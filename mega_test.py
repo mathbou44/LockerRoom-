@@ -43,6 +43,7 @@ PAGES_MAX = 80                       # 4 000 ventes au plus par recherche (22 no
 PLAFOND_DEFAUT = 8000                # credits au plus pour toute la collecte (le forfait : 10 000 par mois)
 PLAN_MAX = 3000                      # recherches au plus dans le plan
 VENTES_MIN = 3                       # ventes en un an dans nos archives, au moins
+REFUS_SUITE_MAX = 8                  # 25 nov 2026 : 8 cartes de suite refusees (HTTP 400) : on arrete, ce n'est plus une page de trop
 DEJA_MIN = 10                        # une recherche avec 10 ventes connues : on ne repaie pas sa periode connue
 PAUSE_S = 0.3                        # 22 nov : 1,2 -> 0,3 s entre les pages (un 429 attend et reessaie seul)
 SONDE_N = 5                          # avant le vrai test : 5 credits, 5 cartes, leurs ventes d'il y a 2 a 3 ans seulement
@@ -272,6 +273,7 @@ def _collecter(plafond, arret, pause):
             finally:
                 c.close()
         taux = vendues._taux_usd_cad() or 1.37
+        refus_suite = [0]
         for q, plus_vieille, pages, debut, fin in _a_faire():
             if not debut:
                 f = fenetre(plus_vieille, _connues(q))
@@ -295,11 +297,23 @@ def _collecter(plafond, arret, pause):
                     return None
                 _texte(f"{q} · page {page}")
                 essais = 0
+                refusee = None
                 while True:
                     try:
                         d = _page(q, page, debut, fin)
+                        refus_suite[0] = 0
                         break
                     except urllib.error.HTTPError as e:
+                        # 25 nov 2026 (Mathieu : « je clique sur Start or resume mais rien se passe » ; ecran : « chris chelios
+                        # rookie auto · page 2 · CompSniper HTTP 400 ») : CompSniper refuse CETTE page (400, 404, 422 : souvent
+                        # une page apres la derniere). Avant : toute la collecte s'arretait, et reprenait sur la meme page une
+                        # heure plus tard : bloquee pour toujours sur une seule carte. Maintenant cette carte est fermee et on
+                        # passe a la suivante ; aucun credit n'est compte (la page n'a rien rendu). 8 refus de suite : la, c'est
+                        # autre chose (l'API a change) : on arrete et on le dit. 401 / 403 (cle, forfait) arretent toujours.
+                        if e.code in (400, 404, 422) and refus_suite[0] < REFUS_SUITE_MAX:
+                            refus_suite[0] += 1
+                            refusee = e.code
+                            break
                         # 22 nov 2026 (« CompSniper HTTP 503 », arrete 35 min) : une panne passagere (429, 5xx) attend et reessaie :
                         # 30 s, 1, 2, 4 puis 5 min
                         if (e.code == 429 or e.code >= 500) and essais < 5:
@@ -318,6 +332,9 @@ def _collecter(plafond, arret, pause):
                         fin_statut = "erreur"
                         _run_maj(erreur="CompSniper injoignable (" + type(e).__name__ + ")")
                         return None
+                if refusee:
+                    _plan_maj(q, fini=1, raison=f"refusee (HTTP {refusee})", le=time.time())
+                    break
                 historique._compter(False)                    # 1 page = 1 credit, compte comme les autres
                 _run_maj(credits=(_run().get("credits") or 0) + 1, battement=time.time())
                 v = historique.lire_reponse(d, taux)

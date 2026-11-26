@@ -89,6 +89,40 @@ assert b["raisons"] == {"sans joueur": 1, "toutes les ventes": 1}, b
 mega_test.time.sleep = _dormir
 print("GARDE-FOUS OK")
 
+# 25 nov 2026 (Mathieu : « je clique sur Start or resume mais rien se passe » ; « chris chelios rookie auto · page 2 · CompSniper
+# HTTP 400 ») : une page refusee ferme CETTE carte et la collecte passe a la suivante (avant : arretee pour toujours sur la meme
+# page) ; aucun credit pour la page refusee ; 8 refus de suite : la collecte s'arrete et le dit ; 401 arrete toujours
+mega_test._run_maj(statut="aucune", credits=0)
+c = mega_test._cx(); c.execute("DELETE FROM plan"); c.execute("INSERT INTO plan (q, ordre, n_an, prix) VALUES ('chris chelios rookie auto', 0, 9, 50), ('cale makar young guns', 1, 9, 50)"); c.commit(); c.close()
+def page400(q, p, debut, fin):
+    APP.append((q, p))
+    if q == "chris chelios rookie auto":
+        if p == 1:
+            return {"results": [{"itemId": f"c{i}", "title": f"chelios {i}", "soldPrice": {"amount": "50"}, "soldDate": jr(10 + i)} for i in range(50)]}
+        raise urllib.error.HTTPError("u", 400, "x", {}, None)
+    return {"results": []}
+mega_test._page = page400
+APP.clear(); b = mega_test.collecter(pause=0)
+assert APP == [("chris chelios rookie auto", 1), ("chris chelios rookie auto", 2), ("cale makar young guns", 1)], APP
+assert b["statut"] == "terminee" and b["raisons"] == {"refusee (HTTP 400)": 1, "toutes les ventes": 1} and b["credits"] == 2, b
+mega_test._run_maj(statut="aucune", credits=0)
+c = mega_test._cx(); c.execute("DELETE FROM plan")
+c.executemany("INSERT INTO plan (q, ordre, n_an, prix) VALUES (?, ?, 9, 50)", [(f"joueur numero{chr(97 + i)} young guns", i) for i in range(12)]); c.commit(); c.close()
+def tout400(q, p, debut, fin):
+    APP.append((q, p)); raise urllib.error.HTTPError("u", 400, "x", {}, None)
+mega_test._page = tout400
+APP.clear(); b = mega_test.collecter(pause=0)
+assert len(APP) == mega_test.REFUS_SUITE_MAX + 1 and b["statut"] == "erreur" and "400" in (b.get("erreur") or ""), (len(APP), b)
+mega_test._run_maj(statut="aucune", credits=0)
+def page401(q, p, debut, fin):
+    APP.append((q, p)); raise urllib.error.HTTPError("u", 401, "x", {}, None)
+mega_test._page = page401
+APP.clear(); b = mega_test.collecter(pause=0)
+assert len(APP) == 1 and b["statut"] == "erreur" and "401" in (b.get("erreur") or ""), (APP, b)
+import base_ventes as _bv_
+_c = _bv_._cx(); _c.execute("DELETE FROM ventes WHERE q = 'chris chelios rookie auto'"); _c.commit(); _c.close()       # la suite compte les cartes des archives
+print("PAGE REFUSEE OK")
+
 # les credits : le plafond de la collecte ; le budget du mois moins la reserve de l'app (a sec : attend le mois suivant)
 mega_test._run_maj(statut="aucune", credits=0)
 c = mega_test._cx(); c.execute("DELETE FROM plan"); c.execute("INSERT INTO plan (q, ordre, n_an, prix) VALUES ('lane hutson young guns', 0, 9, 50)"); c.commit(); c.close()

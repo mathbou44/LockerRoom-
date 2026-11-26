@@ -836,3 +836,34 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   garde son allure. (2) « personne sauf moi doit voir la tuile admin » : la tuile au cadenas ne s'affiche que si
   `admin_a_verifier && !admin_reel` : un compte de `LOCKERROOM_ADMINS` dont la session n'est pas confirmée ; jamais un compte
   ordinaire (test), ni l'admin confirmé qui regarde en vue Pro (ses captures pour l'App Store).
+- **État à 20 h 45 (25 nov)** : poussé à 20 h 38 (commit 9578fb4, en ligne 20 h 39) : tuile Admin au cadenas, flèche de retour,
+  accueil, sapin et cadeau, clé APNs tolérante. Mathieu a confirmé son code admin (« ça marche ») et la notification d'essai est
+  arrivée sur son iPhone (nouvelle clé APNs, l'ancienne révoquée). Dans le bac, PAS poussé : le champ du code admin
+  (`.av-z`) était écrasé à 30 px par le bouton Confirmer : corrigé (champ 211 à 476 px selon l'écran, bouton 120 px), mesuré sur
+  ordi, 430 et 375 (`vue/code.py`). PSA : il a collé le contrat de l'API de Collectors : usage limité à ses propres ventes, « a
+  software subscription product or service offering » exclu : rien de PSA dans SlabCoach sans entente commerciale écrite
+  (possible pour Hall of Cardz, ses propres annonces). APPLE, RESTE : étape 5 (build Codemagic : lui demander s'il est lancé),
+  6 (TestFlight : S'abonner, Restaurer), 7 (6 captures FR + EN en vue Pro), 8 (fiche, note, décocher l'UE, publication
+  manuelle, soumettre). Après l'envoi : un push par jour, tard le soir.
+- **Méga test bloqué, en-tête du Radar à l'ordi (25 nov, 21 h)** : (1) Mathieu relance le méga test (écran : 1 860 / 3 000 cartes,
+  932 972 ventes ajoutées, plafond 20 000 atteint depuis 3 jours ; CompSniper 28 320 / 50 000 selon NOTRE compteur, 33 000 restants
+  selon le sien) avec un plafond de 30 000 : « Stopped (error) · chris chelios rookie auto · page 2 · CompSniper HTTP 400 ». Un 400
+  arrêtait TOUTE la collecte, qui reprenait sur la même page une heure plus tard : bloquée pour toujours. Corrigé (`mega_test.py`) :
+  400 / 404 / 422 ferme CETTE carte (`raison = refusee (HTTP 400)`), aucun crédit compté, on passe à la suivante ; 8 refus de suite
+  (`REFUS_SUITE_MAX`) arrêtent la collecte ; 401 / 403 arrêtent toujours. Test ajouté dans `tests/test_mega_test.py`. Ventes uniques
+  de l'export du 24 nov par année : 2023 : 15 796 ; 2024 : 157 846 ; 2025 : 271 305 ; 2026 : 820 388. (2) En-tête du Radar à l'ordi
+  sans fond « en sortant d'une tuile » : mesuré : `body.fen-ouverte{overflow:hidden}` faisait du body une zone de défilement,
+  l'en-tête collant perdait son appui (−1 500 px) puis le reprenait à la fermeture, redessiné sans fond dans son Chrome. Deux
+  corrections : `overflow:clip` (l'en-tête ne bouge plus : vérifié, `vue/entete2.py`) et un fond PLEIN (`.tete-fixe` + `::before`
+  jusqu'en haut + ombres pleines à gauche et à droite), sans flou d'arrière-plan ni clip-path ni ombre de 100vmax. PAS reproduit
+  dans mon navigateur d'essai (le fond restait là) : à confirmer par lui après le push.
+- **Tendance par SORTE de carte : en cours (25 nov, soir)** : demandé : « comme les listes Au plus bas / Au plus haut des joueurs,
+  mais avec les sortes / parallèles », un petit graphique sur les tuiles du Radar (discret, style Apple) et une version claire
+  dans la fiche, refait aux 3 jours. Module `tendance_sortes.py` ÉCRIT (pas encore branché, pas livré) : même méthode que
+  `tendance_stats` (ventes répétées, 30 j contre 60 j, rétrécissement, Mann-Whitney p < 0,10), clé = la recherche sans le joueur
+  (`cle_sorte`), 5 cartes et 40 ventes au moins, courbe = indice par semaine (fenêtre de 3 semaines), JAMAIS un prix.
+  MESURÉ sur l'export (au 18 nov, 130 jours, 6 243 cartes) : 34 sortes mesurées, 3 hausses confirmées (O-Pee-Chee Platinum +39 %,
+  Ultimate Collection Auto +24 %, SP Authentic Auto +19 %), 10 baisses (OPC Platinum Auto −33 %, Outburst −24 %, Clear Cut Auto
+  −16 %, Young Guns −11 % sur 21 269 ventes et 298 cartes, YG Canvas −10 %…). Par CARTE exacte c'était trop bruyant (recherches
+  larges mélangées). RESTE : brancher au serveur (aux 3 jours), l'API, les listes dans Tendances, le mini-graphique des tuiles,
+  la fiche ; ne PAS changer la lettre SlabIQ sans test.
