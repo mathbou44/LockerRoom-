@@ -694,7 +694,10 @@ def passe_si_besoin():
         age = time.time() - os.path.getmtime(_chemin())
     except OSError:
         age = None
-    if (age is not None and age < AUX_JOURS * 86400) or _ETAT["en_cours"] or time.time() - _ESSAI["le"] < ESSAI_S:
+    # 26 nov 2026, 15 h (journal apres le push : aucun « calcul lance ») : un fichier frais mais d'un ANCIEN format (sans « joueurs »,
+    # listes coupees a 25) doit etre refait aussi : la condition etait dans calculer_si_besoin, pas ici, et le fil ne partait pas.
+    frais = age is not None and age < AUX_JOURS * 86400 and (lire() or {}).get("format") == FORMAT
+    if frais or _ETAT["en_cours"] or time.time() - _ESSAI["le"] < ESSAI_S:
         return None
 
     def tache():

@@ -48,6 +48,7 @@ ARCHIVE_FRAIS_J = 10                 # ... dont une de 10 jours ou moins
 REFUS_SUITE_MAX = 8
 PAUSE_S = 0.3
 VIVANTE_S = 180                      # un battement de moins de 3 minutes : une collecte tourne (dans ce processus ou un autre)
+ATTENTES_S = (1, 2, 4, 8, 15, 30, 30, 30)        # une base occupee (« database is locked ») : on reessaie pendant 2 minutes
 _verrou = threading.Lock()
 ETAT = {"en_cours": False}
 _MIGRE = {"fait": False}
@@ -58,8 +59,27 @@ def _chemin():
     return os.path.join(comptes.DONNEES, "banque_psa.sqlite")
 
 
+# 26 nov 2026, 14 h 58 (journal, 22 s apres la reprise : « Exception in thread donnees-psa [...] sqlite3.OperationalError: database
+# is locked ») : la collecte MOURAIT quand une base etait occupee plus de quelques secondes (ce jour-la : le calcul de la liste
+# « A grader » lisait banque_psa.sqlite pendant des minutes ; historique.sqlite n'attend que 5 s), et son statut restait
+# « en_cours » : c'est l'explication de la « reprise » de 13 h 28. Maintenant chaque lecture et chaque ecriture de la collecte
+# REESSAIE (2 minutes au plus) ; une erreur imprevue ne tue plus le fil sans le dire : statut « erreur », reprise a l'heure.
+def _tenace(f):
+    def g(*a, **k):
+        for attente in ATTENTES_S + (None,):
+            try:
+                return f(*a, **k)
+            except sqlite3.OperationalError as e:
+                if attente is None or not any(m in str(e).lower() for m in ("locked", "busy")):
+                    raise
+                time.sleep(attente if PAUSE_S else 0)
+    g.__name__ = f.__name__
+    g.__doc__ = f.__doc__
+    return g
+
+
 def _cx():
-    c = sqlite3.connect(_chemin(), timeout=10)
+    c = sqlite3.connect(_chemin(), timeout=30)
     c.execute("CREATE TABLE IF NOT EXISTS plan (q TEXT PRIMARY KEY, phase INTEGER, joueur TEXT, ordre INTEGER, n10 INTEGER, debut TEXT, fin TEXT,"
               " pages INTEGER DEFAULT 0, ventes INTEGER DEFAULT 0, fini INTEGER DEFAULT 0, raison TEXT, le REAL, recu_min TEXT)")
     c.execute("CREATE TABLE IF NOT EXISTS ventes (cle TEXT PRIMARY KEY, q TEXT, joueur TEXT, titre TEXT, prix REAL, le TEXT)")
@@ -75,13 +95,18 @@ def _cx():
     return c
 
 
+@_tenace
+def _run_lire():
+    c = _cx()
+    try:
+        return c.execute("SELECT statut, plafond, credits, debut, battement, texte, erreur, raw_planifie, jeton FROM collecte WHERE id=1").fetchone()
+    finally:
+        c.close()
+
+
 def _run():
     try:
-        c = _cx()
-        try:
-            r = c.execute("SELECT statut, plafond, credits, debut, battement, texte, erreur, raw_planifie, jeton FROM collecte WHERE id=1").fetchone()
-        finally:
-            c.close()
+        r = _run_lire()
     except sqlite3.Error:
         r = None
     return dict(zip(("statut", "plafond", "credits", "debut", "battement", "texte", "erreur", "raw_planifie", "jeton"), r)) if r else {}
@@ -98,6 +123,7 @@ def vivante(r=None):
     return r.get("statut") == "en_cours" and time.time() - (r.get("battement") or 0) < VIVANTE_S
 
 
+@_tenace
 def _run_maj(**kw):
     with _verrou:
         c = _cx()
@@ -156,6 +182,7 @@ def joueurs_cibles(n=JOUEURS_N):
     return noms[:n]
 
 
+@_tenace
 def construire_plan(joueurs=None):
     """Phase 1 : « <joueur> psa 10 » puis « <joueur> psa 9 » pour chaque joueur. -> nombre de recherches ajoutees."""
     joueurs = joueurs if joueurs is not None else joueurs_cibles()
@@ -208,13 +235,27 @@ def carte_du_titre(titre, joueur, note="10"):
     return q
 
 
-def cartes_psa10(n_min=N10_MIN, battre=None):
-    """Les cartes exactes vues en PSA 10 dans la collecte -> [(recherche raw, joueur, ventes PSA 10)], les plus vendues d'abord."""
+@_tenace
+def _titres():
     c = _cx()
     try:
-        rows = c.execute("SELECT joueur, titre FROM ventes WHERE joueur IS NOT NULL").fetchall()
+        return c.execute("SELECT joueur, titre FROM ventes WHERE joueur IS NOT NULL").fetchall()
     finally:
         c.close()
+
+
+@_tenace
+def _plan_vide():
+    c = _cx()
+    try:
+        return not c.execute("SELECT COUNT(*) FROM plan").fetchone()[0]
+    finally:
+        c.close()
+
+
+def cartes_psa10(n_min=N10_MIN, battre=None):
+    """Les cartes exactes vues en PSA 10 dans la collecte -> [(recherche raw, joueur, ventes PSA 10)], les plus vendues d'abord."""
+    rows = _titres()
     vues = {}
     for i, (joueur, titre) in enumerate(rows):
         if i % 500 == 499:
@@ -251,6 +292,11 @@ def construire_plan_raw(battre=None):
     _run_maj()
     debut, fin = fenetre()
     cartes = cartes_psa10(battre=battre)[:RAW_MAX]
+    return _ecrire_plan_raw(cartes, debut, fin)
+
+
+@_tenace
+def _ecrire_plan_raw(cartes, debut, fin):
     n = 0
     with _verrou:
         c = _cx()
@@ -294,6 +340,7 @@ def _texte(t, **kw):
     _run_maj(texte=t, battement=time.time(), **kw)
 
 
+@_tenace
 def _a_faire():
     c = _cx()
     try:
@@ -302,6 +349,7 @@ def _a_faire():
         c.close()
 
 
+@_tenace
 def _noter(q, joueur, ventes):
     """Les ventes dans NOTRE base (jamais dans les archives). Une vente n'entre qu'une fois (son numero d'annonce).
     -> le nombre de ventes nouvelles."""
@@ -349,12 +397,7 @@ def _collecter(plafond, arret, pause):
     a_moi = lambda: _run().get("jeton") == jeton
     fin_statut = "interrompue"
     try:
-        c = _cx()
-        try:
-            vide = not c.execute("SELECT COUNT(*) FROM plan").fetchone()[0]
-        finally:
-            c.close()
-        if vide and not construire_plan():
+        if _plan_vide() and not construire_plan():
             fin_statut = "erreur"
             _run_maj(erreur="Aucun joueur dans l'indice SlabIQ : rien à collecter")
             return None
@@ -427,7 +470,7 @@ def _collecter(plafond, arret, pause):
                     if refusee:
                         _plan_maj(q, fini=1, raison=f"refusee (HTTP {refusee})", le=time.time())
                         break
-                    historique._compter(False)                # 1 page = 1 credit, compte comme les autres
+                    _tenace(historique._compter)(False)       # 1 page = 1 credit, compte comme les autres
                     cr = (_run().get("credits") or 0) + 1
                     _run_maj(credits=cr, battement=time.time())
                     if cr % 100 == 0:                         # le journal du serveur : ou en est la collecte
@@ -447,14 +490,7 @@ def _collecter(plafond, arret, pause):
                         raison = "fenetre atteinte"
                     elif page >= pages_max:
                         raison = "pages max"
-                    with _verrou:
-                        c = _cx()
-                        try:
-                            c.execute("UPDATE plan SET pages=?, ventes=ventes+?, fini=?, raison=?, le=?, recu_min=MIN(COALESCE(recu_min, ?), ?) WHERE q=?",
-                                      (page, ajoutees, 1 if raison else 0, raison, time.time(), plus_vieux or "9999", plus_vieux or "9999", q))
-                            c.commit()
-                        finally:
-                            c.close()
+                    _page_faite(q, page, ajoutees, raison, plus_vieux)
                     if raison:
                         break
                     page += 1
@@ -465,6 +501,14 @@ def _collecter(plafond, arret, pause):
             return None
         fin_statut = "terminee"
         _texte("Terminée")
+        return None
+    except Exception as e:                                    # une erreur imprevue : on le dit, et la boucle de l'heure reprendra
+        fin_statut = "erreur"
+        print("Donnees PSA : arret imprevu : " + repr(e)[:200], flush=True)
+        try:
+            _run_maj(erreur="Arrêt imprévu : " + repr(e)[:120])
+        except Exception:
+            pass
         return None
     finally:
         ETAT["en_cours"] = False
@@ -479,6 +523,19 @@ def _collecter(plafond, arret, pause):
             print("Donnees PSA (fin) : " + repr(e)[:160], flush=True)
 
 
+@_tenace
+def _page_faite(q, page, ajoutees, raison, plus_vieux):
+    with _verrou:
+        c = _cx()
+        try:
+            c.execute("UPDATE plan SET pages=?, ventes=ventes+?, fini=?, raison=?, le=?, recu_min=MIN(COALESCE(recu_min, ?), ?) WHERE q=?",
+                      (page, ajoutees, 1 if raison else 0, raison, time.time(), plus_vieux or "9999", plus_vieux or "9999", q))
+            c.commit()
+        finally:
+            c.close()
+
+
+@_tenace
 def _plan_maj(q, **kw):
     with _verrou:
         c = _cx()

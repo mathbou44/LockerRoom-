@@ -49,7 +49,9 @@ JOURS = 120
 RAW_MIN = 5
 P10_MIN = 5                          # 4 -> 5 des le premier essai : a 4 ventes, une PSA 10 d'une autre parallele suffit a fausser la mediane
 P9_MIN = 3
-REFAIRE_H = 20                       # la liste est refaite au plus une fois par 20 heures (ou a la demande de l'admin)
+REFAIRE_J = 7                        # 26 nov, 15 h 06 (Mathieu : « le top 100 a grader qui se refresh chaque semaine ») : refaite chaque semaine,
+                                     # une fois de plus quand la collecte PSA finit, et quand l'admin le demande
+N_TOP = 100
 ETAT = {"en_cours": False, "texte": None}
 _verrou = threading.Lock()
 _MEM = {"mtime": None, "v": None}
@@ -253,20 +255,26 @@ def _ventes_serveur(jours=JOURS):
     import banque_psa
     d_min = (datetime.now(timezone.utc).date() - timedelta(days=jours)).isoformat()
     joueurs = {}
-    try:
+    # 26 nov 2026, 14 h 58 (journal : la collecte PSA morte sur « database is locked » 22 s apres le depart de ce calcul) : la base
+    # de la collecte n'est JAMAIS tenue ouverte pendant le calcul (un curseur ouvert pendant des minutes bloquait ses ecritures).
+    # On lit par blocs de 5 000 ventes, une connexion courte par bloc (la suite : apres le dernier rowid lu).
+    def bloc(sql, args):
         c = banque_psa._cx()
         try:
-            for q, j in c.execute("SELECT q, joueur FROM plan WHERE phase=1 AND joueur IS NOT NULL"):
-                joueurs.setdefault(j, q.rsplit(" psa ", 1)[0])
-            cur = c.execute("SELECT cle, titre, prix, le, joueur FROM ventes WHERE le >= ?", (d_min,))
-            while True:
-                rows = cur.fetchmany(2000)
-                if not rows:
-                    break
-                for r in rows:
-                    yield r
+            return c.execute(sql, args).fetchall()
         finally:
             c.close()
+    try:
+        for q, j in bloc("SELECT q, joueur FROM plan WHERE phase=1 AND joueur IS NOT NULL", ()):
+            joueurs.setdefault(j, q.rsplit(" psa ", 1)[0])
+        dernier = 0
+        while True:
+            rows = bloc("SELECT rowid, cle, titre, prix, le, joueur FROM ventes WHERE rowid > ? AND le >= ? ORDER BY rowid LIMIT 5000", (dernier, d_min))
+            if not rows:
+                break
+            dernier = rows[-1][0]
+            for r in rows:
+                yield r[1:]
     except sqlite3.Error as e:
         print("A grader (collecte PSA) : " + repr(e)[:120], flush=True)
     if not joueurs:                                           # la collecte n'a pas commence : les joueurs du haut de l'indice
@@ -276,16 +284,17 @@ def _ventes_serveur(jours=JOURS):
             joueurs = {}
     try:
         import base_ventes
-        c = base_ventes._cx()
-        try:
-            for j, mots in joueurs.items():
-                if len(mots.split()) < 2:
-                    continue
-                for cle, titre, prix, le in c.execute("SELECT cle, titre, prix, le FROM ventes WHERE q >= ? AND q < ? AND le >= ? AND prix > 0",
-                                                      (mots + " ", mots + "!", d_min)).fetchall():        # « ! » suit l'espace : les recherches « <joueur> ... »
-                    yield cle, titre, prix, le, j
-        finally:
-            c.close()
+        for j, mots in joueurs.items():
+            if len(mots.split()) < 2:
+                continue
+            c = base_ventes._cx()                             # une connexion courte par joueur : rien n'est tenu pendant le calcul
+            try:
+                rows = c.execute("SELECT cle, titre, prix, le FROM ventes WHERE q >= ? AND q < ? AND le >= ? AND prix > 0",
+                                 (mots + " ", mots + "!", d_min)).fetchall()                # « ! » suit l'espace : les recherches « <joueur> ... »
+            finally:
+                c.close()
+            for cle, titre, prix, le in rows:
+                yield cle, titre, prix, le, j
     except Exception as e:
         print("A grader (archives) : " + repr(e)[:120], flush=True)
 
@@ -351,20 +360,32 @@ def lancer():
 
 
 def refaire_si_besoin():
-    """La boucle du serveur : la liste est refaite quand elle a plus de REFAIRE_H heures ET que la collecte PSA a des ventes."""
-    try:
-        age = time.time() - os.path.getmtime(_chemin())
-    except OSError:
-        age = None
-    if ETAT["en_cours"] or (age is not None and age < REFAIRE_H * 3600):
+    """La boucle du serveur : la liste est refaite chaque semaine, et une fois quand la collecte PSA vient de finir (ses ventes
+    sont plus recentes que la liste). Jamais sans ventes collectees (l'admin peut alors la demander lui-meme)."""
+    if ETAT["en_cours"]:
         return None
+    try:
+        mt = os.path.getmtime(_chemin())
+    except OSError:
+        mt = None
     try:
         import banque_psa
+        b = banque_psa._run()
         if not banque_psa.bilan().get("ventes"):
-            return None                                       # rien de collecte encore : l'admin peut la demander lui-meme
+            return None
     except Exception:
         return None
+    finie_apres = mt is not None and b.get("statut") == "terminee" and (b.get("battement") or 0) > mt
+    if mt is not None and time.time() - mt < REFAIRE_J * 86400 and not finie_apres:
+        return None
     return lancer()
+
+
+def top_tendances():
+    """Pour l'onglet « A grader » de Trending (ADMIN seulement pour l'instant : la liste porte des prix) : les N_TOP premieres."""
+    v = lire()
+    return {"cartes": (v.get("cartes") or [])[:N_TOP], "n": v.get("n_cartes") or 0, "le": v.get("le"), "jours": v.get("jours") or JOURS,
+            "frais_psa": v.get("frais_psa") or frais_psa(), "semaine": REFAIRE_J}
 
 
 def page():

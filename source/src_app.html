@@ -6830,6 +6830,7 @@ html body .ecran .md-rech.tiq-rech, html:not(.tel-large) body .tete-fixe:has(.d-
 .ag-x{flex:none; font:800 20px/1 var(--f-cond); font-style:normal; color:var(--acc)}
 .ag-p{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px} .ag-p span{display:flex; flex-direction:column; align-items:flex-start; text-align:left; gap:1px; min-width:0} .ag-p small{font-size:11.5px; color:var(--doux); letter-spacing:.04em} .ag-p b{font:700 19px/1.1 var(--f-cond)} .ag-p i{font-style:normal; font-size:11.5px; color:var(--doux)}
 .ag-r{display:flex; flex-wrap:wrap; gap:4px 14px; font-size:13.5px} .ag-r span{white-space:nowrap} .ag-r .vert b{color:var(--vert)} .ag-r .rouge b{color:var(--rouge)}
+.tiq-mg .tiq-mn{gap:2px} .tiq-gs{font-size:12.5px; color:var(--doux)} .tiq-gs.ok{color:var(--vert)}
 .tiq-nj{flex:none; width:26px; text-align:right; font:700 20px/1 var(--f-cond); color:var(--acc)}
 @media (max-width:1099px){ .tiq-m:has(.tiq-nj){gap:8px} .tiq-m:has(.tiq-nj) .tiq-rg{width:18px} .tiq-m:has(.tiq-nj) .tiq-pc{min-width:64px} .tiq-m:has(.tiq-nj) .tiq-sp{width:50px} }
 .tiq-rg{flex:none; width:22px; font:700 15px/1 var(--f-cond); font-style:normal; color:var(--doux); text-align:center; font-variant-numeric:tabular-nums}
@@ -13974,6 +13975,17 @@ async function feuilleBanquePSA(){
     if (x && x.ok === false) toast(x.erreur || 'Erreur'); setTimeout(feuilleBanquePSA, 1500); };
   if (r.en_cours) setTimeout(() => { if ($('#bp-go') && !$('#fond-feuille').hidden) feuilleBanquePSA(); }, 10000);
 }
+// la carte « a grader » : son rang, le joueur, la carte, le rendement si 10 ; raw / PSA 10 / PSA 9 ; ce qui reste si 10, si 9, et le seuil
+const agSaison = (a) => a ? a + '-' + String((a + 1) % 100).padStart(2, '0') : '';
+const agRend = (x) => '×' + decFr((Math.round(x.rendement * 10) / 10).toFixed(1));
+const agSeuil = (x) => x.seuil === 0 ? tt('Rentable même en 9', 'Pays off even at 9') : x.seuil != null ? tt(`Il faut ${Math.max(1, Math.round(x.seuil * 100))} % de 10 pour ne pas perdre`, `Needs ${Math.max(1, Math.round(x.seuil * 100))}% 10s to break even`) : x.reste9 != null && x.reste10 <= 0 ? tt('Perd même en 10', 'Loses even at 10') : tt('PSA 9 : pas assez de ventes', 'PSA 9: too few sales');
+const agNom = (x) => `${x.nom} ${agSaison(x.annee)}${x.serie ? ' /' + x.serie : ''}`;
+function agCarte(x, rg){
+  const nb = (v) => (v || 0).toLocaleString(LOC()), sg = (v) => (v >= 0 ? '+' : '−') + argent(Math.abs(v), 0);
+  return `<div class="ag-c"><div class="ag-h">${rg ? `<i class="tiq-rg">${rg}</i>` : ''}<span class="ag-n"><b>${esc(x.joueur)}</b><small>${esc(agNom(x))}${x.num ? ' · #' + esc(String(x.num).toUpperCase()) : ''}</small></span><em class="ag-x" title="${esc(tt('Ce qui revient pour 1 $ mis, si elle revient 10', 'What comes back per $1 spent, if it grades 10'))}">${agRend(x)}</em></div>
+      <div class="ag-p"><span><small>Raw</small><b>${argent(x.raw, 0)}</b><i>${nb(x.n_raw)} ${tt('ventes', 'sales')}</i></span><span><small>PSA 10</small><b>${argent(x.psa10, 0)}</b><i>${nb(x.n10)} ${tt('ventes', 'sales')}</i></span><span><small>PSA 9</small><b>${x.psa9 != null ? argent(x.psa9, 0) : '—'}</b><i>${nb(x.n9)} ${tt('ventes', 'sales')}</i></span></div>
+      <div class="ag-r"><span class="${x.reste10 >= 0 ? 'vert' : 'rouge'}">${tt('Si 10', 'If 10')} : <b>${sg(x.reste10)}</b></span><span class="${x.reste9 == null ? '' : x.reste9 >= 0 ? 'vert' : 'rouge'}">${tt('Si 9', 'If 9')} : <b>${x.reste9 != null ? sg(x.reste9) : '—'}</b></span><span>${agSeuil(x)}</span></div></div>`;
+}
 // 26 nov 2026 (Mathieu : « savoir les cartes qui valent le plus la peine d'etre gradees [...] ceux avec le meilleur rapport achat
 // versus vente [...] dans Admin, le temps qu'elle soit parfaite ») : la liste « A grader » (a_grader.py). Pour chaque carte exacte :
 // le prix raw, PSA 10 et PSA 9 (medianes de ventes reelles, la meme periode), ce qui reste si elle revient 10 ou 9 apres les frais,
@@ -13982,10 +13994,7 @@ async function feuilleAGrader(){
   const r = await API.admin_a_grader().catch(e => ({ok: false, erreur: e.message}));
   if (!r || !r.ok) { toast((r && r.erreur) || 'Erreur'); return; }
   const nb = (v) => (v || 0).toLocaleString(LOC()), C = r.cartes || [], sg = (v) => (v >= 0 ? '+' : '−') + argent(Math.abs(v), 0);
-  const sais = (a) => a ? a + '-' + String((a + 1) % 100).padStart(2, '0') : '';
-  const ligne = (x, i) => `<div class="ag-c"><div class="ag-h"><i class="tiq-rg">${i + 1}</i><span class="ag-n"><b>${esc(x.joueur)}</b><small>${esc(x.nom)} ${sais(x.annee)}${x.serie ? ' /' + x.serie : ''}${x.num ? ' · #' + esc(String(x.num).toUpperCase()) : ''}</small></span><em class="ag-x" title="${esc(tt('Ce qui revient pour 1 $ mis, si elle revient 10', 'What comes back per $1 spent, if it grades 10'))}">×${decFr((Math.round(x.rendement * 10) / 10).toFixed(1))}</em></div>
-      <div class="ag-p"><span><small>Raw</small><b>${argent(x.raw, 0)}</b><i>${nb(x.n_raw)} ${tt('ventes', 'sales')}</i></span><span><small>PSA 10</small><b>${argent(x.psa10, 0)}</b><i>${nb(x.n10)} ${tt('ventes', 'sales')}</i></span><span><small>PSA 9</small><b>${x.psa9 != null ? argent(x.psa9, 0) : '—'}</b><i>${nb(x.n9)} ${tt('ventes', 'sales')}</i></span></div>
-      <div class="ag-r"><span class="${x.reste10 >= 0 ? 'vert' : 'rouge'}">${tt('Si 10', 'If 10')} : <b>${sg(x.reste10)}</b></span><span class="${x.reste9 == null ? '' : x.reste9 >= 0 ? 'vert' : 'rouge'}">${tt('Si 9', 'If 9')} : <b>${x.reste9 != null ? sg(x.reste9) : '—'}</b></span><span>${x.seuil === 0 ? tt('Rentable même en 9', 'Pays off even at 9') : x.seuil != null ? tt(`Il faut ${Math.max(1, Math.round(x.seuil * 100))} % de 10 pour ne pas perdre`, `Needs ${Math.max(1, Math.round(x.seuil * 100))}% 10s to break even`) : x.reste9 != null && x.reste10 <= 0 ? tt('Perd même en 10', 'Loses even at 10') : tt('PSA 9 : pas assez de ventes', 'PSA 9: too few sales')}</span></div></div>`;
+  const ligne = (x, i) => agCarte(x, i + 1);
   ouvrirFeuille(`<h3>${tt('À grader', 'Worth grading')}<em class="tiq-pn">${nb(r.n_cartes)}</em></h3>
     <p class="sous" style="margin:-4px 0 10px">${tt(`Des ventes réelles, la même carte, la même période (${r.jours} jours au plus). « Si 10 » et « Si 9 » : ce qui reste après la carte, ${argent(r.frais_psa, 0)} de PSA et d’envoi, et les frais eBay de la revente. Classé par ce qui revient pour 1 $ mis si elle revient 10. Aucune chance de 10 n’est supposée.`, `Real sales, the same card, the same period (${r.jours} days at most). “If 10” and “If 9”: what is left after the card, ${argent(r.frais_psa, 0)} of PSA and shipping, and eBay resale fees. Ranked by what comes back per $1 spent if it grades 10. No odds of a 10 are assumed.`)}</p>
     <div class="by-l" style="margin-bottom:8px"><span>${r.en_cours ? tt('Calcul en cours…', 'Computing…') + (r.texte ? ' ' + esc(r.texte) : '') : r.le ? tt('Calculé ', 'Computed ') + esc(ilYa(r.le)) + ' · ' + nb(r.lues) + ' ' + tt('ventes lues', 'sales read') : tt('Pas encore calculée', 'Not computed yet')}</span><button class="lien-t" id="ag-go" ${r.en_cours ? 'disabled' : ''}>${tt('Recalculer', 'Recompute')}</button></div>
@@ -15266,12 +15275,32 @@ async function vueTendancesIQ(arg){
       // sa liste s'ouvre de la vue Cartes, sous « Par sorte ».
       // 26 nov 2026, 13 h 31 (Mathieu : « on aurait seulement 2 onglets ») : Joueurs | Cartes. « Joueur + cartes » (12 h 50 : « plus
       // complique pour rien ») disparait : chaque joueur a deja, sur la meme ligne, son trend et sa note.
-      const modeT = SO && S.tiqMode === 'sortes' ? 'sortes' : 'joueurs';
+      // 26 nov 2026, 15 h 06 (Mathieu : « dans trend on devrait voir la liste du top 100 a grader qui se refresh chaque semaine » ;
+      // « Admin seulement » pour commencer) : un 3e onglet, seulement quand le serveur envoie la liste (il ne l'envoie qu'a l'admin).
+      // Une ligne : le rang, le joueur, la carte, ce qu'il faut de 10 pour ne pas perdre, et le rendement si 10. Un toucher : les prix.
+      const AG = SO && r.a_grader && (r.a_grader.cartes || []).length ? r.a_grader : null;
+      const modeT = AG && S.tiqMode === 'grader' ? 'grader' : SO && S.tiqMode === 'sortes' ? 'sortes' : 'joueurs';
       const brS = (zone) => $$('[data-sorte]', zone).forEach(b => b.onclick = () => { vibrer(); feuilleSorte(TD[b.dataset.sorte]); });
       const noteSO = () => { const nb = (n) => Number(n || 0).toLocaleString(tt('fr-CA', 'en-CA')), jr = SO.jours || [30, 60];
         return `<div class="sous tiq-note">${tt(`${nb(SO.n_cartes)} cartes et ${nb(SO.n_sortes)} sortes mesurées sur ${nb(SO.n_ventes)} ventes : les ${jr[0]} derniers jours contre les ${jr[1]} d’avant. Refait aux 3 jours.`, `${nb(SO.n_cartes)} cards and ${nb(SO.n_sortes)} card types measured on ${nb(SO.n_ventes)} sales: the last ${jr[0]} days against the ${jr[1]} before. Redone every 3 days.`)}${SO.le ? ' · ' + tt('mis à jour ', 'updated ') + esc(ilYa(SO.le)) : ''}</div>`; };
-      const modeH = SO ? `<div class="tiq-mode" id="tiq-mode" role="tablist">${[['joueurs', tt('Joueurs', 'Players')], ['sortes', tt('Cartes', 'Cards')]].map(([k, n]) => `<button role="tab" class="${modeT === k ? 'on' : ''}" data-tmode="${k}" aria-selected="${modeT === k}">${n}</button>`).join('')}</div>` : '';
+      const modeH = SO ? `<div class="tiq-mode${AG ? ' tiq-mode3' : ''}" id="tiq-mode" role="tablist">${[['joueurs', tt('Joueurs', 'Players')], ['sortes', tt('Cartes', 'Cards')], ...(AG ? [['grader', tt('À grader', 'To grade')]] : [])].map(([k, n]) => `<button role="tab" class="${modeT === k ? 'on' : ''}" data-tmode="${k}" aria-selected="${modeT === k}">${n}</button>`).join('')}</div>` : '';
       const brMode = () => $$('[data-tmode]', z).forEach(b => b.onclick = () => { if (modeT === b.dataset.tmode) return; vibrer(); S.tiqMode = b.dataset.tmode; peindre(); });
+      if (modeT === 'grader') {
+        const nb = (n) => Number(n || 0).toLocaleString(tt('fr-CA', 'en-CA')), C = AG.cartes;
+        const ligneG = (x, i) => `<button class="tiq-m tiq-mg" data-ag="${i}"><i class="tiq-rg">${i + 1}</i><span class="tiq-mn"><b>${esc(x.joueur)}</b><small>${esc(agNom(x))}</small><small class="tiq-gs${x.seuil === 0 ? ' ok' : ''}">${agSeuil(x)}</small></span><em class="ag-x">${agRend(x)}</em></button>`;
+        const ouvrirG = (x) => { if (!x) return; ouvrirFeuille(`<h3>${tt('À grader', 'Worth grading')}</h3>${agCarte(x)}
+          <p class="sous" style="margin-top:10px">${tt(`${agRend(x)} : si elle revient PSA 10, la revente rapporte ${decFr((Math.round(x.rendement * 10) / 10).toFixed(1))} fois ce que tu as mis (la carte raw + ${argent(AG.frais_psa, 0)} de PSA et d’envoi), frais eBay enlevés. Des ventes réelles des ${x.jours} derniers jours, la même carte. Aucune chance de 10 n’est supposée.`, `${agRend(x)}: if it grades PSA 10, the resale brings ${(Math.round(x.rendement * 10) / 10).toFixed(1)} times what you put in (the raw card + ${argent(AG.frais_psa, 0)} of PSA and shipping), eBay fees removed. Real sales from the last ${x.jours} days, the same card. No odds of a 10 are assumed.`)}</p>`); };
+        const brG = (zone) => $$('[data-ag]', zone).forEach(b => b.onclick = () => { vibrer(); ouvrirG(C[+b.dataset.ag]); });
+        z.innerHTML = `${modeH}<div class="tiq-av tiq-so tiq-mixv${C.length <= 24 ? ' tiq-peu' : ''}" data-on="bas"><div class="tiq-g tiq-pan bas"><div class="am-t tiq-gt">${tt('À grader', 'Worth grading')}<em class="tiq-pn">${C.length}</em></div>
+          <p class="tiq-ps">${tt('Si elle revient PSA 10 : ce qui revient pour 1 $ mis (la carte + les frais PSA). Des ventes réelles ; aucune chance de 10 n’est supposée.', 'If it grades PSA 10: what comes back per $1 spent (the card + PSA fees). Real sales; no odds of a 10 are assumed.')}</p>
+          <div class="tiq-lm">${C.map(ligneG).join('')}</div>
+          <div class="tiq-pf">${C.length > 3 ? `<button class="tiq-pl2 tiq-tous" id="tiq-gtous">${tt(`Voir les ${C.length}`, `See all ${C.length}`)} ›</button>` : ''}</div></div></div>
+          <div class="sous tiq-note">${tt(`${nb(AG.n)} cartes mesurées, raw contre PSA 10 sur la même période. Refait chaque semaine. Admin seulement pour l’instant.`, `${nb(AG.n)} cards measured, raw against PSA 10 over the same period. Redone every week. Admin only for now.`)}${AG.le ? ' · ' + tt('mis à jour ', 'updated ') + esc(ilYa(AG.le)) : ''}</div>`;
+        brG(z);
+        const gt = $('#tiq-gtous', z); if (gt) gt.onclick = () => { vibrer(); ouvrirFeuille(`<h3>${tt('À grader', 'Worth grading')}<em class="tiq-pn">${C.length}</em></h3><div class="tiq-lm tiq-ltt">${C.map(ligneG).join('')}</div>`); brG($('#feuille')); };
+        brMode(); ajusterTiq(z);
+        return;
+      }
       if (modeT === 'sortes') {
         const nb = (n) => Number(n || 0).toLocaleString(tt('fr-CA', 'en-CA'));
         const H_ = SO.hausses || [], B_ = SO.baisses || [], T_ = SO.toutes || [], jr = SO.jours || [30, 60];

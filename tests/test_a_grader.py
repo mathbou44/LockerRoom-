@@ -90,7 +90,36 @@ for _ in range(400):
     time.sleep(0.05)
 P = a_grader.page()
 assert P["ok"] and len(P["cartes"]) == 1 and P["cartes"][0]["joueur"] == "Cutter Gauthier" and P["cartes"][0]["n10"] == 5 and P["cartes"][0]["n_raw"] == 5 and P["lues"] == 11, (P["cartes"], P["lues"])
-assert a_grader.refaire_si_besoin() is None, "refaite une fois par 20 heures, pas a chaque tour"
+assert a_grader.refaire_si_besoin() is None, "refaite une fois par semaine, pas a chaque tour"
+# 26 nov, 15 h 06 (Mathieu : « dans trend on devrait voir la liste du top 100 a grader qui se refresh chaque semaine ») : chaque
+# semaine, et une fois de plus quand la collecte PSA vient de finir (ses ventes sont plus recentes que la liste)
+assert a_grader.REFAIRE_J == 7 and a_grader.N_TOP == 100
+os.utime(a_grader._chemin(), (time.time() - 8 * 86400,) * 2)
+assert a_grader.refaire_si_besoin() is not None, "une liste de plus de 7 jours est refaite"
+for _ in range(400):
+    if not a_grader.ETAT["en_cours"]: break
+    time.sleep(0.05)
+banque_psa._run_maj(statut="terminee", battement=time.time() + 60)
+assert a_grader.refaire_si_besoin() is not None, "la collecte vient de finir : la liste est refaite"
+for _ in range(400):
+    if not a_grader.ETAT["en_cours"]: break
+    time.sleep(0.05)
+banque_psa._run_maj(statut="terminee", battement=time.time() - 3600)
+assert a_grader.refaire_si_besoin() is None
+T = a_grader.top_tendances()
+assert len(T["cartes"]) == 1 and T["n"] == 1 and T["semaine"] == 7 and T["frais_psa"] == 41.0 and T["le"]
+# 26 nov, 14 h 58 (journal : la collecte PSA morte sur « database is locked » 22 s apres le depart du calcul) : pendant que la liste
+# se calcule, la base de la collecte n'est JAMAIS tenue ouverte : une ecriture passe tout de suite
+import sqlite3
+g_ = a_grader._ventes_serveur()
+next(g_)
+c2 = sqlite3.connect(banque_psa._chemin(), timeout=0.2)
+c2.execute("UPDATE collecte SET texte='ecrit pendant le calcul' WHERE id=1"); c2.commit(); c2.close()
+cb = base_ventes._cx(); chemin_archives = cb.execute("PRAGMA database_list").fetchone()[2]; cb.close()
+c3 = sqlite3.connect(chemin_archives, timeout=0.2)
+list(g_)
+c3.execute("CREATE TABLE IF NOT EXISTS essai_ecriture (x)"); c3.execute("DROP TABLE essai_ecriture"); c3.commit(); c3.close()
+assert "LIMIT 5000" in open(os.path.join(RACINE, "a_grader.py"), encoding="utf-8").read()
 print("SERVEUR OK")
 
 # ---- 4. admin seulement (des prix) ; l'ecran ; l'export
@@ -110,4 +139,26 @@ hors = src.replace("async function feuilleAGrader(){", "").replace("setTimeout(f
 assert "feuilleAGrader" not in hors, "aucun autre appel"
 assert '@app.route("/admin/psa_export.tsv.gz")' in srv and "if not api._est_admin(reel=True):\n        abort(403)\n    if time.time() - _EXPORT_V.get(\"psa\", 0) < 600:" in srv
 assert "a_grader.refaire_si_besoin()" in srv
+# Trending : la liste n'est envoyee QU'A l'admin (elle porte des prix) : ni au Pro, ni au Gratuit, ni a l'admin en vue client
+import forfaits, tendance_sortes
+api._tendances_iq0 = lambda: {"ok": True, "cats": {"bas": [], "haut": []}, "compte": {}}
+tendance_sortes.page = lambda: None
+vrai_pro = forfaits.est_pro
+try:
+    api._est_admin = lambda reel=False: True
+    ra = api.tendances_iq()
+    assert ra["a_grader"]["cartes"][0]["joueur"] == "Cutter Gauthier" and ra["a_grader"]["cartes"][0]["raw"] == 38.0
+    api._est_admin = lambda reel=False: False                # un Pro (ou l'admin qui regarde l'app comme un client)
+    forfaits.est_pro = lambda: True
+    assert "a_grader" not in api.tendances_iq() and "psa10" not in json.dumps(api.tendances_iq())
+    forfaits.est_pro = lambda: False                         # un Gratuit
+    assert "a_grader" not in api.tendances_iq() and "psa10" not in json.dumps(api.tendances_iq())
+finally:
+    forfaits.est_pro = vrai_pro
+assert "if isinstance(r, dict) and r.get(\"ok\") and self._est_admin():\n                import a_grader" in open(os.path.join(RACINE, "lockerroom.py"), encoding="utf-8").read()
+# l'ecran : un 3e onglet seulement quand le serveur envoie la liste ; une ligne sans prix ; les prix au toucher
+assert "const AG = SO && r.a_grader && (r.a_grader.cartes || []).length ? r.a_grader : null;" in src and "...(AG ? [['grader', tt('À grader', 'To grade')]] : [])" in src
+lg = src[src.index("        const ligneG = (x, i) =>"):src.index("        const ouvrirG = (x) =>")]
+assert "argent(" not in lg and "x.raw" not in lg and "x.psa10" not in lg, "la ligne de Trending ne montre aucun prix"
+assert "function agCarte(x, rg){" in src and "const ligne = (x, i) => agCarte(x, i + 1);" in src and "Admin seulement pour l’instant" in src
 print("ADMIN OK")

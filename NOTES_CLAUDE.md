@@ -1286,6 +1286,32 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   `base_ventes.TRI_VERSION` 1 → 2 : les verdicts gardés des ventes qui portent ces mots sont refaits une fois (une base déjà
   en version 1 ne refait que ceux-là). Tests : `tests/test_espere_note.py`. Suite complète : 303 fichiers, 0 échec.
   Vu en passant, NON corrigé : « PSA 10 possible black label » est refusée comme « variante black » (une vraie PSA 10 perdue).
+- **26 nov, 14 h 55 : « Pushed » (commit e34dd4f = p105 + p106 + p107, en ligne à 14 h 55). L'ANOMALIE DE 13 h 28 EST EXPLIQUÉE.**
+  Journal : 14 h 57 min 59 « Donnees PSA : reprise (en_cours) » puis, 22 s plus tard, « Donnees PSA (fin) : OperationalError
+  ('database is locked') » et « Exception in thread donnees-psa … sqlite3.OperationalError: database is locked ». La collecte
+  MEURT quand une base est occupée : (1) cette fois, `a_grader._ventes_serveur` tenait un curseur ouvert sur
+  `banque_psa.sqlite` pendant tout son calcul (`fetchmany` dans un générateur : un verrou de lecture pendant des minutes, les
+  écritures de la collecte expirent après 10 s) ; (2) `historique._cx()` n'attend que 5 s et `historique._compter` n'était pas
+  protégé (le même défaut existe dans `mega_test.py`). Le `_run_maj` du `finally` échouait aussi → statut resté « en_cours » :
+  d'où la « reprise » de 13 h 28. Donc PAS deux collectes en même temps : une collecte morte puis relancée. Rien payé deux fois.
+  CORRIGÉ (p108) : `banque_psa._tenace` (chaque lecture / écriture de la collecte réessaie 2 minutes : 1, 2, 4, 8, 15, 30, 30,
+  30 s), `_cx` attend 30 s, une erreur imprévue donne le statut « erreur » (plus jamais « en_cours » pour toujours) ;
+  `a_grader._ventes_serveur` lit par blocs de 5 000 avec une connexion courte par bloc (test : une écriture passe pendant le
+  calcul). `tendance_sortes.passe_si_besoin` : la condition « format » manquait (elle n'était que dans `calculer_si_besoin`) :
+  après le push de 14 h 55 le fichier n'a PAS été refait (journal : aucun « calcul lance ») ; corrigé et testé.
+  À FAIRE : la même ténacité dans `mega_test.py` (`historique._compter` nu).
+- **26 nov, 15 h 06 : « Dans trend on devrait voir la liste du top 100 à grader qui se refresh chaque semaine »** → demandé qui le
+  voit : « Admin seulement » pour commencer (le Pro après le test sur le passé ; en Pro, jamais un prix : rendement et seuil
+  seulement). FAIT (p108) : `a_grader.top_tendances()` (100 premières), `REFAIRE_J = 7` (refaite chaque semaine, une fois de
+  plus quand la collecte PSA finit, et à la demande) ; `tendances_iq` ajoute `a_grader` SEULEMENT si `_est_admin()` (ni Pro,
+  ni Gratuit, ni l'admin en vue client : testé) ; écran : 3e onglet « À grader » (`modeT === 'grader'`, classe `tiq-mixv`
+  réutilisée), une ligne = rang, joueur, carte, « Rentable même en 9 » / « Il faut N % de 10 », ×rendement, AUCUN prix ; un
+  toucher : `agCarte(x)` (raw, PSA 10, PSA 9, si 10, si 9), partagé avec la fenêtre admin. Aperçu : `/home/claude/vue/tend7.py`.
+  Sur le serveur à 15 h 02 : « A grader : 156 cartes (179 825 ventes lues, 101 060 rangées, 262 s) ».
+  15 h 18 : il a relancé la collecte PSA lui-même (le serveur avait encore la version sans ténacité).
+  À DÉCIDER avec lui quand la collecte aura fini (on connaîtra son vrai coût) : rafraîchir les DONNÉES chaque semaine coûte
+  des crédits (une semaine de ventes par recherche : de l'ordre de 2 000 à 2 500 crédits par semaine) ; sans ça, la liste
+  refaite chaque semaine vieillit avec ses données.
 - **Demandé pour demain (21 h 02)** : « améliore SlabIQ et refais nos tests avec les nouvelles data une fois obtenues ; tu devrais
   aller chercher tout automatiquement » → refaire les tests sur les ventes de la collecte de 3 ans ; SlabIQ ne change que si le test
   le prouve ; le test publié sur le site doit tourner seul sur le serveur (tâche `g_c_auto`), sans export à la main.

@@ -317,6 +317,29 @@ assert n_ == 2 and "cartes mesurees" not in jl2, "le tri n'avance pas : le fil s
 n_, jl2 = fil([{"partiel": 900000 - 60000 * i, "lues": 1} for i in range(40)])
 assert n_ == ts_.PASSES_MAX, n_                                                    # jamais plus de PASSES_MAX passes de suite
 assert not ts_._ETAT["en_cours"]
+# 26 nov 2026, 15 h (journal apres le push de 14 h 55 : aucun « calcul lance ») : un fichier FRAIS mais d'un ancien format (sans
+# « format ») est refait par la boucle du serveur ; un fichier frais au bon format ne l'est pas
+garde_ = open(ch2, encoding="utf-8").read()
+vrai_c = ts_.calculer
+appels_f = []
+ts_.calculer = lambda maint=None: (appels_f.append(1), dict(fini))[1]
+try:
+    for contenu, attendu in (({"cartes": {}, "sortes": {}}, True), ({"cartes": {}, "sortes": {}, "format": ts_.FORMAT}, None)):
+        with open(ch2, "w", encoding="utf-8") as f_:
+            json.dump(contenu, f_)
+        ts_._MEM.update(mtime=None, v=None, idx=None); ts_._ESSAI["le"] = 0.0
+        with contextlib.redirect_stdout(io.StringIO()):
+            r_ = ts_.passe_si_besoin()
+            for th in threading.enumerate():
+                if th.name == "tendance-sortes":
+                    th.join(60)
+        assert r_ is attendu, (contenu, r_)
+    assert len(appels_f) == 1, "refait une fois pour l'ancien format, pas pour le bon"
+finally:
+    ts_.calculer = vrai_c
+    with open(ch2, "w", encoding="utf-8") as f_:
+        f_.write(garde_)
+    ts_._MEM.update(mtime=None, v=None, idx=None); ts_._ESSAI["le"] = 0.0
 
 # ---------------------------------------------------------------- 26 nov 2026 : la carte et le RESTE du joueur, par joueur
 # (Mathieu : « separer carte, separer joueur, mais aussi un mix des deux ; aucune erreur, sinon on perd toute notre credibilite »)
@@ -409,7 +432,8 @@ assert 'so["joueurs"] = None' in inspect.getsource(lr_.Api._tendances_gratuit), 
 # joueur a droite de son % ; les memes mots pour les joueurs et les cartes
 sx2 = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "source", "src_app.html"), encoding="utf-8").read()
 assert "modeT === 'mix'" not in sx2 and "data-jmix" not in sx2 and "Player + cards" not in sx2 and "tiq-mode3\"" not in sx2, "plus d'onglet « Joueur + cartes »"
-assert "[['joueurs', tt('Joueurs', 'Players')], ['sortes', tt('Cartes', 'Cards')]].map(" in sx2, "deux onglets en haut"
+# (15 h 06 : un 3e onglet « A grader », seulement quand le serveur envoie la liste, et il ne l'envoie qu'a l'admin)
+assert "[['joueurs', tt('Joueurs', 'Players')], ['sortes', tt('Cartes', 'Cards')], ...(AG ? [['grader', tt('À grader', 'To grade')]] : [])].map(" in sx2, "deux onglets en haut pour tous"
 assert "▲ en hausse · ▼ en baisse" not in sx2, "plus de symboles a decoder"
 assert "[['vendre', aH ? tt('En hausse', 'Rising') : tt('À vendre', 'To sell'), aV || aH], ['bas', tt('En baisse', 'Falling'), aB]," in sx2, "joueurs : En hausse d'abord, puis En baisse, comme les cartes"
 assert "tt('Plus bas', 'Lowest') : tt('Au plus bas', 'Lowest')" not in sx2 and "'Highest'" not in sx2 and "At their lowest" not in sx2 and "At their highest" not in sx2

@@ -9211,6 +9211,16 @@ class Api:
                 r = {**r, "sortes": so}
         except Exception as e:
             print("Tendances (sortes) : " + repr(e), flush=True)
+        try:                                    # 26 nov 2026 (Mathieu : « dans trend on devrait voir la liste du top 100 a grader qui se
+            # refresh chaque semaine » ; « Admin seulement » pour commencer) : la liste porte des PRIX -> jamais envoyee a un autre
+            # que l'admin (ni au Pro, ni a l'admin qui regarde l'app comme un client)
+            if isinstance(r, dict) and r.get("ok") and self._est_admin():
+                import a_grader
+                ag = a_grader.top_tendances()
+                if ag.get("cartes"):
+                    r = {**r, "a_grader": ag}
+        except Exception as e:
+            print("Tendances (a grader) : " + repr(e), flush=True)
         try:
             if isinstance(r, dict) and r.get("ok") and not forfaits.est_pro() and not self._est_admin():
                 return self._tendances_gratuit(r)

@@ -182,6 +182,59 @@ assert "une autre collecte a pris le relais" in jl.getvalue(), jl.getvalue()
 banque_psa._run_maj(statut="interrompue", jeton=None)
 print("JAMAIS DEUX OK")
 
+# ---- 4 ter. UNE BASE OCCUPEE NE TUE PLUS LA COLLECTE (26 nov, 14 h 58, journal : « Exception in thread donnees-psa [...]
+#            sqlite3.OperationalError: database is locked », 22 s apres la reprise ; le statut restait « en_cours »)
+import sqlite3 as _sq
+c = banque_psa._cx(); c.execute("UPDATE plan SET fini=0, pages=0, ventes=0 WHERE q='c d psa 10'"); c.execute("DELETE FROM ventes"); c.commit(); c.close()
+banque_psa._run_maj(statut="interrompue", credits=0, erreur=None)
+vrai_cx, pannes = banque_psa._cx, {"n": 0}
+def cx_occupe():                                 # la base est occupee 1 fois sur 3 : chaque lecture / ecriture reessaie
+    pannes["n"] += 1
+    if pannes["n"] % 3 == 0:
+        raise _sq.OperationalError("database is locked")
+    return vrai_cx()
+vrai_compter, pc = historique._compter, {"n": 0}
+def compter_occupe(chasseur, sport=None):        # historique.sqlite aussi (il n'attend que 5 s)
+    pc["n"] += 1
+    if pc["n"] % 2 == 1:
+        raise _sq.OperationalError("database is locked")
+    return vrai_compter(chasseur, sport)
+def page3(q, p, debut, fin):
+    return {"results": [v(f"t{p}{i}", "c d card", j=3) for i in range(50 if p < 3 else 7)]}
+banque_psa._cx, historique._compter, banque_psa._page = cx_occupe, compter_occupe, page3
+u1 = historique.utilises()["mois"]
+try:
+    banque_psa.collecter(pause=0)
+finally:
+    banque_psa._cx, historique._compter = vrai_cx, vrai_compter
+b = banque_psa.bilan()
+assert b["statut"] == "terminee" and b["credits"] == 3 and b["ventes"] == 107 and historique.utilises()["mois"] - u1 == 3, b     # rien de perdu, rien de paye deux fois
+assert pannes["n"] > 30 and pc["n"] == 6, (pannes, pc)
+# une erreur imprevue : le fil ne meurt plus sans le dire : statut « erreur » (jamais « en_cours » pour toujours), reprise plus tard
+c = banque_psa._cx(); c.execute("UPDATE plan SET fini=0, pages=0 WHERE q='c d psa 10'"); c.commit(); c.close()
+banque_psa._run_maj(statut="interrompue", erreur=None)
+vrai_noter = banque_psa._noter
+def noter_casse(q, joueur, ventes):
+    raise ValueError("imprevu")
+banque_psa._noter = noter_casse
+jl = io.StringIO()
+try:
+    with contextlib.redirect_stdout(jl):
+        b = banque_psa.collecter(pause=0)
+finally:
+    banque_psa._noter = vrai_noter
+assert b["statut"] == "erreur" and "Arrêt imprévu" in b["erreur"] and not banque_psa.ETAT["en_cours"] and "arret imprevu" in jl.getvalue(), (b, jl.getvalue())
+assert banque_psa.continuer_si_besoin() is None, "une erreur : pas avant 15 minutes"
+banque_psa._run_maj(battement=time.time() - 16 * 60)
+banque_psa._page = page4
+r = banque_psa.continuer_si_besoin()
+assert r and r["ok"]
+for th in threading.enumerate():
+    if th.name == "donnees-psa":
+        th.join(60)
+assert banque_psa.bilan()["statut"] == "terminee"
+print("BASE OCCUPEE OK")
+
 # ---- 5. admin seulement ; le serveur et l'ecran
 import lockerroom
 api = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "t.db"))
