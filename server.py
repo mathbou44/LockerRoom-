@@ -2132,6 +2132,12 @@ def _valeurs_auto():
                 print("SlabIQ : test et journal en direct lances", flush=True)
         except Exception as e:
             print("SlabIQ journal : " + str(e), flush=True)
+        try:                                    # 26 nov 2026 - la tendance des cartes (aux 3 jours, sans credit, dans son fil)
+            import tendance_sortes
+            if tendance_sortes.passe_si_besoin():
+                print("Tendance des cartes : calcul lance", flush=True)
+        except Exception as e:
+            print("Tendance des cartes : " + str(e), flush=True)
         try:                                    # 10 nov 2026 - TheCardAPI : les ventes de hockey d'hier -> nos archives (1 fois/jour)
             import thecardapi
             thecardapi.moissonner_si_besoin()

@@ -77,6 +77,7 @@ ATTRIBUTS = {"auto", "autograph", "autographs", "autographed", "signed", "patch"
 P_CARTE = 0.01                   # LA carte d'un joueur : p < 0,01 (sur 200 cartes testees, 2 fausses alertes au plus, pas 20)
 _PRECIS = {}
 _ESSAI = {"le": 0.0}
+_ETAT = {"en_cours": False}
 _verrou = threading.Lock()
 _MEM = {"mtime": None, "v": None, "idx": None}
 _TITRES = {}
@@ -514,25 +515,51 @@ def lire():
 
 
 def calculer_si_besoin():
-    """Appele par la boucle du serveur : refait aux 3 jours (ou la premiere fois). Tant que le tri des ventes n'est pas fini,
-    un essai aux 10 minutes au plus, et rien n'est publie."""
+    """Refait aux 3 jours (ou la premiere fois) ; jamais deux calculs a la fois. Tant que le tri des ventes n'est pas fini, un
+    essai aux 10 minutes au plus, et rien n'est publie."""
     try:
         age = time.time() - os.path.getmtime(_chemin())
     except OSError:
         age = None
     if age is not None and age < AUX_JOURS * 86400:
         return None
-    if time.time() - _ESSAI["le"] < ESSAI_S:
+    with _verrou:
+        if _ETAT["en_cours"] or time.time() - _ESSAI["le"] < ESSAI_S:
+            return None
+        _ETAT["en_cours"] = True
+        _ESSAI["le"] = time.time()
+    try:
+        r = calculer()
+        if r.get("partiel"):
+            print(f"Tendance des sortes : {r['partiel']} ventes encore a trier ({r['lues']} lues) : on attend la prochaine passe", flush=True)
+            return None
+        _ESSAI["le"] = 0.0
+        print(f"Tendance des sortes : {r['n_cartes']} cartes mesurees ({len(r['cartes_hausses'])} en hausse, {len(r['cartes_baisses'])} en baisse "
+              f"dans les listes), {r['n_sortes']} sortes mesurees ({r['n_cartes_lues']} recherches lues, {r['n_ventes']} ventes)", flush=True)
+        return r
+    finally:
+        _ETAT["en_cours"] = False
+
+
+def passe_si_besoin():
+    """26 nov 2026 : la boucle du serveur (chaque heure, et quelques minutes apres chaque deploiement) lance le calcul dans SON fil.
+    Le 26 au matin, accroche seulement a la FIN d'un tour du chasseur, il n'etait toujours pas parti une heure apres le push : un
+    tour dure longtemps et chaque deploiement le coupe. Le chasseur l'appelle encore a la fin de son tour (sans effet si c'est frais
+    ou deja en cours)."""
+    try:
+        age = time.time() - os.path.getmtime(_chemin())
+    except OSError:
+        age = None
+    if (age is not None and age < AUX_JOURS * 86400) or _ETAT["en_cours"] or time.time() - _ESSAI["le"] < ESSAI_S:
         return None
-    _ESSAI["le"] = time.time()
-    r = calculer()
-    if r.get("partiel"):
-        print(f"Tendance des sortes : {r['partiel']} ventes encore a trier ({r['lues']} lues) : on attend la prochaine passe", flush=True)
-        return None
-    _ESSAI["le"] = 0.0
-    print(f"Tendance des sortes : {r['n_cartes']} cartes mesurees ({len(r['cartes_hausses'])} en hausse, {len(r['cartes_baisses'])} en baisse "
-          f"dans les listes), {r['n_sortes']} sortes mesurees ({r['n_cartes_lues']} recherches lues, {r['n_ventes']} ventes)", flush=True)
-    return r
+
+    def tache():
+        try:
+            calculer_si_besoin()
+        except Exception as e:
+            print("Tendance des sortes : " + repr(e)[:200], flush=True)
+    threading.Thread(target=tache, daemon=True, name="tendance-sortes").start()
+    return True
 
 
 def _saison_txt(y):

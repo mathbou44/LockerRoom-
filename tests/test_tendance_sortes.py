@@ -272,7 +272,23 @@ assert tb and tb["cle"] == "jacob fowler|young guns|2025" and tb["pct"] == c3["p
 
 # ---------------------------------------------------------------- branche : la boucle du chasseur (aux 3 jours) et les ecrans
 src = lambda f: open(os.path.join(RAC, f), encoding="utf-8").read()
-assert "tendance_sortes.calculer_si_besoin()" in src("deals.py")
+assert "tendance_sortes.calculer_si_besoin()" in src("deals.py") and "tendance_sortes.passe_si_besoin()" in src("server.py")
+# 26 nov 2026 : la boucle du serveur lance le calcul dans son fil (le chasseur seul ne suffisait pas : rien une heure apres le push)
+import threading
+ch2 = os.path.join(comptes.DONNEES, "tendance_sortes.json")
+assert os.path.exists(ch2) and ts_.passe_si_besoin() is None                       # frais : rien a faire
+os.utime(ch2, (time.time() - 4 * 86400,) * 2)
+ts_._ESSAI["le"] = 0.0
+ts_._ETAT["en_cours"] = True
+assert ts_.passe_si_besoin() is None and ts_.calculer_si_besoin() is None          # un calcul tourne deja : jamais deux a la fois
+ts_._ETAT["en_cours"] = False
+with contextlib.redirect_stdout(io.StringIO()) as jl:
+    assert ts_.passe_si_besoin() is True
+    for th in threading.enumerate():
+        if th.name == "tendance-sortes":
+            th.join(120)
+assert "cartes mesurees" in jl.getvalue() and time.time() - os.path.getmtime(ch2) < 120 and not ts_._ETAT["en_cours"], jl.getvalue()
+assert ts_.passe_si_besoin() is None
 app = src("ui/app.html")
 for m in ("data-td=", "feuilleSorte", "data-tmode=", "badgeTend", "bandeTend", "ajusterPS", "psg", "tiq-mode"):
     assert m in app, m

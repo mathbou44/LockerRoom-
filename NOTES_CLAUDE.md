@@ -973,6 +973,15 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
     `tests/test_tendance_sortes.py`, `NOTES_CLAUDE.md`. PAS poussé.
   * EN ATTENTE de lui : « publie » (les tests du site) ; « corrige » (cartes_match : Young Guns Renewed, lots) ; les crédits pour
     relire les cartes exactes ; l'état du méga test.
+- **26 nov, 8 h 30 – 8 h 45 : le calcul des tendances ne partait pas sur le serveur**. Push de p99 par Mathieu à 8 h 29 (commit
+  c4f3fef). Constat dans le journal Render : entre le déploiement de 7 h 30 et celui de 8 h 30, AUCUNE ligne « Tendance des
+  sortes » : le calcul était accroché seulement à la FIN d'un tour du chasseur (un tour par heure au plus, long, et chaque
+  déploiement le coupe). Corrigé : `tendance_sortes.passe_si_besoin()` dans la boucle horaire de `server.py` (après le test
+  SlabIQ), dans son propre fil, quelques minutes après chaque déploiement ; `_ETAT` : jamais deux calculs à la fois ; le chasseur
+  l'appelle encore à la fin de son tour (sans effet si c'est frais ou en cours). Journal attendu : « Tendance des cartes : calcul
+  lance » puis « Tendance des sortes : N cartes mesurees… » (ou « N ventes encore a trier »). Suite complète : 298 fichiers,
+  0 échec. Livré (p100) : `tendance_sortes.py`, `server.py`, `tests/test_tendance_sortes.py`, `NOTES_CLAUDE.md`. À POUSSER, puis
+  lire le journal et comparer aux 148 cartes de mon calcul sur l'export du 26.
 - **Demandé pour demain (21 h 02)** : « améliore SlabIQ et refais nos tests avec les nouvelles data une fois obtenues ; tu devrais
   aller chercher tout automatiquement » → refaire les tests sur les ventes de la collecte de 3 ans ; SlabIQ ne change que si le test
   le prouve ; le test publié sur le site doit tourner seul sur le serveur (tâche `g_c_auto`), sans export à la main.
