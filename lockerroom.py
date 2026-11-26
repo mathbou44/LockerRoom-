@@ -2493,6 +2493,26 @@ class Api:
             mega_test._run_maj(plafond=plafond)
         return mega_test.lancer(plafond)
 
+    # 26 nov 2026 (Mathieu : « on y va pour le mega test pour donnees PSA, juste me dire quand le partir ») : les ventes PSA 10 et
+    # PSA 9 de chaque joueur, puis la version raw de chaque carte vue en PSA 10 (banque_psa.py). Une base a part, admin seulement.
+    def admin_banque_psa(self):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import banque_psa
+        return banque_psa.bilan()
+
+    def admin_banque_psa_lancer(self, plafond=None):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import banque_psa
+        try:
+            plafond = max(10, min(30000, int(plafond))) if plafond else None
+        except (TypeError, ValueError):
+            plafond = None
+        if plafond:
+            banque_psa._run_maj(plafond=plafond)
+        return banque_psa.lancer(plafond)
+
     # 15 nov 2026 (Mathieu : « on ne doit jamais arreter d'iterer et d'ameliorer SlabIQ ») : le moment d'achat (Young Guns),
     # ses regles en place, chaque iteration de la semaine (garde ou change, et pourquoi) et le journal en direct
     def admin_moment_yg(self):

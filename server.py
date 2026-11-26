@@ -2017,6 +2017,11 @@ def _valeurs_auto():
             mega_test.continuer_si_besoin()
         except Exception as e:
             print("Mega test : " + repr(e)[:160], flush=True)
+        try:                                    # 26 nov 2026 - les donnees PSA : une collecte deja lancee par l'admin reprend seule
+            import banque_psa
+            banque_psa.continuer_si_besoin()
+        except Exception as e:
+            print("Donnees PSA : " + repr(e)[:160], flush=True)
         try:                                    # 10 nov 2026 - le banc de validation (backtest valeur, deals, tendance ; 1 fois/jour)
             import banc
             banc.passe_si_besoin()
@@ -2327,6 +2332,11 @@ def _reprendre_banque_yg():
         mega_test.continuer_si_besoin()
     except Exception as e:
         print("Mega test (reprise) : " + repr(e)[:160], flush=True)
+    try:                                         # 26 nov 2026 : les donnees PSA aussi (jamais lancees : rien ne part)
+        import banque_psa
+        banque_psa.continuer_si_besoin()
+    except Exception as e:
+        print("Donnees PSA (reprise) : " + repr(e)[:160], flush=True)
 
 
 def _valeur_actuelle(titre):

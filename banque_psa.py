@@ -1,0 +1,501 @@
+"""
+SLABCOACH - les donnees PSA : quelles cartes valent la peine d'etre gradees (26 nov 2026).
+
+Mathieu : « savoir les cartes qui valent le plus la peine d'etre gradees [...] on partirait de toutes nos ventes des 3 derniers
+mois, ou plus [...] de toutes les paralleles de cartes qui ont ete vendues en PSA 10. Puis on regarde la version raw, combien
+elle a ete vendue en moyenne, versus la moyenne des vendus PSA 10 pour le meme genre de time frame. » Puis : « Good, on y va pour
+le mega test pour donnees PSA, juste me dire quand le partir. »
+
+Nos archives viennent des recherches de l'app (le Radar, les fiches, la banque Young Guns) : presque seulement des Young Guns,
+peu de PSA 9, peu de paralleles. Cette collecte va chercher ce qui manque, sur le serveur (la cle CompSniper est dans Render) :
+
+1. PHASE 1 - CE QUI SE VEND GRADE : pour chaque joueur du haut de l'indice SlabIQ (actifs d'abord), « <joueur> psa 10 » et
+   « <joueur> psa 9 », 120 jours, page par page (50 ventes, les plus recentes d'abord), PAGES_MAX pages au plus.
+2. PHASE 2 - LA VERSION RAW : chaque carte exacte vue au moins N10_MIN fois en PSA 10 (lue TITRE PAR TITRE avec le meme
+   decodeur que les comps : cartes_match.cible_titre) : sa recherche sans la note (cartes_match.requete_ebay, la meme que l'app),
+   PAGES_MAX_RAW pages au plus. Une recherche deja dans nos archives et fraiche n'est pas repayee.
+3. UNE BASE A PART (banque_psa.sqlite) : « connor bedard psa 10 » melange toutes ses cartes. Rangee dans nos archives
+   (base_ventes), une recherche pareille fausserait les tendances et les tests publies. Ici, une vente n'est JAMAIS comptee par
+   sa recherche : seulement par son titre (la carte exacte, la note). Rien ne touche aux archives.
+4. LES CREDITS : jamais plus que le plafond choisi par l'admin, ni que le budget du mois (LR_HISTORIQUE_MOIS, qu'on ne touche
+   pas) moins la reserve de l'app (la meme que le mega test : LR_MEGA_RESERVE, 1 500 par defaut). 1 page = 1 credit, compte
+   avec les autres.
+5. ELLE NE PART PAS SEULE : c'est l'admin qui la lance. Une fois lancee, elle reprend seule ou elle etait (redemarrage, mois a
+   sec) ; une recherche finie n'est jamais refaite.
+
+Rien ici n'est montre au public (comps = admin seulement).
+"""
+import os
+import sqlite3
+import threading
+import time
+import unicodedata
+import urllib.error
+from datetime import datetime, timedelta, timezone
+
+JOURS = 120                          # « 3 derniers mois, ou plus » : 4 mois
+PAR_PAGE = 50
+PAGES_MAX = 30                       # « <joueur> psa 10 » : 1 500 ventes au plus (les plus recentes)
+PAGES_MAX_RAW = 8                    # la version raw d'une carte : 400 ventes au plus
+PLAFOND_DEFAUT = 8000                # credits au plus pour toute la collecte
+JOUEURS_N = 200
+NOTES = ("psa 10", "psa 9")
+N10_MIN = 4                          # ventes PSA 10 de la carte (120 jours) pour aller chercher sa version raw
+RAW_MAX = 1500                       # recherches raw au plus
+ARCHIVE_MIN = 20                     # la recherche raw est deja dans nos archives : 20 ventes dans la fenetre...
+ARCHIVE_FRAIS_J = 10                 # ... dont une de 10 jours ou moins
+REFUS_SUITE_MAX = 8
+PAUSE_S = 0.3
+_verrou = threading.Lock()
+ETAT = {"en_cours": False}
+
+
+def _chemin():
+    import comptes
+    return os.path.join(comptes.DONNEES, "banque_psa.sqlite")
+
+
+def _cx():
+    c = sqlite3.connect(_chemin(), timeout=10)
+    c.execute("CREATE TABLE IF NOT EXISTS plan (q TEXT PRIMARY KEY, phase INTEGER, joueur TEXT, ordre INTEGER, n10 INTEGER, debut TEXT, fin TEXT,"
+              " pages INTEGER DEFAULT 0, ventes INTEGER DEFAULT 0, fini INTEGER DEFAULT 0, raison TEXT, le REAL, recu_min TEXT)")
+    c.execute("CREATE TABLE IF NOT EXISTS ventes (cle TEXT PRIMARY KEY, q TEXT, joueur TEXT, titre TEXT, prix REAL, le TEXT)")
+    c.execute("CREATE INDEX IF NOT EXISTS ventes_joueur ON ventes (joueur)")
+    c.execute("CREATE TABLE IF NOT EXISTS collecte (id INTEGER PRIMARY KEY CHECK (id = 1), statut TEXT, plafond INTEGER, credits INTEGER,"
+              " debut REAL, battement REAL, texte TEXT, erreur TEXT, raw_planifie INTEGER DEFAULT 0)")
+    return c
+
+
+def _run():
+    try:
+        c = _cx()
+        try:
+            r = c.execute("SELECT statut, plafond, credits, debut, battement, texte, erreur, raw_planifie FROM collecte WHERE id=1").fetchone()
+        finally:
+            c.close()
+    except sqlite3.Error:
+        r = None
+    return dict(zip(("statut", "plafond", "credits", "debut", "battement", "texte", "erreur", "raw_planifie"), r)) if r else {}
+
+
+def _run_maj(**kw):
+    with _verrou:
+        c = _cx()
+        try:
+            if not c.execute("SELECT 1 FROM collecte WHERE id=1").fetchone():
+                c.execute("INSERT INTO collecte (id, statut, credits) VALUES (1, 'aucune', 0)")
+            if kw:
+                c.execute("UPDATE collecte SET " + ", ".join(k + "=?" for k in kw) + " WHERE id=1", list(kw.values()))
+            c.commit()
+        finally:
+            c.close()
+
+
+def _simple(nom):
+    """« Juraj Slafkovský » -> « juraj slafkovsky » : les titres d'eBay n'ont presque jamais d'accents."""
+    s = unicodedata.normalize("NFKD", str(nom or "")).encode("ascii", "ignore").decode("ascii")
+    return " ".join(s.lower().replace("'", " ").replace(".", " ").split())
+
+
+def _mots_joueur(nom):
+    """Les mots du joueur dans une recherche, ecrits comme l'app les ecrit (cartes_match) : « Tim Stützle » -> « tim stutzle »."""
+    try:
+        import cartes_match
+        m = cartes_match.cible(nom)["mots"]
+        if len(m) >= 2:
+            return " ".join(m)
+        return cartes_match.joueur_du_titre(nom) or _simple(nom)
+    except Exception:
+        return _simple(nom)
+
+
+def _aujourdhui():
+    return datetime.now(timezone.utc).date()
+
+
+def fenetre(aujourd=None):
+    a = aujourd or _aujourdhui()
+    return (a - timedelta(days=JOURS)).isoformat(), a.isoformat()
+
+
+# -- 1. le plan ----------------------------------------------------------------------------------------------------------
+def joueurs_cibles(n=JOUEURS_N):
+    """Le haut de l'indice SlabIQ, actifs d'abord (ce sont leurs cartes recentes qu'on envoie chez PSA), puis les autres."""
+    noms = []
+    try:
+        import indice_joueurs
+        for actifs in (True, None):
+            for x in indice_joueurs.top(n * 3, actifs=actifs) or []:
+                nm = x.get("nom")
+                if nm and len(_mots_joueur(nm).split()) >= 2 and nm not in noms:
+                    noms.append(nm)
+                if len(noms) >= n:
+                    return noms
+    except Exception as e:
+        print("Donnees PSA (joueurs) : " + repr(e)[:120], flush=True)
+    return noms[:n]
+
+
+def construire_plan(joueurs=None):
+    """Phase 1 : « <joueur> psa 10 » puis « <joueur> psa 9 » pour chaque joueur. -> nombre de recherches ajoutees."""
+    joueurs = joueurs if joueurs is not None else joueurs_cibles()
+    debut, fin = fenetre()
+    n = 0
+    with _verrou:
+        c = _cx()
+        try:
+            for k, nom in enumerate(joueurs):
+                for i, note in enumerate(NOTES):
+                    q = _mots_joueur(nom) + " " + note
+                    if c.execute("INSERT OR IGNORE INTO plan (q, phase, joueur, ordre, debut, fin) VALUES (?,1,?,?,?,?)",
+                                 (q, nom, k * len(NOTES) + i, debut, fin)).rowcount:
+                        n += 1
+            c.commit()
+        finally:
+            c.close()
+    return n
+
+
+def carte_du_titre(titre, joueur, note="10"):
+    """Un titre -> la recherche RAW de sa carte exacte (les mots de l'app, sans la note), ou None si ce n'est pas une carte seule
+    de ce joueur, nommee (un set ou une parallele), gradee PSA <note>. Les memes regles que les comps (cartes_match) et que les
+    tendances (tendance_sortes.autre_carte : un « + », un lot, une reedition -> ecartee ; on perd quelques ventes, jamais une fausse)."""
+    import cartes_match
+    import tendance_sortes
+    try:
+        ct = cartes_match.cible_titre(titre, joueur)
+    except Exception:
+        return None
+    g = ct.get("grade") or {}
+    if g.get("cie") != "psa" or str(g.get("note") or "") != str(note):
+        return None
+    if ct.get("autres_joueurs"):
+        return None                                           # carte a plusieurs joueurs
+    nom = (cartes_match.joueur_du_titre(joueur) or _simple(joueur)).split()
+    if not nom or nom[-1] not in str(ct.get("joueur") or "").split():
+        return None                                           # la carte d'un autre joueur
+    if not ct.get("carte_nommee"):
+        return None                                           # « connor bedard psa 10 rookie » : on ne sait pas quelle carte
+    try:                                                      # le tri des comps accepte-t-il cette vente pour SA recherche ?
+        if cartes_match.raisons_refus(cartes_match.cible(cartes_match.requete_ebay(ct)), titre):
+            return None                                       # (un lot ecrit avec « + », la suite d'un set, une carte abimee...)
+    except Exception:
+        return None
+    ct["grade"] = None
+    q = cartes_match.requete_ebay(ct)
+    if len(q.split()) < 3 or tendance_sortes.autre_carte(titre, q):
+        return None                                           # un lot, une reedition
+    return q
+
+
+def cartes_psa10(n_min=N10_MIN):
+    """Les cartes exactes vues en PSA 10 dans la collecte -> [(recherche raw, joueur, ventes PSA 10)], les plus vendues d'abord."""
+    c = _cx()
+    try:
+        rows = c.execute("SELECT joueur, titre FROM ventes WHERE joueur IS NOT NULL").fetchall()
+    finally:
+        c.close()
+    vues = {}
+    for joueur, titre in rows:
+        q = carte_du_titre(titre, joueur)
+        if q:
+            v = vues.setdefault(q, [joueur, 0])
+            v[1] += 1
+    return sorted(((q, j, n) for q, (j, n) in vues.items() if n >= n_min), key=lambda x: (-x[2], x[0]))
+
+
+def _dans_archives(q, debut):
+    """La recherche raw est-elle deja dans nos archives, et fraiche ? (la banque Young Guns relit « <joueur> young guns »)"""
+    try:
+        import base_ventes
+        c = base_ventes._cx()
+        try:
+            n, dernier = c.execute("SELECT COUNT(*), MAX(le) FROM ventes WHERE q=? AND le >= ? AND prix > 0", (q, debut)).fetchone()
+        finally:
+            c.close()
+    except Exception:
+        return False
+    frais = (_aujourdhui() - timedelta(days=ARCHIVE_FRAIS_J)).isoformat()
+    return bool(n and n >= ARCHIVE_MIN and dernier and str(dernier)[:10] >= frais)
+
+
+def construire_plan_raw():
+    """Phase 2 : la recherche raw de chaque carte vue assez souvent en PSA 10. -> nombre de recherches a faire."""
+    _run_maj()
+    debut, fin = fenetre()
+    cartes = cartes_psa10()[:RAW_MAX]
+    n = 0
+    with _verrou:
+        c = _cx()
+        try:
+            for k, (q, joueur, n10) in enumerate(cartes):
+                if c.execute("SELECT 1 FROM plan WHERE q=?", (q,)).fetchone():
+                    continue
+                if _dans_archives(q, debut):
+                    c.execute("INSERT INTO plan (q, phase, joueur, ordre, n10, debut, fin, fini, raison, le) VALUES (?,2,?,?,?,?,?,1,'deja dans nos archives',?)",
+                              (q, joueur, k, n10, debut, fin, time.time()))
+                    continue
+                c.execute("INSERT INTO plan (q, phase, joueur, ordre, n10, debut, fin) VALUES (?,2,?,?,?,?,?)", (q, joueur, k, n10, debut, fin))
+                n += 1
+            c.execute("UPDATE collecte SET raw_planifie=1 WHERE id=1")
+            c.commit()
+        finally:
+            c.close()
+    return n
+
+
+# -- 2. la collecte ------------------------------------------------------------------------------------------------------
+def _page(q, page, debut, fin):
+    import mega_test
+    return mega_test._page(q, page, debut, fin)             # la meme requete CompSniper que le mega test
+
+
+def reserve_app():
+    import mega_test
+    return mega_test.reserve_app()
+
+
+def credits_disponibles(plafond=None):
+    """Ce que la collecte peut encore depenser : son plafond ET le budget du mois moins la reserve de l'app."""
+    import historique
+    r = _run()
+    plafond = plafond if plafond is not None else (r.get("plafond") or PLAFOND_DEFAUT)
+    return max(0, min(plafond - (r.get("credits") or 0), historique.budget_mois() - reserve_app() - historique.utilises()["mois"]))
+
+
+def _texte(t, **kw):
+    _run_maj(texte=t, battement=time.time(), **kw)
+
+
+def _a_faire():
+    c = _cx()
+    try:
+        return c.execute("SELECT q, phase, joueur, pages, debut, fin FROM plan WHERE fini=0 ORDER BY phase, ordre").fetchall()
+    finally:
+        c.close()
+
+
+def _noter(q, joueur, ventes):
+    """Les ventes dans NOTRE base (jamais dans les archives). Une vente n'entre qu'une fois (son numero d'annonce).
+    -> le nombre de ventes nouvelles."""
+    n = 0
+    with _verrou:
+        c = _cx()
+        try:
+            for x in ventes:
+                cle = x.get("item_id") or (x["titre"] + "|" + x["le"])
+                n += c.execute("INSERT OR IGNORE INTO ventes (cle, q, joueur, titre, prix, le) VALUES (?,?,?,?,?,?)",
+                               (cle, q, joueur, x["titre"], x["prix"], x["le"])).rowcount
+            c.commit()
+        finally:
+            c.close()
+    return n
+
+
+def collecter(plafond=None, arret=None, pause=None):
+    """La collecte (en fond). Reprend : une recherche finie n'est jamais refaite ; une recherche commencee reprend a sa page
+    suivante, avec la meme fenetre. -> le bilan."""
+    r = _collecter(plafond, arret, PAUSE_S if pause is None else pause)
+    return bilan() if r is None else r
+
+
+def _collecter(plafond, arret, pause):
+    import historique
+    import vendues
+    if not historique.actif():
+        return {"ok": False, "erreur": "Clé CompSniper absente (COMPSNIPER_CLE)"}
+    with _verrou:
+        if ETAT["en_cours"]:
+            deja = True
+        else:
+            deja = False
+            ETAT["en_cours"] = True
+    if deja:
+        return {**bilan(), "deja": True}
+    r0 = _run()
+    plafond = int(plafond or r0.get("plafond") or PLAFOND_DEFAUT)
+    if r0.get("statut") in (None, "aucune"):
+        _run_maj(statut="en_cours", plafond=plafond, credits=0, debut=time.time(), battement=time.time(), texte="Le plan", erreur=None)
+    else:
+        _run_maj(statut="en_cours", plafond=plafond, battement=time.time(), texte="Reprise", erreur=None)
+    fin_statut = "interrompue"
+    try:
+        c = _cx()
+        try:
+            vide = not c.execute("SELECT COUNT(*) FROM plan").fetchone()[0]
+        finally:
+            c.close()
+        if vide and not construire_plan():
+            fin_statut = "erreur"
+            _run_maj(erreur="Aucun joueur dans l'indice SlabIQ : rien à collecter")
+            return None
+        taux = vendues._taux_usd_cad() or 1.37
+        refus_suite = 0
+        while True:
+            a_faire = _a_faire()
+            if not a_faire:
+                if not _run().get("raw_planifie"):
+                    _texte("Phase 2 : les cartes vues en PSA 10")
+                    try:
+                        construire_plan_raw()                   # la phase 1 est finie : les versions raw
+                    except Exception as e:
+                        fin_statut = "erreur"
+                        _run_maj(erreur="Phase 2 : " + repr(e)[:120])
+                        return None
+                    if not _run().get("raw_planifie"):
+                        fin_statut = "erreur"
+                        _run_maj(erreur="Phase 2 : le plan n'a pas pu etre ecrit")
+                        return None
+                    continue
+                break
+            for q, phase, joueur, pages, debut, fin in a_faire:
+                pages_max = PAGES_MAX if phase == 1 else PAGES_MAX_RAW
+                page = (pages or 0) + 1
+                vus = set()
+                while True:
+                    if arret and arret():
+                        fin_statut = "arretee"
+                        _texte("Arrêtée")
+                        return None
+                    if credits_disponibles(plafond) <= 0:
+                        fin_statut = "plafond" if (_run().get("credits") or 0) >= plafond else "attente_mois"
+                        _texte("Plafond de la collecte atteint" if fin_statut == "plafond" else "Budget du mois atteint : reprend le mois prochain")
+                        return None
+                    _texte(f"{q} · page {page}")
+                    essais = 0
+                    refusee = None
+                    while True:
+                        try:
+                            d = _page(q, page, debut, fin)
+                            refus_suite = 0
+                            break
+                        except urllib.error.HTTPError as e:
+                            # comme le mega test (25 nov) : une page refusee (400, 404, 422) ferme CETTE recherche, sans credit ;
+                            # 8 refus de suite : l'API a change, on arrete ; 429 / 5xx attendent et reessaient ; 401 / 403 arretent
+                            if e.code in (400, 404, 422) and refus_suite < REFUS_SUITE_MAX:
+                                refus_suite += 1
+                                refusee = e.code
+                                break
+                            if (e.code == 429 or e.code >= 500) and essais < 5:
+                                essais += 1
+                                _texte(f"{q} · page {page} · CompSniper HTTP {e.code}, nouvel essai {essais}/5")
+                                time.sleep(min(300, 30 * 2 ** (essais - 1)) if pause else 0)
+                                continue
+                            fin_statut = "erreur"
+                            _run_maj(erreur=f"CompSniper HTTP {e.code}")
+                            return None
+                        except Exception as e:
+                            if essais < 5:
+                                essais += 1
+                                time.sleep(min(300, 30 * 2 ** (essais - 1)) if pause else 0)
+                                continue
+                            fin_statut = "erreur"
+                            _run_maj(erreur="CompSniper injoignable (" + type(e).__name__ + ")")
+                            return None
+                    if refusee:
+                        _plan_maj(q, fini=1, raison=f"refusee (HTTP {refusee})", le=time.time())
+                        break
+                    historique._compter(False)                # 1 page = 1 credit, compte comme les autres
+                    _run_maj(credits=(_run().get("credits") or 0) + 1, battement=time.time())
+                    v = historique.lire_reponse(d, taux)
+                    ids = {x.get("item_id") or (x["titre"] + "|" + x["le"]) for x in v}
+                    neuves = ids - vus
+                    vus |= ids
+                    ajoutees = _noter(q, joueur, v) if v else 0
+                    plus_vieux = min((x["le"] for x in v), default=None)
+                    raison = None
+                    if len((d or {}).get("results") or []) < PAR_PAGE * 0.9:
+                        raison = "toutes les ventes"
+                    elif not neuves:
+                        raison = "page repetee"
+                    elif plus_vieux and plus_vieux < debut:
+                        raison = "fenetre atteinte"
+                    elif page >= pages_max:
+                        raison = "pages max"
+                    with _verrou:
+                        c = _cx()
+                        try:
+                            c.execute("UPDATE plan SET pages=?, ventes=ventes+?, fini=?, raison=?, le=?, recu_min=MIN(COALESCE(recu_min, ?), ?) WHERE q=?",
+                                      (page, ajoutees, 1 if raison else 0, raison, time.time(), plus_vieux or "9999", plus_vieux or "9999", q))
+                            c.commit()
+                        finally:
+                            c.close()
+                    if raison:
+                        break
+                    page += 1
+                    time.sleep(pause)
+                time.sleep(pause)
+        fin_statut = "terminee"
+        _texte("Terminée")
+        return None
+    finally:
+        ETAT["en_cours"] = False
+        _run_maj(statut=fin_statut, battement=time.time())
+
+
+def _plan_maj(q, **kw):
+    with _verrou:
+        c = _cx()
+        try:
+            c.execute("UPDATE plan SET " + ", ".join(k + "=?" for k in kw) + " WHERE q=?", list(kw.values()) + [q])
+            c.commit()
+        finally:
+            c.close()
+
+
+def lancer(plafond=None):
+    """L'admin lance (ou relance) la collecte, en fond."""
+    if ETAT["en_cours"]:
+        return {**bilan(), "deja": True}
+    import historique
+    if not historique.actif():
+        return {"ok": False, "erreur": "Clé CompSniper absente (COMPSNIPER_CLE)"}
+    import contextvars
+    ctx = contextvars.copy_context()
+    threading.Thread(target=lambda: ctx.run(collecter, plafond), daemon=True, name="donnees-psa").start()
+    return {"ok": True, "lancee": True}
+
+
+def continuer_si_besoin():
+    """Boucle du serveur (chaque heure) et demarrage : une collecte DEJA LANCEE par l'admin et coupee (redemarrage, erreur
+    passagere, mois a sec) reprend seule. Jamais lancee, terminee, arretee ou au plafond : rien ne part."""
+    if ETAT["en_cours"]:
+        return None
+    import historique
+    if not historique.actif():
+        return None
+    r = _run()
+    st = r.get("statut") or "aucune"
+    if st not in ("en_cours", "interrompue", "attente_mois", "erreur"):
+        return None
+    if st == "erreur" and time.time() - (r.get("battement") or 0) < 15 * 60:
+        return None
+    if credits_disponibles() <= 0:
+        return None
+    print("Donnees PSA : reprise (" + st + ")", flush=True)
+    return lancer()
+
+
+def bilan():
+    import historique
+    try:
+        c = _cx()
+        try:
+            n, n_f, pg = c.execute("SELECT COUNT(*), COALESCE(SUM(fini),0), COALESCE(SUM(pages),0) FROM plan").fetchone()
+            n1, n1_f = c.execute("SELECT COUNT(*), COALESCE(SUM(fini),0) FROM plan WHERE phase=1").fetchone()
+            nv = c.execute("SELECT COUNT(*) FROM ventes").fetchone()[0]
+            nj = c.execute("SELECT COUNT(DISTINCT joueur) FROM plan WHERE phase=1").fetchone()[0]
+            raisons = dict(c.execute("SELECT raison, COUNT(*) FROM plan WHERE fini=1 GROUP BY raison").fetchall())
+        finally:
+            c.close()
+    except sqlite3.Error:
+        n = n_f = pg = n1 = n1_f = nv = nj = 0
+        raisons = {}
+    r = _run()
+    vivant = ETAT["en_cours"] or (r.get("statut") == "en_cours" and time.time() - (r.get("battement") or 0) < 180)
+    return {"ok": True, "en_cours": bool(vivant), "statut": r.get("statut") or "aucune", "texte": r.get("texte"),
+            "phase": 2 if r.get("raw_planifie") else 1, "joueurs": int(nj), "recherches": int(n), "recherches_finies": int(n_f),
+            "cartes_raw": int(n - n1), "pages": int(pg), "ventes": int(nv), "raisons": raisons,
+            "credits": r.get("credits") or 0, "plafond": r.get("plafond") or PLAFOND_DEFAUT, "debut": r.get("debut"),
+            "battement": r.get("battement"), "erreur": r.get("erreur"), "reserve_app": reserve_app(), "jours": JOURS,
+            "joueurs_vises": JOUEURS_N, "dispo": credits_disponibles(), "compsniper": historique.etat()}

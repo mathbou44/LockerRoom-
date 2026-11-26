@@ -396,6 +396,12 @@ assert "a_relire" in json.load(open(ch2, encoding="utf-8")) and "a_relire" not i
 app = src("ui/app.html")
 for m in ("data-tmode=", "data-jmix=", "resteTD", "tiq-mixv", "it-vper", "data-per="):
     assert m in app, m
+# 26 nov 2026 (Mathieu : « bug apres avoir refresh », le titre et la recherche de Trending descendus par-dessus les onglets) : pendant
+# « tirer pour actualiser », #vue est decale par un transform ; la position de l'en-tete collant se mesure SANS ce decalage, et se
+# remesure une fois la page remontee
+sx = src("source/src_app.html")
+assert "const ptrY = () =>" in sx and "tf.getBoundingClientRect().top - ptrY()" in sx and "APRES_PTR.f = fixer" in sx and "if (APRES_PTR.f) APRES_PTR.f()" in sx
+assert "f.getBoundingClientRect().bottom - ptrY()" in sx, "la bande fixe des Breaks : la meme mesure"
 assert "t.fait" in src("source/src_app.html") and "14 joueurs" not in src("source/src_app.html"), "les chiffres du fait viennent du serveur, pas de l'ecran"
 for m in ("data-td=", "feuilleSorte", "data-tmode=", "badgeTend", "bandeTend", "ajusterPS", "psg", "tiq-mode"):
     assert m in app, m

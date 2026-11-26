@@ -5973,6 +5973,22 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
 .fen.fa.fa-pub .fa-photo{flex:1 1 0 !important; height:auto !important; min-height:130px}
 .fen.fa.fa-pub .fen-img{max-height:none !important}
 .fen.fa.fa-pub .fen-x{top:18px !important; right:18px !important}
+/* 26 nov 2026 (Mathieu, capture d'une annonce au cell : « le X en haut a droite est cache ») : la fenetre defile quand son contenu
+   depasse (la bande de tendance du 25 nov l'a allongee : sur un iPhone, dans l'app, elle depasse de ~35 px) et le X, pose en haut
+   du contenu, sortait de l'ecran des qu'on descendait. Au cell, il COLLE maintenant en haut de la fenetre (position sticky).
+   La marge du haut de la fenetre passe a 0 et c'est le X qui porte cet espace : ainsi « top » se compte du haut de la fenetre
+   dans tous les navigateurs (avec une marge interne, Chrome et Safari comptent a partir du contenu). Rien ne bouge au repos. */
+@media (max-width:999px){
+  html body .fen.fen.fen.fen.fa.fb{padding-top:0 !important}
+  html body .fen.fen.fen.fen.fa.fb > .fen-x{position:sticky !important; right:auto !important; left:auto !important; align-self:flex-end; flex:none; z-index:8}
+  /* fiche Pro / publique : le X dans sa bande du haut (10 + 34 + 8 d'espace = les 52 px d'avant) */
+  html body .fen.fen.fen.fen.fa.fb:not(.fb-adm) > .fen-x{top:10px !important; margin:10px 0 0 0 !important}
+  /* fiche admin / Platine : le X sur le coin de la photo (18 px du haut ; la marge du bas negative rend sa place a la photo) */
+  html body .fen.fen.fen.fen.fa.fb.fb-adm > .fen-x{top:18px !important; margin:18px calc((100% - 10px) * 0.444 + 16px) -46px 0 !important}
+  /* la bande de tendance avait 16 px au-dessus et 8 dessous (sa marge + l'espace de la colonne) : 8 partout, et 8 px de gagnes */
+  .fen.fa.fb-adm .fb-dr > .td-b{margin-top:0}
+}
+.fen-x.fen-x-suit{will-change:transform}
 .fa-pub .fa-t{font-size:14.5px; line-height:1.22}
 .fa-pub .fa-pays{font-size:12.5px; margin-top:-3px}
 .fa-pub .fa-3{gap:6px}
@@ -7634,6 +7650,13 @@ function anneau(taille, p, cls=''){
     + `<b>${Math.round(v * 100)}<small>%</small></b></span>`;
 }
 const V = () => $('#vue');
+// 26 nov 2026 (Mathieu, capture de Trending : « bug apres avoir refresh », le titre et la recherche descendus par-dessus les onglets) :
+// pendant « tirer pour actualiser », #vue est decale par un transform (jusqu'a 84 px) et l'ecran est redessine A CE MOMENT-LA : une
+// position mesuree a l'ecran (getBoundingClientRect) compte ce decalage en trop, et l'en-tete collant gardait ce « top » trop bas
+// une fois la page remontee. ptrY() : le decalage en cours, a retirer de toute mesure ; APRES_PTR : ce qui se remesure a la fin.
+const ptrY = () => { const v = document.getElementById('vue'); if (!v || !v.style.transform) return 0;
+  try { return new DOMMatrixReadOnly(getComputedStyle(v).transform).m42 || 0; } catch (e) { return 0; } };
+const APRES_PTR = {f: null};
 // 19 nov 2026 : la hauteur de l'en-tete fixe (Radar, Inventaire), pour que la recherche colle juste dessous
 (() => { const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(es => { for (const e of es) { const r_ = document.documentElement.style, ec = e.target.closest('.ecran');
     r_.setProperty('--tf-h', Math.round(e.target.getBoundingClientRect().height) + 'px');
@@ -12962,7 +12985,7 @@ async function rendreAnalyse(){
   // aussi, sous « J'achete / Je fais un break » ; seule la liste defile
   { const sl = $(':scope > .score-liste', z); if (sl) { const fx = document.createElement('div'); fx.className = 'an-fixe';
       [...z.children].filter(k => k !== sl && (k.compareDocumentPosition(sl) & Node.DOCUMENT_POSITION_FOLLOWING)).forEach(k => fx.appendChild(k)); z.prepend(fx);
-      const pose = () => { const f = $('.bk-page > .bk-fixe'); if (f && fx.isConnected) fx.style.top = Math.round(f.getBoundingClientRect().bottom) + 'px'; };
+      const pose = () => { const f = $('.bk-page > .bk-fixe'); if (f && fx.isConnected) fx.style.top = Math.round(f.getBoundingClientRect().bottom - ptrY()) + 'px'; };
       if (!scrollY) pose(); requestAnimationFrame(() => { if (!scrollY) pose(); }); } }
   $('#an-amp').onclick = () => { vibrer(); const tr = (TRIS_ANA().find(t => t[0] === (A.tri || 'place')) || TRIS_ANA()[0]);
     popOuvrir(`<button class="pop-x" id="amp-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
@@ -13225,7 +13248,13 @@ async function ouvrirAnnonce(base){
   const total0 = base && base.total;                       // le prix de la tuile (avant la lecture en direct)
   let f = $('#fen-annonce');
   if (!f) { f = document.createElement('div'); f.id = 'fen-annonce'; f.className = 'fen-fond'; document.body.appendChild(f);
-    f.addEventListener('click', (e) => { if (e.target === f || e.target.closest('.fen-x')) fermerAnnonce(); }); }
+    f.addEventListener('click', (e) => { if (e.target === f || e.target.closest('.fen-x')) fermerAnnonce(); });
+    // 26 nov 2026 (« le X est cache ») : au cell le X colle par CSS (sticky) ; sur un ecran large il est pose en absolu : la, il suit
+    // le defilement de la fenetre. Dans les deux cas il reste a portee, meme quand la fiche depasse l'ecran.
+    f.addEventListener('scroll', (e) => { const p = e.target; if (!p.classList || !p.classList.contains('fen')) return;
+      const x = p.querySelector(':scope > .fen-x'); if (!x) return;
+      const abs = getComputedStyle(x).position === 'absolute';
+      x.classList.toggle('fen-x-suit', abs); x.style.transform = abs && p.scrollTop > 0 ? `translateY(${p.scrollTop}px)` : ''; }, {capture: true, passive: true}); }
   document.body.classList.add('fen-ouverte');
   const montrer = (d) => {
     if (!comps()) return montrerPublic(d);
@@ -13805,13 +13834,16 @@ async function feuilleMomentYG(){
 // (mega_test.py) ; la mesure se fait ensuite sur l'export (outils/mega_test.py). Admin seulement.
 async function feuilleMesures(t, tc, m_){
   t = t || {}; tc = tc || {}; m_ = m_ || {};
-  const mg = await API.admin_mega_test().catch(() => null) || {};
+  const [mg, bp] = (await Promise.all([API.admin_mega_test().catch(() => null), API.admin_banque_psa().catch(() => null)])).map(x => x || {});
+  const etBp = bp.en_cours ? tt('En cours', 'Running') + (bp.recherches ? ` · ${Math.round(100 * (bp.recherches_finies || 0) / bp.recherches)} %` : '')
+    : ({terminee: tt('Terminé', 'Done'), aucune: tt('Pas commencé', 'Not started'), plafond: tt('Plafond atteint', 'Cap reached')}[bp.statut || 'aucune'] || tt('En pause', 'Paused'));
   const etMg = mg.en_cours ? tt('En cours', 'Running') + (mg.cartes ? ` · ${Math.round(100 * (mg.cartes_finies || 0) / mg.cartes)} %` : '')
     : ({terminee: tt('Terminé', 'Done'), aucune: tt('Pas commencé', 'Not started')}[mg.statut] || tt('En pause', 'Paused'));
   const L = [
     ['signal', 'cible', tt('Signal par joueur', 'Player signal'), tt('achète, vends, attends : noté en direct', 'buy, sell, wait: scored live'), '', () => feuilleSignalJoueurs()],
     ['iq', 'pouls', tt('Test SlabIQ', 'SlabIQ test'), tt('rejoue le passé : la lettre a-t-elle raison ?', 'replays the past: is the letter right?'), admAge(t.slabiq_test) != null ? ilYa(t.slabiq_test) : '—', () => feuilleTestIQ()],
     ['mega', 'pouls', tt('Méga test 3 ans', '3-year mega test'), tt('l’acheteur fait-il de l’argent, frais compris ?', 'does the buyer make money, fees included?'), etMg, () => feuilleMegaTest()],
+    ['psa', 'graphe', tt('Données PSA', 'PSA data'), tt('raw, PSA 9, PSA 10 : quelles cartes grader ?', 'raw, PSA 9, PSA 10: which cards to grade?'), etBp, () => feuilleBanquePSA()],
     ['moment', 'cible', tt('Moment d’achat', 'Buy timing'), tt('feu vert et taux mesurés', 'green light and measured rates'), '', () => feuilleMomentYG()],
     ['types', 'etoile', tt('Types de cartes', 'Card types'), tt('test avant / après', 'before / after test'), m_.apres != null ? 'ρ ' + decFr(m_.avant) + ' → ' + decFr(m_.apres) : String(tc.types || ''), () => feuilleTypesAdmin()],
     ['effets', 'pouls', tt('Ce qui fait bouger les cartes', 'What moves cards'), tt('prix et ventes après chaque événement', 'price and sales after each event'), '', () => feuilleEffets()],
@@ -13902,6 +13934,34 @@ async function feuilleMegaTest(){
     const x = await API.admin_mega_test_lancer(entierYG($('#mt-pl').value) || 8000).catch(e => ({ok: false, erreur: e.message}));
     if (x && x.ok === false) toast(x.erreur || 'Erreur'); setTimeout(feuilleMegaTest, 1500); };
   if (r.en_cours) setTimeout(() => { if ($('#mt-go') && !$('#fond-feuille').hidden) feuilleMegaTest(); }, 10000);
+}
+// 26 nov 2026 (Mathieu : « on y va pour le mega test pour donnees PSA, juste me dire quand le partir ») : les ventes PSA 10 et PSA 9
+// de chaque joueur (120 jours), puis la version raw de chaque carte vue en PSA 10 (banque_psa.py). Admin seulement ; ne part
+// jamais seule : c'est ce bouton qui la lance.
+async function feuilleBanquePSA(){
+  const r = await API.admin_banque_psa().catch(e => ({ok: false, erreur: e.message}));
+  if (!r || !r.ok) { toast((r && r.erreur) || 'Erreur'); return; }
+  const cs = r.compsniper || {}, nb = (v) => (v || 0).toLocaleString(LOC());
+  const pj = r.recherches ? Math.round(100 * (r.recherches_finies || 0) / r.recherches) : 0;
+  const etat = r.en_cours ? tt('En cours', 'Running') : {aucune: tt('Pas commencé', 'Not started'), terminee: tt('Terminé', 'Done'), plafond: tt('Plafond atteint', 'Cap reached'),
+    attente_mois: tt('En attente : reprend seul quand le mois a des crédits', 'Waiting: resumes by itself when the month has credits'), erreur: tt('Arrêté (erreur) : réessaie seul dans l’heure', 'Stopped (error): retries by itself within the hour'),
+    interrompue: tt('En pause : reprend seul', 'Paused: resumes by itself'), en_cours: tt('En pause : reprend seul', 'Paused: resumes by itself'), arretee: tt('Arrêté', 'Stopped')}[r.statut] || r.statut;
+  const phase = r.statut === 'aucune' ? '' : r.phase === 2 ? tt('Étape 2 de 2 : la version raw de chaque carte', 'Step 2 of 2: the raw version of each card') : tt('Étape 1 de 2 : ce qui se vend en PSA 10 et PSA 9', 'Step 1 of 2: what sells in PSA 10 and PSA 9');
+  ouvrirFeuille(`<h3>${tt('Données PSA', 'PSA data')}</h3>
+    <div class="sous" style="margin-bottom:10px">${tt(`Les ventes PSA 10 et PSA 9 de ${nb(r.joueurs || r.joueurs_vises)} joueurs sur ${r.jours} jours, puis la version raw de chaque carte vendue en PSA 10 (CompSniper). Pour savoir quelles cartes valent la peine d’être envoyées chez PSA.`, `PSA 10 and PSA 9 sales of ${nb(r.joueurs || r.joueurs_vises)} players over ${r.jours} days, then the raw version of every card sold in PSA 10 (CompSniper). To learn which cards are worth sending to PSA.`)}</div>
+    <div class="jb tq-g">
+      <div class="jb-t"><span class="jb-k">${tt('Recherches', 'Searches')}</span><b class="jb-v">${nb(r.recherches_finies)} / ${nb(r.recherches)}</b><small>${tt('complètes', 'done')} (${pj} %)</small></div>
+      <div class="jb-t"><span class="jb-k">${tt('Ventes lues', 'Sales read')}</span><b class="jb-v">${nb(r.ventes)}</b><small>${nb(r.pages)} ${tt('pages', 'pages')}${r.cartes_raw ? ' · ' + nb(r.cartes_raw) + ' ' + tt('cartes', 'cards') : ''}</small></div>
+      <div class="jb-t"><span class="jb-k">CompSniper</span><b class="jb-v">${nb(cs.mois)}</b><small>${tt('utilisés ce mois sur', 'used this month of')} ${nb(cs.budget_mois)} · ${tt('dispo', 'free')} ${nb(r.dispo)}</small></div></div>
+    <div class="by-prog"><div class="by-l"><b>${esc(etat)}</b><span>${nb(r.credits)} / ${nb(r.plafond)} ${tt('crédits', 'credits')}${r.battement ? ' · ' + ilYa(new Date(r.battement * 1000).toISOString()) : ''}</span></div>
+      <div class="by-b"><i style="width:${pj}%"></i></div>${phase ? `<div class="by-l"><span>${phase}</span></div>` : ''}${r.texte || r.erreur ? `<div class="by-l"><span>${esc(r.texte || '')}</span>${r.erreur ? `<span class="rouge">${esc(r.erreur)}</span>` : ''}</div>` : ''}</div>
+    <div style="display:flex;gap:10px;align-items:flex-end;margin-top:12px"><label class="md-l" style="flex:1;margin:0">${tt('Crédits au plus (toute la collecte)', 'Max credits (whole collection)')}<input class="champ" id="bp-pl" type="number" inputmode="numeric" value="${r.plafond || 8000}"></label>
+    <button class="btn" id="bp-go" ${r.en_cours ? 'disabled' : ''} style="flex:1;margin:0">${r.en_cours ? tt('Collecte en cours…', 'Collecting…') : tt('Lancer ou reprendre', 'Start or resume')}</button></div>
+    <div class="sous" style="font-size:12.5px;margin-top:6px">${tt(`Jamais plus que le budget du mois, moins ${nb(r.reserve_app)} gardés pour l’app. Ne part jamais seule ; une fois lancée, elle reprend seule après une mise à jour.`, `Never more than the monthly budget, minus ${nb(r.reserve_app)} kept for the app. Never starts by itself; once started, it resumes by itself after an update.`)}</div>`);
+  const go = $('#bp-go'); if (go) go.onclick = async () => { vibrer(); go.disabled = true;
+    const x = await API.admin_banque_psa_lancer(entierYG($('#bp-pl').value) || 8000).catch(e => ({ok: false, erreur: e.message}));
+    if (x && x.ok === false) toast(x.erreur || 'Erreur'); setTimeout(feuilleBanquePSA, 1500); };
+  if (r.en_cours) setTimeout(() => { if ($('#bp-go') && !$('#fond-feuille').hidden) feuilleBanquePSA(); }, 10000);
 }
 function texteBanqueYG(t){
   t = String(t || ''); if (LANGUE !== 'en') return t;
@@ -14955,7 +15015,8 @@ async function vueTendancesIQ(arg){
   // il remontait sous la barre du haut et les lumieres) ; rien ne bouge au defilement
   (() => { const tf = $('.tiq-tf'); if (!tf || !matchMedia('(max-width: 899px)').matches) return;
     const fixer = () => { if (!tf.isConnected) return; const sc = (document.scrollingElement || document.documentElement).scrollTop;
-      if (sc > 4) return; tf.style.top = Math.max(0, Math.round(tf.getBoundingClientRect().top)) + 'px'; };
+      if (sc > 4) return; tf.style.top = Math.max(0, Math.round(tf.getBoundingClientRect().top - ptrY())) + 'px'; };
+    APRES_PTR.f = fixer;                         // 26 nov 2026 : remesure quand « tirer pour actualiser » a tout remonte
     requestAnimationFrame(() => requestAnimationFrame(fixer)); setTimeout(fixer, 400); })();
   // 21 nov 2026 (Mathieu : « donner une vraie plus-value ») : dans « À vendre », TES joueurs d'abord, avec « Tu en as N »
   const [r, jm_] = await Promise.all([API.tendances_iq().catch(e => ({ok: false, erreur: e.message})), API.joueurs_en_main().catch(() => null)]);
@@ -22023,7 +22084,7 @@ const PTR_SEUIL = 72, PTR_MAX = 120;
     el.classList.add('fini');
     await new Promise(r => setTimeout(r, 900));
     el.classList.remove('fini'); placer(0, el); el.style.opacity = 0;
-    setTimeout(() => { occupe = false; if (v) v.classList.remove('ptr-lache'); }, 360);
+    setTimeout(() => { occupe = false; if (v) v.classList.remove('ptr-lache'); try { if (APRES_PTR.f) APRES_PTR.f(); } catch (e) {} }, 360);
   };
   document.addEventListener('touchend', fin, {passive:true});
   document.addEventListener('touchcancel', fin, {passive:true});

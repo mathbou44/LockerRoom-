@@ -1153,6 +1153,49 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
     `iqx.py`. Suite complète vers midi : 299 fichiers, 0 échec. Livré (p103) : `iq_publie.py`, `outils/site_iq.py`,
     `ui/site_base.html`, `ui/site_slabiq.html`, `ui/site_accueil.html`, `source/src_app.html`, `ui/app.html`,
     `tests/test_site_a_jour.py`, `tests/test_chiffres_partout.py`, `NOTES_CLAUDE.md`.
+- **26 nov, 12 h – 13 h 30 : après son push (94f6c8d = p101 + p102 + p103), 4 demandes d'affilée** :
+  * Vérifié en direct : le site dit « 6× », 87 % / 13 %, « Refait 5 fois » ; le serveur a calculé les tendances (225 cartes
+    mesurées, 3 sortes, 20 346 ventes). « Pourquoi juste des Young Guns / 3 parallèles ? » : nos archives viennent des
+    recherches de l'app (1 947 cartes exactes, 982 Young Guns ; les 1 131 autres sont éparpillées sur 370 sortes ; une ligne
+    « Par sorte » veut 5 cartes mesurées). À faire : fusionner les doublons de sortes (« Dazzlers Blue » / « Blue Dazzlers »,
+    « Upper Deck Young Guns Canvas » / « Young Guns Canvas ») et le libellé tronqué.
+  * « Bug après avoir refresh » (Trending, l'en-tête par-dessus les onglets) : l'en-tête collant mesurait sa place pendant que
+    `#vue` était encore décalé par le tirer-pour-rafraîchir. `ptrY()` (le décalage en cours), soustrait dans l'en-tête de
+    Trending et la bande des Breaks ; `APRES_PTR.f` : la mesure est refaite à la fin du geste. Aperçu : `/home/claude/vue/ptr.py`.
+  * « Le X en haut à droite est caché » (fiche d'une annonce, cell) : la fiche défile quand elle dépasse (dans l'app, sur un
+    iPhone de 393 x 852, il reste 739 px : la fiche admin avec la bande de tendance et une alerte en fait 766) et le X, posé en
+    absolu en haut du CONTENU, partait avec. Au cell (≤ 999 px) le X est maintenant `position:sticky` dans les deux fiches
+    (`.fa-pub` : top 10 ; `.fb-adm` : top 18, sur le coin de la photo, marge du bas négative). IMPORTANT : la marge du haut de
+    la fenêtre passe à 0 et c'est le X qui porte l'espace, parce qu'avec une marge interne Chrome et Safari comptent « top » à
+    partir du contenu (un `top:10px` donnait 62 px). À l'ordi (X en absolu) un écouteur `scroll` le fait suivre
+    (`fen-x-suit`). La bande de tendance de la fiche admin perd sa marge du haut au cell (16 px dessus, 8 dessous → 8 partout).
+    Aperçus : `/home/claude/vue/fen.py` (fiche Pro) et `fen_adm.py` (fiche admin : il faut `S.forfait.comps = true` et simuler
+    `/api/annonce_detail`), tailles 393x852, 393x759 (= iPhone dans l'app), 375x667, 440x863, ordi 1280x560.
+    Test : `tests/test_fen_x_colle.py`.
+  * **Les données PSA (« quelles cartes valent la peine d'être gradées »)**. Sa méthode (12 h 31) : toutes les parallèles
+    vendues en PSA 10 sur ~3 mois, la moyenne raw contre la moyenne PSA 10 sur la même période, classées par rapport ; le Radar
+    les détecte ; Admin d'abord, Pro ensuite. 12 h 46 : « on y va pour le mega test pour données PSA, juste me dire quand le
+    partir ». Constats : (1) nos archives ont déjà ~46 600 lignes « PSA 10 » et ~31 100 « PSA 9 » sur 120 jours, mais rangées
+    sous la recherche qui les a trouvées : une PSA 9 trouvée par une recherche raw est refusée (« gradée ») au lieu d'être
+    comptée comme PSA 9 ; il faut ranger PAR TITRE. (2) `grader.py` (17 nov) est trop optimiste (PSA 9 = 45 % de la PSA 10 :
+    le vrai est ~25 % ; 62 « oui » sur 93). (3) Sans population PSA (interdit), on ne peut PAS écrire une chance de 10 : on
+    montre « si 10 », « si 9 » et le seuil de rentabilité, jamais un profit espéré.
+    Construit : `banque_psa.py` (base À PART `banque_psa.sqlite` : JAMAIS dans `base_ventes`, une recherche « joueur + note »
+    mélangerait des cartes dans les tendances et les tests publiés). Phase 1 : « <joueur> psa 10 » et « <joueur> psa 9 » pour
+    les 200 premiers joueurs de l'indice (actifs d'abord), 120 jours, 30 pages au plus. Phase 2 : chaque carte exacte vue 4 fois
+    ou plus en PSA 10 (`carte_du_titre` : `cible_titre` + `raisons_refus` + `tendance_sortes.autre_carte`, donc les règles des
+    comps ET des tendances) : sa recherche raw (`requete_ebay` sans la note), 8 pages au plus, sautée si elle est déjà dans nos
+    archives et fraîche (20 ventes, la dernière de 10 jours ou moins). Plafond 8 000 crédits par défaut (choisi dans la
+    fenêtre), budget du mois moins `LR_MEGA_RESERVE`. NE PART JAMAIS SEULE (`continuer_si_besoin` ne reprend qu'une collecte
+    déjà lancée). Admin > Mesures > « Données PSA » (`feuilleBanquePSA`, routes `admin_banque_psa`, `admin_banque_psa_lancer`).
+    Essai du rangement par titre sur nos archives (`/tmp/v26/proto_psa.py`) : Bedard 363 ventes PSA 10 dans 85 cartes (Young
+    Guns 128, O-Pee-Chee Glossy 22, Glossy Gold 11…). Test : `tests/test_banque_psa.py`.
+    SUITE (paquet suivant) : la liste « À grader » dans Admin (raw / PSA 10 / PSA 9 par carte exacte ET par saison : la
+    recherche raw n'a pas l'année ; même période pour les trois ; ce qui reste après frais PSA et eBay), puis le badge du Radar.
+  * **Onglet « Player + cards » : « c'est juste plus compliqué pour rien »** (12 h 50, capture « ▼1 ●2 »). Proposé A (un seul
+    chiffre par joueur : toutes ses cartes ensemble sur 30 jours, En hausse / En baisse, même look que Cards ; on touche = ses
+    cartes une par une) ou B (deux signaux côte à côte) → « Oui A, ça doit être compréhensible en 1 sec ». À faire au paquet
+    suivant : `_agreger` sur toutes les cartes mesurées du joueur (comme `croiser` le fait pour « le reste »).
 - **Demandé pour demain (21 h 02)** : « améliore SlabIQ et refais nos tests avec les nouvelles data une fois obtenues ; tu devrais
   aller chercher tout automatiquement » → refaire les tests sur les ventes de la collecte de 3 ans ; SlabIQ ne change que si le test
   le prouve ; le test publié sur le site doit tourner seul sur le serveur (tâche `g_c_auto`), sans export à la main.
