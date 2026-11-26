@@ -4132,6 +4132,11 @@ def chasser_si_besoin(force=False):
                     print(f"Manquees : {rs['aubaines']} aubaines en {rs['jours']} jours, {rs['montrees']} montrees avant la fin", flush=True)
             except Exception as e:
                 print("Manquees : " + repr(e), flush=True)
+            try:                                         # 25 nov 2026 : la tendance par sorte de carte (aux 3 jours, sans credit)
+                import tendance_sortes
+                tendance_sortes.calculer_si_besoin()
+            except Exception as e:
+                print("Tendance des sortes : " + repr(e), flush=True)
             with _verrou:
                 d = lire()
                 d["bassin"] = b.n

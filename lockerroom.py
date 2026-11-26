@@ -8088,6 +8088,7 @@ class Api:
         try:
             import sets_cultes
             import series
+            import tendance_sortes
             ser = comps_permis(self)
             items = [x for k in ("deals", "petits", "suivis", "pres", "a_la_une", "recherchees") for x in (r.get(k) or []) if isinstance(x, dict)]
             items += [x for k in ("pour_toi", "decouvrir", "chauds", "creux", "chasses", "types", "vendeurs", "cibles")
@@ -8107,6 +8108,10 @@ class Api:
                     x["series"] = se
                 elif "series" in x:
                     x.pop("series", None)
+                # 25 nov 2026 (Mathieu : « la tendance par sorte de carte, sur les tuiles du Radar ») : la sorte mesuree de
+                # l'annonce (un indice et un %, jamais un prix : pour tous), refaite aux 3 jours sur nos ventes
+                if hockey and "tend" not in x:
+                    x["tend"] = tendance_sortes.de_titre(x.get("titre") or "", j)
         except Exception as e:
             print("Pastilles radar : " + repr(e), flush=True)
         return r
@@ -9161,6 +9166,13 @@ class Api:
 
     def tendances_iq(self):
         r = self._tendances_iq0()
+        try:                                    # 25 nov 2026 : les sortes de cartes en hausse et en baisse (indice et %, jamais un prix)
+            import tendance_sortes
+            so = tendance_sortes.page()
+            if so and isinstance(r, dict) and r.get("ok"):
+                r = {**r, "sortes": so}
+        except Exception as e:
+            print("Tendances (sortes) : " + repr(e), flush=True)
         try:
             if isinstance(r, dict) and r.get("ok") and not forfaits.est_pro() and not self._est_admin():
                 return self._tendances_gratuit(r)
@@ -9175,7 +9187,17 @@ class Api:
             n = max(0, len(L) - self.TEND_GRATUIT)
             verrous += n
             cats[k] = [{"verrou": True, "marche": {c: (x.get("marche") or {}).get(c) for c in ("vs_mediane_pct", "courbe")}} for x in L[:n]] + L[n:]
-        return {**r, "cats": cats, "gratuit": {"verrous": verrous, "libres": self.TEND_GRATUIT, "top": self.TEND_TOP}}
+        out = {**r, "cats": cats, "gratuit": {"verrous": verrous, "libres": self.TEND_GRATUIT, "top": self.TEND_TOP}}
+        so = r.get("sortes")
+        if isinstance(so, dict):                # les sortes : meme regle (les premieres verrouillees : le rang, le % et la courbe, sans le nom)
+            so = dict(so)
+            for k in ("hausses", "baisses"):
+                L = so.get(k) or []
+                n = max(0, len(L) - self.TEND_GRATUIT)
+                so[k] = [{"verrou": True, "pct": x.get("pct"), "sens": x.get("sens"), "serie": x.get("serie")} for x in L[:n]] + L[n:]
+            so["toutes"] = []
+            out["sortes"] = so
+        return out
 
     def _tendances_iq0(self):
         """12 nov 2026 (Mathieu : « un onglet Tendances : les joueurs a surveiller, comment l'IA les a analyses, des stats, des
@@ -9738,6 +9760,13 @@ class Api:
     def annonce_score(self, titre=None, joueur=None):
         """10 nov 2026 : le Score SlabCoach d'une annonce pour sa fiche publique (joueur + carte ; aucun prix)."""
         s = score_slab.score(str(titre or "")[:200], joueur)
+        try:                                           # 25 nov 2026 : la tendance de sa sorte de carte (un indice et un %, jamais un prix)
+            import tendance_sortes
+            td = tendance_sortes.de_titre(str(titre or "")[:200], s.get("joueur") or joueur)
+            if td:
+                s["tend"] = td
+        except Exception as e:
+            print("Score annonce (tendance) : " + repr(e)[:120], flush=True)
         if s.get("joueur"):
             try:                                       # 13 nov 2026 : « Alexei Semenov BAP » -> « Alexei Semenov »
                 import nhl

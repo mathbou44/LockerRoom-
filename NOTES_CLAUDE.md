@@ -857,13 +857,78 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   corrections : `overflow:clip` (l'en-tête ne bouge plus : vérifié, `vue/entete2.py`) et un fond PLEIN (`.tete-fixe` + `::before`
   jusqu'en haut + ombres pleines à gauche et à droite), sans flou d'arrière-plan ni clip-path ni ombre de 100vmax. PAS reproduit
   dans mon navigateur d'essai (le fond restait là) : à confirmer par lui après le push.
-- **Tendance par SORTE de carte : en cours (25 nov, soir)** : demandé : « comme les listes Au plus bas / Au plus haut des joueurs,
-  mais avec les sortes / parallèles », un petit graphique sur les tuiles du Radar (discret, style Apple) et une version claire
-  dans la fiche, refait aux 3 jours. Module `tendance_sortes.py` ÉCRIT (pas encore branché, pas livré) : même méthode que
-  `tendance_stats` (ventes répétées, 30 j contre 60 j, rétrécissement, Mann-Whitney p < 0,10), clé = la recherche sans le joueur
-  (`cle_sorte`), 5 cartes et 40 ventes au moins, courbe = indice par semaine (fenêtre de 3 semaines), JAMAIS un prix.
-  MESURÉ sur l'export (au 18 nov, 130 jours, 6 243 cartes) : 34 sortes mesurées, 3 hausses confirmées (O-Pee-Chee Platinum +39 %,
-  Ultimate Collection Auto +24 %, SP Authentic Auto +19 %), 10 baisses (OPC Platinum Auto −33 %, Outburst −24 %, Clear Cut Auto
-  −16 %, Young Guns −11 % sur 21 269 ventes et 298 cartes, YG Canvas −10 %…). Par CARTE exacte c'était trop bruyant (recherches
-  larges mélangées). RESTE : brancher au serveur (aux 3 jours), l'API, les listes dans Tendances, le mini-graphique des tuiles,
-  la fiche ; ne PAS changer la lettre SlabIQ sans test.
+- **p95 poussé par Mathieu vers 21 h 10 (25 nov)** : le méga test est reparti (« shane wright psa 10 · page 1 », 1 861 / 3 000,
+  plafond 30 000) ; il tourne seul la nuit. L'en-tête du Radar à l'ordi (fond plein + `overflow:clip`) est dans ce push : PAS
+  encore confirmé par lui.
+- **TENDANCE DES CARTES (25 nov, 20 h 46 → 22 h 40) : état FINAL, après la triple vérification demandée par Mathieu** (« double et
+  triple vérifie tous les graphiques et infos ; on doit être parfait, on n'a pas le droit à l'erreur »). Demandes, dans l'ordre :
+  « idem au trend des joueurs mais pour les cartes, biggest risers et losers » ; « petit et clean sur la tuile du Radar, plus visible
+  quand on clique » ; « dans SlabIQ » ; « aux 3 jours » ; « j'espère que le trend est associé aux joueurs ? » ; « une OPC Platinum
+  Emerald Surge Auto ne doit pas être compilée avec une Violet Pixel Auto, ni avec une Emerald Surge pas auto » ; « type en hausse +
+  joueur en hausse = méga valeur » ; « on se fout des parallèles à 20 $ et moins, à part les Young Guns ».
+  * LA MESURE (`tendance_sortes.py`) = LA CARTE D'UN JOUEUR : un joueur + une sorte + UNE saison, comparée à elle-même, 30 derniers
+    jours contre les 60 d'avant (médianes, borné ×4, rétréci N / (N + 8) : le chiffre affiché est PRUDENT ; `brut` = l'écart des
+    médianes tel quel). Annoncée seulement si : 12 ventes et 4 par période ; test de Mann-Whitney p < 0,01 (`P_CARTE` : sur 200
+    cartes testées, 2 fausses alertes au plus) ; la courbe des 30 derniers jours va dans le même sens (`coherent`) ; |%| ≥ 5.
+    Listes En hausse / En baisse : 20 ventes et plus, 25 par liste. La sorte « tous joueurs » (5 cartes, 40 ventes, p < 0,10) reste
+    à côté, étiquetée ; elle ne va JAMAIS sur une tuile (dans les Young Guns, autant de joueurs montent que baissent).
+  * MON ERREUR DE LA SOIRÉE : mon échantillon hors ligne (`/tmp/cartes_130.pkl`) ne triait PAS les ventes par cartes_match comme le
+    serveur. Tous les chiffres donnés à Mathieu avant 22 h 10 (34 sortes, « O-Pee-Chee Platinum +39 % », 497 cartes) étaient faux
+    ou gonflés. Refait par le VRAI chemin : une vraie base sqlite montée avec son export du 24 nov (862 000 ventes depuis le
+    10 juillet), le vrai `base_ventes.cartes_toutes` (126 s, 420 Mo), puis `listes`. Scripts gardés dans `/tmp/verif/` (la VM ne
+    les garde pas) : `pipeline.py`, `mesure.py`, `entonnoir.py`, `audit_titres.py`.
+  * CE QUE LA VÉRIFICATION A TROUVÉ, et corrigé :
+    1. la même vente est rangée sous plusieurs recherches (152 000 ventes sur 582 000 ; « jacob fowler young guns », « jacob fowler
+       hockey ») : les recherches d'une même carte sont FONDUES et chaque vente (son numéro eBay, `_RE_NUMERO`) compte UNE fois
+       (141 000 → 61 000 ventes) ;
+    2. une recherche sans année ramène plusieurs saisons : la saison se lit dans le titre de CHAQUE vente (`saison_du_titre`, qui lit
+       aussi « 25/26 », ce que `cartes_match._annee` ne fait pas : l'Elias Pettersson défenseur de 2025-26 passait pour celui de
+       2018-19). Une saison à 90 % : une carte ; sinon une carte PAR saison ; aucune tolérance « 2026 pour 2025-26 » ;
+    3. des paniers ne sont pas UNE carte : « rookie auto », « auto », « psa 10 », un nom de SET seul (« o-pee-chee », « sp authentic
+       auto », « portfolio », « clear cut auto », « the cup rookie auto patch ») : écartés (`_precise`, `SETS`, `ATTRIBUTS`) ;
+    4. « case hit serie select », « metal universe hobby box » donnaient un « joueur » Case Hit : il faut un joueur CONNU
+       (`cartes_match._joueurs_connus`, 1 464 noms ; « Alexander Ovechkin » = « alex ovechkin ») ;
+    5. des ventes trop vieilles : la dernière LECTURE (`lu_le` = MAX(vu_le) de la recherche) ou la dernière vente doit avoir 10 jours
+       ou moins (`FRAIS_J`), sinon « 30 derniers jours » serait faux. C'EST LE PLUS GROS FILTRE : 1 363 cartes sur 1 935 ;
+    6. des prix très étalés DANS UNE MÊME SEMAINE (`_etalement`, q75 / q25 > 2,5) : la recherche mélange des cartes ; une carte qui
+       monte vite garde des prix serrés chaque semaine et reste (la 1re version, sur les 60 jours, punissait les cartes qui bougent) ;
+    7. hors Young Guns, sous 20 $ de médiane : écartée (`PRIX_MIN_HORS_YG`) ;
+    8. le graphique : 100 = le niveau des 60 jours d'avant, axe du temps VRAI (`jours`), bande « 30 derniers jours » (`j_rec`) ;
+    9. rien n'est publié tant que plus de 2 % des ventes de la fenêtre ne sont pas triées (`base_ventes.A_TRIER`, `PARTIEL_MAX`) :
+       un essai aux 10 minutes, journal « N ventes encore à trier ».
+  * `base_ventes.cartes_toutes(detail=True)` : ajoute `q`, `lu_le` et `ventes` = [date, prix, numéro, saison] ; sans `detail`, rien
+    ne change pour les autres appelants (vérifié par le test).
+  * RÉSULTAT VÉRIFIÉ sur l'export du 24 nov : 169 cartes mesurées (161 Young Guns et variantes, 8 inserts nommés), 145 joueurs,
+    17 818 ventes ; 16 hausses et 39 baisses confirmées ; 2 sortes (Young Guns −9 % sur 152 cartes ; Young Guns PSA 10 −1 %).
+    Vérifié À LA MAIN sur 12 cartes, directement dans les titres vendus : même sens partout ; les grosses cartes à 1 à 5 points
+    (Fowler +81 / +86, Martone −44 / −44, Hutson −28 / −26, Gauthier +56 / +57, Frondell −43 / −41, Protas −38 / −37). Le seul
+    gros écart (Misa −2 à la main, −19 au module) venait de MA vérification : elle comptait la carte double Schaefer / Misa #500
+    à 5 $, que cartes_match refuse à raison ; sur les ventes communes : −17 %. Audit de `de_titre` sur 7 381 vrais titres :
+    1 024 reçoivent la tendance d'une carte, 0 erreur (autre saison, variante, gradée 9+, lot).
+  * DEUX DÉFAUTS de `cartes_match` trouvés, PAS corrigés (ils touchent les valeurs : sa règle, pas à la sauvette) : sans année dans
+    la recherche, la « Young Guns Renewed » 2024-25 (3 $) passe pour la Young Guns d'origine (58 des 200 ventes de « kirill kaprizov
+    young guns ») ; un lot « Young Guns + Dazzlers » passe pour la carte. `tendance_sortes.autre_carte` les écarte ICI seulement.
+    À LUI DIRE et à corriger avec un test sur les comps. (Les gradées 8 et moins comptent comme des brutes : voulu, 22 nov.)
+  * Écrans : Tendances → « Joueurs | Cartes » ; Cartes en hausse / en baisse (le joueur en gros, « Young Guns 2025-26 · 634 ventes »),
+    « Par sorte, tous joueurs » ; Gratuit : les premières verrouillées. Radar : un badge de plus sur la photo, seulement LA carte
+    du joueur, confirmée (son icône est la courbe). Fiche et fenêtre SlabIQ : la bande « Tendance de cette carte » (ou « Sa sorte,
+    tous joueurs »). Un toucher : `feuilleSorte` (graphique, 3 chiffres, « s'est vendue ENVIRON X % plus cher »). « Double hausse /
+    baisse » : la carte bouge ET le joueur est dans « Au plus haut / bas » : deux faits côte à côte, PAS prouvé pour la suite.
+  * LIMITES à lui dire : presque tout est Young Guns (les recherches d'autos sont des paniers : « x rookie auto ») ; les cartes dont
+    la recherche n'a pas été relue depuis 10 jours ne sont pas mesurées (1 363) : pour en couvrir plus, il faut relire les cartes
+    exactes plus souvent (des crédits : SA décision) ; les recherches larges « upper deck kaboom hockey » (sans joueur) ne servent
+    pas encore. La LETTRE SlabIQ n'a pas changé.
+- **Fenêtre SlabIQ refaite (25 nov, 21 h 05, capture à l'ordi : « devrait tout fitter sur une page sans scroll ; couleur fade,
+  manque de vie »)** : la couleur dit la note (A vert, B lilas, C or, D orange, E rouge, « — » gris), la lettre dans une pastille
+  pleine, une barre de niveau au bas de chaque tuile, libellés en minuscules ; à l'ordi (900 px+) la fenêtre fait 880 px en DEUX
+  colonnes (les 8 notes | la tendance, les faits, l'histoire) ; `ajusterPS()` resserre tant que la fenêtre déborde (s1 : 2 faits,
+  histoire sur 3 lignes ; s2 : 1 fait, 2 lignes ; s3 : sans le mot sous le libellé) ; un toucher sur l'histoire la déplie.
+  Mesuré : tient à 1830 × 883, 1280 × 680, 390 × 844 et 375 × 667. Classes `ps2`, `psg`, `pst` (les anciennes `psb-g` / `psb`
+  ne servent plus à cette fenêtre). Tendances au petit iPhone : `tiq-serre` (sans la phrase) puis `tiq-court` (sans le
+  sous-titre) pour tenir avec le nouveau choix du haut.
+- **Leçons du soir** : `tendDe` et `.tiq-lt` existaient déjà (collision : erreur JS, puis style) : TOUJOURS chercher un nom dans
+  tout le fichier avant de le créer. `tests/test_blessures.py` exige le texte exact « [data-np], .w-go ».
+- **Suite complète le 25 nov, 22 h 40 : 298 fichiers, 0 échec** (168 s et 285 s), après la triple vérification.
+- **Demandé pour demain (21 h 02)** : « améliore SlabIQ et refais nos tests avec les nouvelles data une fois obtenues ; tu devrais
+  aller chercher tout automatiquement » → refaire les tests sur les ventes de la collecte de 3 ans ; SlabIQ ne change que si le test
+  le prouve ; le test publié sur le site doit tourner seul sur le serveur (tâche `g_c_auto`), sans export à la main.

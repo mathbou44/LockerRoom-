@@ -6908,6 +6908,63 @@ button.sd-b{cursor:pointer; margin:0; -webkit-appearance:none; appearance:none}
 .sd-b.b-vert{color:var(--vert)} .sd-b.b-rouge{color:var(--rouge)} .sd-b.b-or{color:#E8C26A} .sd-b.b-acc{color:var(--acc)} .sd-b.b-creux{color:#8EC9FF}
 .sd-b.b-cle, .sd-b.b-culte{border-color:transparent; background:linear-gradient(rgba(14,14,18,.9),rgba(14,14,18,.9)) padding-box, linear-gradient(120deg,#9FE6D2,#B79CF2,#F2B6D2,#E8C77A) border-box}
 .sd-b.b-cle{color:#E8C77A} .sd-b.b-cle svg{fill:currentColor; stroke-width:1.2} .sd-b.b-culte{color:#F4F2F8}
+
+/* 25 nov 2026 (Mathieu : « tout sur une page sans scroll quand on clique sur la cote ; couleur fade, manque de vie ») : la fenetre
+   SlabIQ : la couleur dit la note, la lettre dans une pastille pleine, une barre de niveau ; a l'ordi, deux colonnes */
+.ps2{gap:12px} .ps2 .ps-g, .ps2 .ps-d{display:flex; flex-direction:column; gap:10px; min-width:0}
+.ps2 .na{--n:#4FE39A} .ps2 .nb{--n:#A3A9FF} .ps2 .nc{--n:#FFCB5C} .ps2 .nd{--n:#FF9A62} .ps2 .ne{--n:#FF6B7A} .ps2 .nx{--n:#8D8D9C}
+.ps2 .ps-n{gap:14px} .ps2 .ps-n > b{flex:none; min-width:0; width:62px; height:62px; border-radius:18px; display:grid; place-items:center; font:800 38px/1 var(--f-cond); color:#0E0E14;
+  background:linear-gradient(140deg, color-mix(in srgb, var(--n) 70%, #fff), var(--n)); box-shadow:0 10px 30px color-mix(in srgb, var(--n) 38%, transparent), inset 0 1px 0 rgba(255,255,255,.55)}
+.ps2 .ps-n.nx > b{background:rgba(255,255,255,.08); color:var(--doux); box-shadow:none}
+.ps2 #ps-ra:empty, .ps2 #ps-td:empty, .ps2 #ps-tu:empty{display:none} .ps2 .ps-ra{margin:0}
+.psg{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px}
+.pst{position:relative; display:flex; align-items:center; gap:10px; min-width:0; padding:9px 10px 12px 12px; border-radius:14px; overflow:hidden;
+  background:linear-gradient(120deg, color-mix(in srgb, var(--n) 24%, #1B1B22), color-mix(in srgb, var(--n) 7%, #1B1B22) 78%); border:1px solid color-mix(in srgb, var(--n) 40%, transparent)}
+.pst-t{flex:1; min-width:0; display:flex; flex-direction:column; gap:3px}
+.pst-h{display:flex; align-items:center; gap:6px; min-width:0; font:600 14px/1.15 var(--f-txt); color:color-mix(in srgb, var(--n) 45%, #fff)} .pst-h > span{min-width:0; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden}
+.pst-h svg{flex:none; width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+.pst small{font-size:13px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.pst > b{flex:none; min-width:42px; height:38px; padding:0 7px; box-sizing:border-box; border-radius:11px; display:grid; place-items:center; font:800 24px/1 var(--f-cond); color:#0E0E14; background:var(--n); box-shadow:0 4px 14px color-mix(in srgb, var(--n) 30%, transparent)}
+.pst.nx{background:#1B1B22; border-color:var(--ligne)} .pst.nx .pst-h{color:var(--doux)} .pst.nx > b{background:none; box-shadow:none; color:var(--doux); border:1px dashed rgba(255,255,255,.22)}
+.pst-b{position:absolute; left:0; bottom:0; height:3px; width:var(--p); background:var(--n); border-radius:0 3px 3px 0}
+.pst::after{content:''; position:absolute; left:0; right:0; bottom:0; height:3px; background:rgba(255,255,255,.07)} .pst-b{z-index:1}
+.ps2 .ps-l{gap:6px} .ps2 .ps-r{padding:8px 12px} .ps2 .ps-h{margin-top:8px; cursor:pointer} .ps2 #ps-l > .ps-h:first-child{margin-top:0}
+.ps2.s1 .ps-l .ps-r:nth-child(n+3), .ps2.s2 .ps-l .ps-r:nth-child(n+2){display:none}
+.ps2.s1 .ps-h:not(.ouv) .ps-h-c p{display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow:hidden}
+.ps2.s2 .ps-h:not(.ouv) .ps-h-c p{-webkit-line-clamp:2} .ps2.s2 .ps-h:not(.ouv) .ps-h-s{display:none}
+.ps2.s2{gap:9px} .ps2.s2 .ps-g, .ps2.s2 .ps-d{gap:8px} .ps2.s2 .pst{padding-top:6px; padding-bottom:9px} .ps2.s2 .ps-n > b{width:52px; height:52px; font-size:32px; border-radius:15px}
+.ps2.s3 .ps-h:not(.ouv) .ps-h-c p{-webkit-line-clamp:1} .ps2.s3 .pst small{display:none} .ps2.s3 .pst > b{height:32px; font-size:21px} .ps2.s3 .psg{gap:6px}
+@media (min-width:900px){
+  html:not(.tel-large) .fond-feuille .feuille:has(> .ps2){max-width:880px}
+  html:not(.tel-large) .ps2{display:grid; grid-template-columns:minmax(0, 1.05fr) minmax(0, .95fr); gap:18px; align-items:start} html:not(.tel-large) .ps2 .ps-d{padding-top:2px}
+  html:not(.tel-large) .ps2 #ps-td .td-b{width:calc(100% - 46px)} html:not(.tel-large) .ps2 #ps-td:empty + #ps-l > :first-child{margin-right:46px}
+}
+/* la tendance par sorte de carte : la bande (fenetre SlabIQ, fiche), le badge de la tuile, la fenetre du graphique */
+.td-b{display:flex; align-items:center; gap:12px; width:100%; box-sizing:border-box; padding:9px 12px; border-radius:14px; border:1px solid var(--ligne); background:#1B1B22; color:var(--texte); font:inherit; text-align:left; cursor:pointer}
+.td-b-t{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px} .td-b-t small{font-size:12.5px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .td-b-t b{font-size:15.5px; line-height:1.2; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden}
+.td-b .tiq-pc{min-width:60px; font-size:16px; padding:7px 8px} .fb-dr > .td-b, .fa-pub > .td-b{margin-top:8px}
+.tiq-pc.nul{background:rgba(255,255,255,.1); color:var(--doux)}
+.tiq-sp.n path{stroke:var(--doux)} .tiq-sp.n circle{fill:var(--doux)}
+.sd-b.sd-td{cursor:pointer} .sd-b.sd-td svg{width:15px; height:13px; stroke-width:2.4}
+.fso{display:flex; flex-direction:column; gap:12px; color:var(--doux)} .fso.h{color:#4FE39A} .fso.b{color:#FF7C86}
+.fso-h{display:flex; align-items:center; gap:12px; padding-right:44px} .fso-h > span:first-child{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px} .fso-h small{font-size:13px; color:var(--doux)} .fso-h h3{margin:0; color:var(--texte)}
+.fso-g{border-radius:16px; background:#17171D; border:1px solid var(--ligne); padding:10px 10px 8px} .fso-g svg{display:block; width:100%; height:auto; overflow:visible}
+.fso-l{fill:none; stroke:currentColor; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round} .fso-0{fill:none; stroke:rgba(255,255,255,.22); stroke-width:1; stroke-dasharray:3 4} .fso-g circle{fill:currentColor; stroke:#17171D; stroke-width:2}
+.fso-v{font:800 16px var(--f-cond); fill:currentColor} .fso-d{font:600 11px var(--f-txt); fill:rgba(255,255,255,.5)}
+.fso-r{fill:rgba(255,255,255,.055)} .fso-rt{font:600 10.5px var(--f-txt); fill:rgba(255,255,255,.5)}
+.fso-ax{display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-top:4px; font-size:12px; color:var(--doux)} .fso-ax em{font-style:normal; opacity:.8}
+.fso-k{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px} .fso-k > div{display:flex; flex-direction:column; gap:3px; padding:10px 12px; border-radius:14px; background:#1B1B22; min-width:0}
+.fso-k b{font:800 24px/1 var(--f-cond); color:var(--texte)} .fso-k > div:first-child b{color:currentColor} .fso-k small{font-size:12.5px; line-height:1.25; color:var(--doux)}
+.fso-p{margin:0; font-size:15.5px; line-height:1.4; color:var(--texte)} .fso-n{margin:0}
+/* Tendances : Joueurs | Sortes de cartes */
+.tiq-mode{display:inline-flex; align-self:flex-start; gap:2px; padding:3px; margin:0 0 12px; border-radius:12px; background:rgba(255,255,255,.07)}
+.tiq-mode button{border:0; background:none; color:var(--doux); font:600 15px var(--f-txt); padding:7px 16px; border-radius:9px; cursor:pointer; white-space:nowrap}
+.tiq-mode button.on{background:#34343F; color:var(--texte); box-shadow:0 1px 5px rgba(0,0,0,.45)}
+.tiq-serre .tiq-ps{display:none} .tiq-serre .tiq-mode{margin-bottom:6px} .tiq-serre .tiq-mode button{padding-top:5px; padding-bottom:5px} .ecran.tiq.tiq-court .tiq-tf .tiq-t .sous{display:none} .ecran.tiq.tiq-court #tiq-z{margin-top:-16px} html body .tiq-serre .tiq-seg{margin-bottom:8px !important} .tiq-serre .tiq-lm .tiq-m{padding:8px 0}
+.tiq-dbl{font-style:normal; font-weight:700} .tiq-dbl.h{color:var(--vert)} .tiq-dbl.b{color:var(--rouge)} .fso-2{color:currentColor}
+.tiq-vide{padding:14px 0} .tiq-ltt .tiq-m{padding:10px 0}
+@media (max-width:1099px){ .tiq-mode{display:flex; align-self:stretch; margin-bottom:10px} .tiq-mode button{flex:1; padding:8px 6px}
+  html body .tiq-seg ~ .tiq-av[data-on="toutes"] > .tiq-pan.toutes{display:flex !important} }
 .sd-b.big{height:30px; padding:0 14px 0 12px; font-size:14px; gap:6px} .sd-b.big svg{width:15px; height:15px}
 /* 21 nov 2026 (Mathieu : « le chiffre de notif est drolement place » ; « mettre identique a Apple ») : la pastille rouge
    d'Apple (rouge systeme, chiffre blanc, ronde), posee sur le coin en haut a droite de l'icone, jamais coupee */
@@ -12087,10 +12144,57 @@ const IC_BADGE = {croix: '<rect x="4.5" y="4.5" width="15" height="15" rx="4"/><
   bas: '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>', alerte: '<path d="M12 4 3 19h18z"/><path d="M12 10v4M12 16.800v.200"/>',
   moi: '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4-5.5 7-5.500s6 1.5 7 5.5"/>', gemme: '<path d="M6 4h12l3 5-9 11L3 9z"/><path d="M3 9h18"/>',
   trophee: '<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4"/>'};
+// 25 nov 2026 (Mathieu : « la tendance par sorte de carte : petit et clean sur la tuile, plus visible quand on clique ») : un indice
+// et un % tires de nos ventes (tendance_sortes.py, refait aux 3 jours), JAMAIS un prix. Sur la tuile : un badge comme les autres,
+// dont l'icone est la vraie courbe ; un toucher : feuilleSorte (le graphique complet, en mots simples).
+const TD = {};
+const sgPct = (v) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' %';
+const tdNoter = (t) => { if (t && t.cle) TD[t.cle] = t; return t; };
+const tdSens = (t) => !t || t.net === false || t.pct == null || !t.sens || t.sens === 'stable' ? 'n' : t.sens === 'hausse' ? 'h' : 'b';
+// jours : le jour de chaque point depuis le premier : l'axe du temps est VRAI (une semaine sans assez de ventes laisse un trou, elle n'est
+// pas collee a la suivante)
+const tdPts = (serie, W, H, m, avec, jours) => { const v = (serie || []).filter(y => y != null && isFinite(y)); if (v.length < 2) return null;
+  const lo = Math.min(...v, ...(avec || [])), hi = Math.max(...v, ...(avec || [])), e = (hi - lo) || 1;
+  const J = jours && jours.length === v.length && jours[jours.length - 1] > 0 ? jours : v.map((_, i) => i), jm = J[J.length - 1];
+  return v.map((y, i) => [m + (W - 2 * m) * J[i] / jm, m + (H - 2 * m) * (1 - (y - lo) / e)]); };
+const tdTrace = (P) => P.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ',' + q[1].toFixed(1)).join('');
+const sparkTD = (t, W, H) => { W = W || 64; H = H || 26; const P = tdPts(t && t.serie, W, H, 3, null, t && t.jours); if (!P) return ''; const f = P[P.length - 1];
+  return `<svg class="tiq-sp ${tdSens(t)}" viewBox="0 0 ${W} ${H}" style="width:${W}px; height:${H}px" aria-hidden="true"><path d="${tdTrace(P)}"/><circle cx="${f[0].toFixed(1)}" cy="${f[1].toFixed(1)}" r="2.2"/></svg>`; };
+const pcTD = (t) => { const k = tdSens(t); return `<span class="tiq-pc ${k === 'h' ? 'acheter' : k === 'b' ? 'vendre' : 'nul'}">${t.pct == null ? '—' : sgPct(t.pct)}</span>`; };
+// 25 nov 2026 (Mathieu : « j'espere que le trend est associe aux joueurs ? ») : sur la tuile, seulement la tendance de LA carte du
+// joueur (« Jacob Fowler · Young Guns ») ; la sorte tous joueurs (117 joueurs en baisse et 70 en hausse dans les Young Guns) n'y va pas
+const tdNom = (t) => t.joueur ? `${t.joueur} · ${t.nom}${t.saison ? ' ' + t.saison : ''}` : t.nom;
+function badgeTend(x){ const t = x && x.tend, k = tdSens(t); if (k === 'n' || t.niveau !== 'carte') return ''; tdNoter(t); const P = tdPts(t.serie, 24, 24, 4, null, t.jours);
+  return `<button class="sd-b b-${k === 'h' ? 'vert' : 'rouge'} sd-td" data-td="${esc(t.cle)}" aria-label="${esc(tdNom(t) + ' ' + sgPct(t.pct))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${P ? tdTrace(P) : k === 'h' ? 'M3 17l6-6 4 4 8-8' : 'M3 7l6 6 4-4 8 8'}"/></svg><span>${sgPct(t.pct)}</span></button>`; }
+function bandeTend(t){ if (!t || (t.serie || []).length < 2) return ''; tdNoter(t);
+  return `<button class="td-b" data-td="${esc(t.cle)}"><span class="td-b-t"><small>${t.niveau === 'carte' ? tt('Tendance de cette carte · 30 jours', 'This card’s trend · 30 days') : tt('Sa sorte, tous joueurs · 30 jours', 'Its card type, all players · 30 days')}</small><b>${esc(tdNom(t))}</b></span>${sparkTD(t, 60, 26)}${pcTD(t)}</button>`; }
+function feuilleSorte(t){ if (!t) return; const k = tdSens(t), UNE = t.niveau === 'carte', W = 340, H = 150, M = 14, v = (t.serie || []).filter(y => y != null && isFinite(y)), P = tdPts(v, W, H, M, [100], t.jours);
+  const nb = (n) => Number(n || 0).toLocaleString(tt('fr-CA', 'en-CA')), jr = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString(tt('fr-CA', 'en-CA'), {day: 'numeric', month: 'short'}) : '';
+  const a = Math.abs(t.pct || 0);
+  const qui = UNE ? tt('Cette carte s’est vendue', 'This card sold') : tt('Les mêmes cartes se sont vendues', 'The same cards sold');
+  const phrase = k === 'h' ? tt(`${qui} environ ${a} % plus cher dans les 30 derniers jours que dans les 60 jours d’avant.`, `${qui} about ${a}% higher in the last 30 days than in the 60 days before.`)
+    : k === 'b' ? tt(`${qui} environ ${a} % moins cher dans les 30 derniers jours que dans les 60 jours d’avant.`, `${qui} about ${a}% lower in the last 30 days than in the 60 days before.`)
+    : t.pct != null ? tt('Stable : presque aucun écart entre les 30 derniers jours et les 60 jours d’avant.', 'Stable: almost no gap between the last 30 days and the 60 days before.')
+    : tt('Pas de mouvement clair : les ventes vont dans les deux sens, on ne peut pas conclure.', 'No clear move: sales go both ways, so no conclusion.');
+  let g = '';
+  // le graphique : la ligne pointillee = le niveau des 60 jours d'avant (100) ; la bande = les 30 derniers jours (ce que le % compare)
+  if (P) { const f = P[P.length - 1], lo = Math.min(...v, 100), hi = Math.max(...v, 100), y100 = M + (H - 2 * M) * (1 - (100 - lo) / ((hi - lo) || 1)), id = 'fsog' + Math.random().toString(36).slice(2, 7);
+    // la bande : du debut de la periode recente (j_rec, en jours depuis le premier point) a la fin
+    const jm = (t.jours || [])[(t.jours || []).length - 1] || 0, xr = t.j_rec != null && jm > 0 && t.j_rec <= jm ? Math.max(M, M + (W - 2 * M) * t.j_rec / jm - 4) : null;
+    g = `<div class="fso-g"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt('Indice des ventes par semaine', 'Weekly sales index'))}"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".30"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs>
+      ${xr != null ? `<rect class="fso-r" x="${xr.toFixed(1)}" y="0" width="${(W - xr).toFixed(1)}" height="${H}" rx="8"/><text class="fso-rt" x="${((xr + W) / 2).toFixed(1)}" y="${H - 5}" text-anchor="middle">${tt('30 derniers jours', 'last 30 days')}</text>` : ''}
+      <path class="fso-a" d="${tdTrace(P)}L${f[0].toFixed(1)},${H}L${P[0][0].toFixed(1)},${H}Z" fill="url(#${id})"/><path class="fso-0" d="M${M},${y100.toFixed(1)}H${W - M}"/><text class="fso-d" x="${M}" y="${((P[0][1] < y100 - 1 || y100 < 20) && y100 < H - 18 ? y100 + 13 : y100 - 5).toFixed(1)}">100</text>
+      <path class="fso-l" d="${tdTrace(P)}"/><circle cx="${f[0].toFixed(1)}" cy="${f[1].toFixed(1)}" r="4"/></svg>
+      <div class="fso-ax"><span>${esc(jr(t.du))}</span><em>${tt('100 = le niveau des 60 jours d’avant', '100 = the level of the 60 days before')}</em><span>${esc(jr(t.au))}</span></div></div>`; }
+  ouvrirFeuille(`<div class="fso ${k}"><div class="fso-h"><span><small>${UNE ? esc(t.nom + (t.saison ? ' · ' + t.saison : '')) : tt('Sorte de carte, tous joueurs', 'Card type, all players')}</small><h3>${esc(UNE ? t.joueur : t.nom)}</h3></span>${pcTD(t)}</div>${g}
+    <div class="fso-k"><div><b>${t.pct == null ? '—' : sgPct(t.pct)}</b><small>${tt('30 jours vs les 60 d’avant', '30 days vs the 60 before')}</small></div><div><b>${nb(t.n)}</b><small>${tt('ventes mesurées', 'sales measured')}</small></div>${UNE ? `<div><b>${nb(t.n_re)}</b><small>${tt('dans les 30 derniers jours', 'in the last 30 days')}</small></div>` : `<div><b>${nb(t.n_cartes)}</b><small>${tt('cartes différentes', 'different cards')}</small></div>`}</div>
+    <p class="fso-p">${phrase}</p>${t.double ? `<p class="fso-p fso-2">${t.double === 'h' ? tt('Double hausse : le marché de ce joueur, toutes ses cartes ensemble, est aussi à son plus haut depuis des mois.', 'Double rise: this player’s market, all his cards together, is also at its highest in months.') : tt('Double baisse : le marché de ce joueur, toutes ses cartes ensemble, est aussi à son plus bas depuis des mois.', 'Double drop: this player’s market, all his cards together, is also at its lowest in months.')}</p>` : ''}<p class="sous fso-n">${UNE ? tt('Mesuré sur nos ventes de cette carte exacte (même saison ; les gradées 9 et plus à part), chaque vente comptée une fois. Chiffre prudent : moins il y a de ventes, plus il est ramené vers zéro. Chaque point : la médiane des 3 dernières semaines. Refait aux 3 jours. Un fait, pas une promesse.', 'Measured on our sales of this exact card (same season; graded 9 and up apart), each sale counted once. A cautious figure: the fewer the sales, the more it is pulled toward zero. Each point: the median of the last 3 weeks. Redone every 3 days. A fact, not a promise.') : tt('Mesuré sur nos ventes, chaque carte comparée à elle-même. D’un joueur à l’autre, la même sorte peut aller dans l’autre sens. Refait aux 3 jours.', 'Measured on our sales, each card compared with itself. From one player to the next, the same type can go the other way. Redone every 3 days.')}</p></div>`); }
+document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-td]'); if (!b) return;
+  e.preventDefault(); e.stopPropagation(); vibrer(); feuilleSorte(TD[b.dataset.td]); }, true);
 const badgeSlab = (txt, ton, ic, attrs) => `<${attrs ? 'button' : 'span'} class="sd-b b-${esc(ton || '')}" ${attrs || ''}><svg viewBox="0 0 24 24" aria-hidden="true">${IC_BADGE[ic] || IC_BADGE.etoile}</svg><span>${esc(txt)}</span></${attrs ? 'button' : 'span'}>`;
 function pastillesCS(x, est){
-  const c = x.culte, se = x.series; if (!c && !se) return est && est.includes('sd-b') ? `<span class="sd-cs">${est}</span>` : est || '';
-  return `<span class="sd-cs">${est || ''}${c ? badgeSlab(c.cle ? tt('Clé', 'Key') : tt('Culte', 'Iconic'), c.cle ? 'cle' : 'culte', c.cle ? 'etoile' : 'gemme', `data-cu="${esc(c.set)}" data-cu-cle="${c.cle ? 1 : ''}"`) : ''}${se ? badgeSlab(se.p + ' %', se.ton, 'trophee', `data-se="${esc(JSON.stringify(se))}"`) : ''}</span>`;
+  const c = x.culte, se = x.series, td = badgeTend(x); if (!c && !se && !td) return est && est.includes('sd-b') ? `<span class="sd-cs">${est}</span>` : est || '';
+  return `<span class="sd-cs">${est || ''}${td}${c ? badgeSlab(c.cle ? tt('Clé', 'Key') : tt('Culte', 'Iconic'), c.cle ? 'cle' : 'culte', c.cle ? 'etoile' : 'gemme', `data-cu="${esc(c.set)}" data-cu-cle="${c.cle ? 1 : ''}"`) : ''}${se ? badgeSlab(se.p + ' %', se.ton, 'trophee', `data-se="${esc(JSON.stringify(se))}"`) : ''}</span>`;
 }
 // 25 nov 2026 (Mathieu : « quand tu cliques sur la pastille t'as l'explication ; inspire-toi d'Apple iOS pour le pop-up de la
 // notif ») : UNE seule fenetre pour toutes les pastilles d'une annonce : une notification a la iOS (verre depoli, l'icone a
@@ -12931,7 +13035,7 @@ const attrsAnnonce = (x) => x && x.item_id ? `data-annonce="${esc(x.item_id)}" d
 document.addEventListener('click', (e) => {
   const a = e.target.closest('[data-annonce]'); if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
   if (a.dataset.glisse) { e.preventDefault(); e.stopPropagation(); return; }      // 31 oct : un glissement n'ouvre pas la fiche
-  if (e.target.closest('[data-masquer], [data-refus], [data-bonne], [data-comps], [data-pasdeal], [data-watch], [data-wmax], [data-wmiser], [data-sc], [data-cu], [data-se], [data-np], .w-go, .x')) return;
+  if (e.target.closest('[data-masquer], [data-refus], [data-bonne], [data-comps], [data-pasdeal], [data-watch], [data-wmax], [data-wmiser], [data-sc], [data-cu], [data-se], [data-td], [data-np], .w-go, .x')) return;
   e.preventDefault(); e.stopPropagation();
   S.fenOrigine = a.getBoundingClientRect();          // 29 oct : la fiche s'ouvre depuis l'annonce touchee
   ouvrirAnnonce({item_id:a.dataset.annonce, titre:a.dataset.titre, photo:a.dataset.photo, total:nb(a.dataset.total), url:a.dataset.url, q:a.dataset.q || null});
@@ -13098,6 +13202,7 @@ function feuilleSignalerIQ(x){
       $$(`[data-annonce="${CSS.escape(String(x.item_id || ''))}"]`).forEach(t => { const w = t.closest('.sr-w') || t; w.remove(); });
       if (S.mdTous) S.mdTous.delete(x.item_id); } else toast(tt('Pas envoyé, réessaie', 'Not sent, try again')); };
 }
+const tendSorteDe = (base, sp) => (base && base.tend) || ((S.mdTous && base && S.mdTous.get(String(base.item_id))) || {}).tend || ((S.dealsParId || {})[String(base && base.item_id)] || {}).tend || (sp && sp.tend) || null;
 async function ouvrirAnnonce(base){
   S.fenBaseId = base && base.item_id;
   if (base && S.autresParId && S.autresParId[base.item_id]) Object.assign(base, S.autresParId[base.item_id]);   // 16 nov 2026 : les autres annonces de la meme carte
@@ -13175,7 +13280,7 @@ async function ouvrirAnnonce(base){
           <div class="fb-t fb-pay"><span class="fb-k">${encan ? tt('Mise max', 'Max bid') : tt('Paie max', 'Pay max')}</span><b>${maxA != null && !tropPetite ? argent(maxA, 0) : '—'}</b></div>
           <div class="fb-t fb-g"><span class="fb-k">${tt('Profit', 'Profit')}</span>${gainAff != null ? `<b class="${gainAff > 0 ? 'pos' : 'neg'}">${gainAff > 0 ? '+' : '−'}${argent(Math.abs(gainAff), 0)}</b>` : d.chargement || d.ventes_attente ? `<b><span class="roue"></span></b>` : `<b>—</b>`}</div></div></div>
       <div class="fb-nom">${nomJ ? `<b>${esc(nomJ)}</b>` : ''}<span>${esc(a.titre || base.titre || '')}</span></div>
-      <div class="fb-dr">${faVerdict(a, encan, depasse)}
+      <div class="fb-dr">${faVerdict(a, encan, depasse)}${bandeTend(tendSorteDe(base, scoreP))}
       ${(() => { const l = ligneIQ(base.item_id); return l ? `<details class="fa-pq"><summary>${tt('Pourquoi SlabIQ dit ça', 'Why SlabIQ says this')}</summary>${l}</details>` : ''; })()}
       ${d.pas_deal_ventes ? `<div class="fa-pils"><span class="capsule rouge" style="white-space:normal; line-height:1.3">${tt('Pas un deal : les ventes de cette carte sont bien plus basses que la valeur trouvée par le Radar', 'Not a deal: this card’s sales are far lower than the value the Radar found')}</span></div>` : ''}
       ${depasse || budget || suspect ? `<div class="fa-al ${depasse || budget ? 'rouge' : 'or'}"><i>!</i><span>${[suspect ? tt('Prix très bas : vérifie que c’est la même carte', 'Very low price: check it’s the same card') : '', depasse ? esc(vt[1]) : '', depasse && d.deal_retire ? tt('retiré de tes deals', 'removed from your deals') : '', budget ? (S.budget.reste <= 0 ? tt('budget du mois atteint', 'monthly budget reached') : tt('au-dessus de ton budget', 'over your budget')) : ''].filter(Boolean).join(' · ')}</span></div>` : ''}
@@ -13296,6 +13401,7 @@ async function ouvrirAnnonce(base){
           <div class="fb-t fb-pay"><span class="fb-k">${tt('Tu paies', 'You pay')}</span><b>${reel ? argent(reel, 0) : '—'}</b></div></div></div>
       <div class="fb-nom">${nomJ ? `<b>${esc(nomJ)}</b>` : ''}<span>${esc(ligneC)}</span></div>
       ${pils.length ? `<div class="pastilles fa-pils2">${pils.slice(0, 2).join('')}</div>` : ''}
+      ${bandeTend(tendSorteDe(base, sp))}
       ${bandeauVerifier(base.item_id)}
       ${proChips(a)}
       ${''/* 20 nov 2026 (Mathieu : « Wrong grade juste en dessous des deux tuiles, un petit onglet en rouge pale ») */}
@@ -15007,12 +15113,17 @@ async function vueTendancesIQ(arg){
   // la liste complete reste a « Voir les N › »
   function ajusterTiq(z) { if (!z || !z.isConnected) return;
     const R = [...z.querySelectorAll('.tiq-av .tiq-m, .tiq-av .tiq-b')], note = $('.tiq-note', z);
-    R.forEach(x => x.style.display = ''); if (note) note.style.display = '';
+    R.forEach(x => x.style.display = ''); if (note) note.style.display = ''; z.classList.remove('tiq-serre'); const ec_ = z.closest('.ecran'); if (ec_) ec_.classList.remove('tiq-court');
     if (innerWidth >= 1100) return;
     const deb = () => document.documentElement.scrollHeight - innerHeight > 1;
     let vis = R.filter(x => x.offsetParent);
     while (deb() && vis.length > 3) { vis.pop().style.display = 'none'; }
-    if (deb() && note) note.style.display = 'none'; }
+    if (deb() && note) note.style.display = 'none';
+    // 25 nov 2026 : avec le choix Joueurs | Sortes, un petit ecran (iPhone SE) deborde encore : la phrase sous le titre part, puis une rangee
+    if (deb()) z.classList.add('tiq-serre');
+    if (deb() && ec_) ec_.classList.add('tiq-court');
+    vis = R.filter(x => x.offsetParent);
+    while (deb() && vis.length > 2) { vis.pop().style.display = 'none'; } }
   if (!window.__tiqFit) { window.__tiqFit = 1; let t; addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => ajusterTiq($('#tiq-z')), 150); }); }
   requestAnimationFrame(() => setTimeout(() => ajusterTiq($('#tiq-z')), 400));
   let ouvert = false;                         // 16 nov 2026 : 12 joueurs, puis « Voir les N › »
@@ -15033,9 +15144,41 @@ async function vueTendancesIQ(arg){
       // 22 nov 2026 (Mathieu : « pas les trois tableaux un apres l'autre ; un menu en haut comme l'inventaire ; un tableau par page ») :
       // au cell, une rangee de choix (Au plus bas, A vendre, Joueurs, Cartes) et UNE liste a la fois ; a l'ordi (1100 px+), rien ne change
       // 4 choix sur une rangee, sans defiler de cote : au cell, « Plus bas » et « Plus haut » (le titre complet est dans la liste)
+      // 25 nov 2026 (Mathieu, capture des listes Au plus bas / Au plus haut : « comme ca mais avec les sortes / paralleles ») :
+      // en haut, Joueurs | Cartes ; les cartes : En hausse, En baisse (un joueur + une sorte : « Jacob Fowler · Young Guns »),
+      // Par sorte (tous joueurs) ; un indice et un %, jamais un prix
+      const SO = r.sortes && ((r.sortes.hausses || []).length + (r.sortes.baisses || []).length + (r.sortes.toutes || []).length) ? r.sortes : null;
+      const modeT = SO && S.tiqMode === 'sortes' ? 'sortes' : 'joueurs';
+      const modeH = SO ? `<div class="tiq-mode" id="tiq-mode" role="tablist">${[['joueurs', tt('Joueurs', 'Players')], ['sortes', tt('Cartes', 'Cards')]].map(([k, n]) => `<button role="tab" class="${modeT === k ? 'on' : ''}" data-tmode="${k}" aria-selected="${modeT === k}">${n}</button>`).join('')}</div>` : '';
+      const brMode = () => $$('[data-tmode]', z).forEach(b => b.onclick = () => { if (modeT === b.dataset.tmode) return; vibrer(); S.tiqMode = b.dataset.tmode; peindre(); });
+      if (modeT === 'sortes') {
+        const nb = (n) => Number(n || 0).toLocaleString(tt('fr-CA', 'en-CA'));
+        const H_ = SO.hausses || [], B_ = SO.baisses || [], T_ = SO.toutes || [], jr = SO.jours || [30, 60];
+        // 25 nov 2026 (Mathieu : « le type de carte en hausse jumele au joueur en hausse ») : la carte monte ET le marche du joueur
+        // est dans « Au plus haut » : « Double hausse » (deux faits mesures cote a cote ; aucune promesse pour la suite)
+        const nomsDe = (k) => new Set((r.cats[k] || []).map(y => String(y.nom || '').toLowerCase()).filter(Boolean)), nH = nomsDe('haut'), nB = nomsDe('bas');
+        const dbl = (x) => { const j = String(x.joueur || '').toLowerCase(), k = tdSens(x); return !j ? '' : k === 'h' && nH.has(j) ? 'h' : k === 'b' && nB.has(j) ? 'b' : ''; };
+        const ligneS = (x, rg) => x.verrou ? `<button class="tiq-m tiq-ver" data-pro-lock="tendances" aria-label="${esc(tt('Réservé au Pro', 'Pro only'))}"><i class="tiq-rg">${rg}</i><span class="tiq-mn"><b class="tiq-flou" aria-hidden="true">${'Joueur de hockey'.slice(0, 9 + (rg * 3) % 8)}</b><small><span class="tiq-cad">${icN('cadenas')}</span>${tt('Réservé au Pro', 'Pro only')}</small></span>${sparkTD(x)}${pcTD(x)}</button>`
+          : (tdNoter(x), x.double = dbl(x), `<button class="tiq-m" data-sorte="${esc(x.cle)}">${rg ? `<i class="tiq-rg">${rg}</i>` : ''}<span class="tiq-mn"><b>${esc(x.joueur || x.nom)}</b><small>${x.double ? `<em class="tiq-dbl ${x.double}">${x.double === 'h' ? tt('Double hausse', 'Double rise') : tt('Double baisse', 'Double drop')}</em> · ${esc(x.nom + (x.saison ? ' ' + x.saison : ''))}` : x.joueur ? esc(x.nom + (x.saison ? ' ' + x.saison : '')) + ' · ' + nb(x.n) + ' ' + tt('ventes', 'sales') : nb(x.n) + ' ' + tt('ventes', 'sales') + ' · ' + nb(x.n_cartes) + ' ' + tt('cartes', 'cards')}</small></span>${sparkTD(x)}${pcTD(x)}</button>`);
+        const panS = (k, titre, L, phrase, vide) => `<div class="tiq-g tiq-pan ${k}"><div class="am-t tiq-gt">${titre}<em class="tiq-pn">${L.length}</em></div><p class="tiq-ps">${phrase}</p>
+          <div class="tiq-lm">${L.length ? L.map((x, i) => ligneS(x, k === 'toutes' ? 0 : i + 1)).join('') : `<div class="sous tiq-vide">${vide}</div>`}</div>
+          <div class="tiq-pf">${L.length > 3 && !L.some(x => x.verrou) ? `<button class="tiq-pl2 tiq-tous" data-sortes-liste="${k}">${tt(`Voir les ${L.length}`, `See all ${L.length}`)} ›</button>` : ''}${L.some(x => x.verrou) ? `<button class="tiq-pl2 tiq-deb" data-pro-lock="tendances">${icN('cadenas')}${tt(`Débloquer les ${L.filter(x => x.verrou).length} premières`, `Unlock the top ${L.filter(x => x.verrou).length}`)} ›</button>` : ''}</div></div>`;
+        const OPT = [['bas', tt('En hausse', 'Rising')], ['vendre', tt('En baisse', 'Falling')], ...(T_.length ? [['toutes', tt('Par sorte', 'By type')]] : [])];
+        const ong = (OPT.find(o => o[0] === S.tiqOngletS) || OPT[0])[0];
+        z.innerHTML = `${modeH}<div class="chips tiq-seg" id="tiq-seg">${OPT.map(([k, n]) => `<button class="chip ${ong === k ? 'on' : ''}" data-v="${k}">${n}</button>`).join('')}</div>
+          <div class="tiq-av tiq-so ${T_.length ? 'tiq-c3' : 'tiq-c2'}" data-on="${ong}">${panS('bas', tt('Cartes en hausse', 'Rising cards'), H_, tt('La carte d’un joueur, comparée à elle-même : plus cher depuis 30 jours. Un fait, pas une promesse.', 'One player’s card, compared with itself: higher for 30 days. A fact, not a promise.'), tt('Aucune hausse confirmée cette fois.', 'No confirmed rise this time.'))}${panS('vendre', tt('Cartes en baisse', 'Falling cards'), B_, tt('La carte d’un joueur, comparée à elle-même : moins cher depuis 30 jours. Un fait, pas une promesse.', 'One player’s card, compared with itself: lower for 30 days. A fact, not a promise.'), tt('Aucune baisse confirmée cette fois.', 'No confirmed drop this time.'))}${T_.length ? panS('toutes', tt('Par sorte, tous joueurs', 'By card type, all players'), T_, tt('La moyenne de tous les joueurs. Un tiret : pas de mouvement clair.', 'The average across all players. A dash: no clear move.'), '') : ''}</div>
+          <div class="sous tiq-note">${tt(`${nb(SO.n_cartes)} cartes et ${nb(SO.n_sortes)} sortes mesurées sur ${nb(SO.n_ventes)} ventes : les ${jr[0]} derniers jours contre les ${jr[1]} d’avant. Refait aux 3 jours.`, `${nb(SO.n_cartes)} cards and ${nb(SO.n_sortes)} card types measured on ${nb(SO.n_ventes)} sales: the last ${jr[0]} days against the ${jr[1]} before. Redone every 3 days.`)}${SO.le ? ' · ' + tt('mis à jour ', 'updated ') + esc(ilYa(SO.le)) : ''}</div>`;
+        $$('#tiq-seg button', z).forEach(b => b.onclick = () => { vibrer(); S.tiqOngletS = b.dataset.v; $$('#tiq-seg button', z).forEach(x => x.classList.toggle('on', x === b)); const av = $('.tiq-av', z); if (av) av.dataset.on = b.dataset.v; ajusterTiq(z); });
+        const brS = (zone) => $$('[data-sorte]', zone).forEach(b => b.onclick = () => { vibrer(); feuilleSorte(TD[b.dataset.sorte]); });
+        brS(z);
+        $$('[data-sortes-liste]', z).forEach(b => b.onclick = () => { vibrer(); const k = b.dataset.sortesListe, L = k === 'bas' ? H_ : k === 'vendre' ? B_ : T_;
+          ouvrirFeuille(`<h3>${k === 'bas' ? tt('Cartes en hausse', 'Rising cards') : k === 'vendre' ? tt('Cartes en baisse', 'Falling cards') : tt('Par sorte, tous joueurs', 'By card type, all players')}<em class="tiq-pn">${L.length}</em></h3><div class="tiq-lm tiq-ltt">${L.map((x, i) => ligneS(x, k === 'toutes' ? 0 : i + 1)).join('')}</div>`); brS($('#feuille')); });
+        brMode(); ajusterTiq(z);
+        return;
+      }
       const OPT = [['bas', aH ? tt('Plus bas', 'Lowest') : tt('Au plus bas', 'Lowest'), aB], ['vendre', aH ? tt('Plus haut', 'Highest') : tt('À vendre', 'To sell'), aV || aH], ['joueurs', tt('Joueurs', 'Players'), top10.length > 0], ['cartes', tt('Cartes', 'Cards'), (r.familles || []).length > 0]].filter(o => o[2]);
       const ong = (OPT.find(o => o[0] === S.tiqOnglet) || OPT[0] || ['bas'])[0];
-      z.innerHTML = `${OPT.length > 1 ? `<div class="chips tiq-seg" id="tiq-seg">${OPT.map(([k, n]) => `<button class="chip ${ong === k ? 'on' : ''}" data-v="${k}">${n}</button>`).join('')}</div>` : ''}
+      z.innerHTML = `${modeH}${OPT.length > 1 ? `<div class="chips tiq-seg" id="tiq-seg">${OPT.map(([k, n]) => `<button class="chip ${ong === k ? 'on' : ''}" data-v="${k}">${n}</button>`).join('')}</div>` : ''}
         <div class="tiq-av${aB && (aV || aH) ? '' : aB || aV || aH ? ' tiq-c3' : ' tiq-c2'}" data-on="${ong}">${pan('bas', tt('Au plus bas', 'At their lowest'))}${aH ? pan('haut', tt('Au plus haut', 'At their highest'), 'vendre haut') : pan('vendre', tt('À vendre', 'To sell'))}<div class="tiq-col">${blocs2}</div></div>
         <div class="tiq-kr tiq-kr2">${['en_feu', 'rebond', 'recrue'].map(k => (r.compte[k] || 0) ? `<button class="tiq-kp" data-tl="${k}"><b class="${k === 'rebond' ? 'vert' : k === 'recrue' ? 'or' : 'rouge'}">${r.compte[k]}</b><span>${k === 'en_feu' ? tt('en feu', 'on fire') : k === 'rebond' ? tt('sortent du creux', 'bouncing back') : tt('recrues', 'rookies')}</span></button>` : '').join('')}${autres.length ? `<button class="tiq-kp" id="tiq-autres"><span>${tt('Plus de listes', 'More lists')} ›</span></button>` : ''}</div>${note}`;
       $$('#tiq-seg button', z).forEach(b => b.onclick = () => { vibrer(); S.tiqOnglet = b.dataset.v; $$('#tiq-seg button', z).forEach(x => x.classList.toggle('on', x === b)); const av = $('.tiq-av', z); if (av) av.dataset.on = b.dataset.v; ajusterTiq(z); });
@@ -15046,7 +15189,7 @@ async function vueTendancesIQ(arg){
       const au = $('#tiq-autres', z); if (au) au.onclick = () => { vibrer();
         ouvrirFeuille(`<h3>${tt('Quelle liste ?', 'Which list?')}</h3><div class="tiq-menu">${autres.map(([k, n]) => `<button class="tiq-mi" data-tm="${k}"><span><b>${n}</b><small>${DESC_IQ()[k] || ''}</small></span><em>${(r.cats[k] || []).length}</em></button>`).join('')}</div>`);
         $$('#feuille [data-tm]').forEach(b => b.onclick = () => { vibrer(); const k = b.dataset.tm; fermerFeuille(); setTimeout(() => feuilleListe(k), 220); }); };
-      remplirPortraits(z); ajusterTiq(z);
+      brMode(); remplirPortraits(z); ajusterTiq(z);
       if (arg && !['acheter', 'vendre'].includes(arg) && (r.cats[arg] || []).length && !S.tiqArgVu) { S.tiqArgVu = 1; setTimeout(() => { feuilleListe(arg); S.tiqArgVu = 0; }, 150); }
       return;
     }
@@ -22238,8 +22381,13 @@ const _SC = {};
 async function pourquoiScore(x){
   if (!x) return;
   const qual = (n) => n >= 80 ? tt('Très recherchée', 'Highly sought') : n >= 65 ? tt('Recherchée', 'Sought after') : n >= 50 ? tt('Correcte', 'Decent') : tt('Peu recherchée', 'Low demand');
-  ouvrirFeuille(`<div class="ps"><div class="ps-n ${couleurScore(x.score)}"><b>${lettre(x.score)}</b><span>${qual(x.score)}<small>Score SlabIQ${S.forfait && S.forfait.admin ? ' · ' + Math.round(x.score) + '/100' : ''}</small></span></div><div id="ps-ra"></div><div id="ps-l"><span class="roue"></span></div>
-    <button class="lien-doux" id="ps-iq">${tt('Comment SlabIQ fonctionne', 'How SlabIQ works')} ›</button></div>`);
+  // 25 nov 2026 (Mathieu, a l'ordi : « devrait tout fitter sur une page sans scroll ; couleur fade, manque de vie ») : la couleur
+  // dit la note (A vert, B bleu-lilas, C or, D orange, E rouge), la lettre dans une pastille pleine, une barre de niveau au bas de
+  // chaque tuile ; a l'ordi deux colonnes (les notes | le reste) ; ajusterPS() resserre tant que la fenetre deborde
+  const nL = (l) => ({A: 'na', B: 'nb', C: 'nc', D: 'nd', E: 'ne'})[String(l || '')[0]] || 'nx';
+  ouvrirFeuille(`<div class="ps ps2"><div class="ps-g"><div class="ps-n ${nL(lettre(x.score))}"><b>${lettre(x.score)}</b><span>${qual(x.score)}<small>Score SlabIQ${S.forfait && S.forfait.admin && x.score != null ? ' · ' + Math.round(x.score) + '/100' : ''}</small></span></div><div id="ps-ra"></div><div id="ps-tu"></div></div>
+    <div class="ps-d"><div id="ps-td"></div><div id="ps-l"><span class="roue"></span></div>
+    <button class="lien-doux" id="ps-iq">${tt('Comment SlabIQ fonctionne', 'How SlabIQ works')} ›</button></div></div>`);
   $('#ps-iq').onclick = () => { fermerFeuille(); setTimeout(expliquerSlabIQ, 200); };
   const cle = (x.titre || '') + '|' + (x.joueur || '');
   const sp = _SC[cle] || (_SC[cle] = await API.annonce_score(x.titre, x.joueur).catch(() => null));
@@ -22266,7 +22414,8 @@ async function pourquoiScore(x){
   // 16 nov 2026 (le bareme ecrit avec l'expert) : une tuile peut recevoir directement sa lettre (« C+ » n'existe que pour un joueur)
   const NL_ = {'A+': 95, 'A': 88, 'A-': 82, 'B+': 76, 'B': 68, 'B-': 64, 'C+': 61, 'C': 55, 'D': 40, 'E': 25};
   const tuileB = (icone, lib, note, mot, cls) => { const ls = typeof note === 'string', n = ls ? NL_[note] : note;
-    T_.push(`<div class="psb ${cls || ''}"><span class="psb-h">${ic2(icone)}<span>${lib}</span></span><b class="${n != null ? couleurScore(n) : ''}">${n != null ? (ls ? note : lettre(n)) : '—'}</b><small>${mot || '&nbsp;'}</small></div>`); };
+    const lt = n != null ? (ls ? note : lettre(n)) : '—';
+    T_.push(`<div class="pst ${nL(n != null ? lt : '')} ${cls || ''}" style="--p:${n != null ? Math.max(10, Math.min(100, Math.round(n))) : 0}%"><span class="pst-t"><span class="pst-h">${ic2(icone)}<span>${lib}</span></span><small>${mot || '&nbsp;'}</small></span><b>${lt}</b><i class="pst-b" aria-hidden="true"></i></div>`); };
   const BQ = (sp && sp.bareme) || null;
   const SORTE_MOT = {yg10: tt('Young Guns gradée 10', 'Graded 10 Young Guns'), yg_variante: tt('variante Young Guns', 'Young Guns variant'), yg: 'Young Guns',
     cup_rpa: 'The Cup RPA', premier_rpa: 'Premier RPA', fw_auto: 'Future Watch Auto', case_hit: 'Case hit', ice_premieres: 'Ice Premieres',
@@ -22315,7 +22464,9 @@ async function pourquoiScore(x){
   tuileB('<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>', tt('Le marché', 'The market'), ri0 === 'marche_bas' || ri0 === 'flip' ? 90 : ri0 === 'chaud' ? 85 : null,
     ri0 === 'marche_bas' ? tt('sous sa normale', 'below normal') : ri0 === 'chaud' ? tt('chaud en ce moment', 'hot right now') : ri0 === 'flip' ? tt('sous le prix des ventes', 'under recent sales') : tt('normal', 'normal'));
   tuileB('<path d="M12 2l3 6 6 1-4.5 4 1 6-5.5-3-5.5 3 1-6L3 9l6-1z"/>', tt('Evergreen', 'Evergreen'), sp && sp.evergreen ? sp.evergreen.score : null, sp && sp.evergreen ? tt('valeur qui dure', 'lasting value') : tt('pas encore', 'not yet'));
-  const zB = $('#ps-ra'); if (zB) zB.insertAdjacentHTML('afterend', `<div class="psb-g">${T_.join('')}</div>`);
+  const zB = $('#ps-tu'); if (zB) zB.innerHTML = `<div class="psg">${T_.join('')}</div>`;
+  // 25 nov 2026 : la tendance de SA sorte de carte (un indice et un %, jamais un prix) ; un toucher : le graphique complet
+  { const zt = $('#ps-td'); if (zt) zt.innerHTML = bandeTend(x.tend || (sp && sp.tend)); }
   // 11 nov 2026 : ce que le hobby sait de cette carte (le guide des annees 90 appris par SlabIQ)
   if (sp && sp.connaissance) R.push(['legende', {graal: tt('Carte mythique', 'Legendary card'), chasse: tt('Très chassée', 'Heavily chased'), cle: tt('Recrue clé', 'Key rookie')}[sp.connaissance.niveau] || 'SlabIQ', esc(tt(sp.connaissance.raison, sp.connaissance.raison_en))]);
   // le joueur
@@ -22343,15 +22494,21 @@ async function pourquoiScore(x){
     + (x.titre && S.forfait && (S.forfait.pro || S.forfait.admin) ? `<div class="ps-h" id="ps-h"><div class="ps-h-t">${tt('L’histoire de la carte', 'The card’s story')}</div><div class="ps-h-c"><span class="roue"></span> ${tt('SlabIQ cherche ce qui rend cette carte spéciale…', 'SlabIQ is looking up what makes this card special…')}</div></div>` : '');
   // 13 nov 2026 (Mathieu : « quand tu cliques sur le score : pourquoi cette carte-la est interessante ; surtout les annees 90,
   // debut 2000 ») : l'histoire de la carte (recherche web une fois par carte, gardee pour tous), sous le pourquoi du score
+  ajusterPS();
   if (!$('#ps-h')) return;
+  $('#ps-h').onclick = (e) => { if (e.target.closest('a')) return; $('#ps-h').classList.toggle('ouv'); };
   const hk = 'h|' + cle, hr = _SC[hk] || (_SC[hk] = await API.carte_histoire(x.titre, (sp && sp.joueur) || x.joueur).catch(() => null));
   const hz = $('#ps-h'); if (!hz) return;
   const h = hr && hr.histoire;
   if (!h) { const rien = hr && hr.raison === 'rien'; if (!rien) delete _SC[hk];
-    if (!rien && !(hr && hr.raison === 'budget')) { hz.remove(); return; }          // pas de cle, panne : rien a montrer
+    if (!rien && !(hr && hr.raison === 'budget')) { hz.remove(); ajusterPS(); return; }          // pas de cle, panne : rien a montrer
     hz.querySelector('.ps-h-c').innerHTML = `<span class="sous">${rien ? tt('Rien de particulier trouvé sur cette carte.', 'Nothing special found about this card.') : tt('Revient demain : SlabIQ a raconté assez de cartes aujourd’hui.', 'Back tomorrow: SlabIQ told enough card stories today.')}</span>`; return; }
   hz.querySelector('.ps-h-c').innerHTML = `<p>${esc(tt(h.fr, h.en))}</p>${(h.sources || []).length ? `<div class="ps-h-s">${h.sources.map(u => `<a href="${esc(u.url)}" target="_blank" rel="noopener">${esc(u.titre)}</a>`).join(' · ')}</div>` : ''}`;
+  ajusterPS();
 }
+function ajusterPS(){ const fe = $('#feuille'), p = fe && fe.querySelector('.ps2'); if (!p) return; p.classList.remove('s1', 's2', 's3');
+  for (const c of ['s1', 's2', 's3']) { if (fe.scrollHeight <= fe.clientHeight + 1) break; p.classList.add(c); } }
+addEventListener('resize', () => { clearTimeout(ajusterPS.t); ajusterPS.t = setTimeout(ajusterPS, 150); });
 document.addEventListener('click', (e) => { const b = e.target.closest('[data-sc]'); if (!b) return; e.preventDefault(); e.stopPropagation(); vibrer();
   const id = b.dataset.sc, x = (S.mdTous && S.mdTous.get(id)) || null; pourquoiScore(x || {score: +(b.querySelector('b') || {}).textContent, titre: (b.closest('[data-titre]') || {dataset: {}}).dataset.titre}); }, true);
 // 11 nov 2026 (Mathieu : « admin seulement : le cout d'acquisition avec les ventes ») : le serveur n'envoie admin_vendu qu'a

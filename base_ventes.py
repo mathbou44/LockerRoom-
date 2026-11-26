@@ -404,7 +404,14 @@ def statut():
 NOUVELLES_MAX = 15000            # 3 nov 2026 : ventes nouvelles triees par passe (le reste a la passe suivante)
 
 
-def cartes_toutes(jours=42, n_min=4, max_q=12000):
+# 25 nov 2026 (tendance_sortes ; Mathieu : « on n'a pas le droit a l'erreur ») : detail=True ajoute a chaque carte sa recherche
+# (« q ») et, pour chaque vente gardee, [date, prix, numero de la vente, saison lue dans le titre] : la meme vente rangee sous
+# deux recherches n'est alors comptee qu'une fois, et deux saisons ne sont jamais melangees. A_TRIER : le nombre de ventes de la
+# fenetre que la derniere passe n'a pas eu le temps de trier (NOUVELLES_MAX) : tant qu'il en reste, la mesure n'est pas complete.
+A_TRIER = {"n": 0}
+
+
+def cartes_toutes(jours=42, n_min=4, max_q=12000, detail=False):
     import cartes_match
     import time as _t
     auj = datetime.now()
@@ -422,11 +429,13 @@ def cartes_toutes(jours=42, n_min=4, max_q=12000):
             for q, cle, titre, prix, le, ok in c.execute("SELECT v.q, v.cle, v.titre, v.prix, v.le, a.ok FROM ventes v LEFT JOIN accepte a "
                                                          "ON a.q = v.q AND a.cle = v.cle WHERE v.le >= ?", (d0,)):
                 par_q.setdefault(q, []).append((titre, prix, le, cle, ok))
+            # detail : quand chaque recherche a ete lue la derniere fois (noter() date chaque vente qu'une lecture ramene)
+            lu_le = dict(c.execute("SELECT q, MAX(vu_le) FROM ventes WHERE le >= ? GROUP BY q", (d0,))) if detail else {}
         finally:
             c.close()
     except sqlite3.Error:
         return []
-    nouveaux, budget = [], [NOUVELLES_MAX]
+    nouveaux, budget, a_trier = [], [NOUVELLES_MAX], [0]
     an_rec = None
     try:
         import deals
@@ -441,16 +450,18 @@ def cartes_toutes(jours=42, n_min=4, max_q=12000):
         try:
             p = plan.get(q)
             cib = cartes_match.cible(p[0] if p else q)
-            l = []
+            l, lk = [], []
             for t, pr, le, cle, ok in par_q[q]:
                 if ok is None:
                     if budget[0] <= 0:
+                        a_trier[0] += 1
                         continue                         # triee a la prochaine passe
                     budget[0] -= 1
                     ok = 0 if cartes_match.raisons_refus(cib, t or "") else 1
                     nouveaux.append((q, cle, ok))
                 if ok:
                     l.append((t, pr, le))
+                    lk.append(cle)
             if len(l) < n_min:
                 continue
             if p:
@@ -474,8 +485,14 @@ def cartes_toutes(jours=42, n_min=4, max_q=12000):
                 sp = sports.detecter(" ".join(str(t2 or "") for t2, _p, _l in l[:8]), q, defaut="hockey")
             except Exception:
                 sp = None
-            out.append({"joueur": j, "carte": carte, "produit_id": pid, "recrue": rec, "annee": an, "sport": sp,
-                        "points": [[le, pr] for _t2, pr, le in l]})
+            e = {"joueur": j, "carte": carte, "produit_id": pid, "recrue": rec, "annee": an, "sport": sp,
+                 "points": [[le, pr] for _t2, pr, le in l]}
+            if detail:
+                e["q"] = q
+                e["lu_le"] = lu_le.get(q)
+                import tendance_sortes as _ts
+                e["ventes"] = [[le, pr, k, an_] for (t2, pr, le), k in zip(l, lk) for an_ in (_ts.vente_detail(t2, q),) if an_ is not False]
+            out.append(e)
         except Exception:
             continue
     if nouveaux:
@@ -489,6 +506,7 @@ def cartes_toutes(jours=42, n_min=4, max_q=12000):
                     c.close()
         except sqlite3.Error:
             pass
+    A_TRIER["n"] = a_trier[0]
     return out
 
 
