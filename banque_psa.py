@@ -31,6 +31,7 @@ import threading
 import time
 import unicodedata
 import urllib.error
+import uuid
 from datetime import datetime, timedelta, timezone
 
 JOURS = 120                          # « 3 derniers mois, ou plus » : 4 mois
@@ -46,8 +47,10 @@ ARCHIVE_MIN = 20                     # la recherche raw est deja dans nos archiv
 ARCHIVE_FRAIS_J = 10                 # ... dont une de 10 jours ou moins
 REFUS_SUITE_MAX = 8
 PAUSE_S = 0.3
+VIVANTE_S = 180                      # un battement de moins de 3 minutes : une collecte tourne (dans ce processus ou un autre)
 _verrou = threading.Lock()
 ETAT = {"en_cours": False}
+_MIGRE = {"fait": False}
 
 
 def _chemin():
@@ -63,6 +66,12 @@ def _cx():
     c.execute("CREATE INDEX IF NOT EXISTS ventes_joueur ON ventes (joueur)")
     c.execute("CREATE TABLE IF NOT EXISTS collecte (id INTEGER PRIMARY KEY CHECK (id = 1), statut TEXT, plafond INTEGER, credits INTEGER,"
               " debut REAL, battement REAL, texte TEXT, erreur TEXT, raw_planifie INTEGER DEFAULT 0)")
+    if not _MIGRE["fait"]:                                    # la base du 26 nov, 13 h 27, n'a pas la colonne du jeton
+        try:
+            c.execute("ALTER TABLE collecte ADD COLUMN jeton TEXT")
+        except sqlite3.OperationalError:
+            pass
+        _MIGRE["fait"] = True
     return c
 
 
@@ -70,12 +79,23 @@ def _run():
     try:
         c = _cx()
         try:
-            r = c.execute("SELECT statut, plafond, credits, debut, battement, texte, erreur, raw_planifie FROM collecte WHERE id=1").fetchone()
+            r = c.execute("SELECT statut, plafond, credits, debut, battement, texte, erreur, raw_planifie, jeton FROM collecte WHERE id=1").fetchone()
         finally:
             c.close()
     except sqlite3.Error:
         r = None
-    return dict(zip(("statut", "plafond", "credits", "debut", "battement", "texte", "erreur", "raw_planifie"), r)) if r else {}
+    return dict(zip(("statut", "plafond", "credits", "debut", "battement", "texte", "erreur", "raw_planifie", "jeton"), r)) if r else {}
+
+
+# 26 nov 2026, 13 h 28 (journal du serveur, 45 s apres le lancement par Mathieu : « Donnees PSA : reprise (en_cours) ») : la boucle
+# de l'heure a relance une collecte qui venait de partir : le drapeau en memoire (ETAT) ne l'a pas arretee. Deux collectes en meme
+# temps paieraient chaque page deux fois. Deux garde-fous, dans la BASE (vrais meme entre deux processus) :
+#  1. le BATTEMENT : une collecte « en_cours » dont le battement a moins de VIVANTE_S secondes tourne : rien ne la relance ;
+#  2. le JETON : chaque collecte ecrit le sien en partant et le relit avant chaque page ; s'il a change, une autre a pris le
+#     relais : elle s'arrete sans rien toucher. Il n'en reste jamais qu'une.
+def vivante(r=None):
+    r = _run() if r is None else r
+    return r.get("statut") == "en_cours" and time.time() - (r.get("battement") or 0) < VIVANTE_S
 
 
 def _run_maj(**kw):
@@ -188,7 +208,7 @@ def carte_du_titre(titre, joueur, note="10"):
     return q
 
 
-def cartes_psa10(n_min=N10_MIN):
+def cartes_psa10(n_min=N10_MIN, battre=None):
     """Les cartes exactes vues en PSA 10 dans la collecte -> [(recherche raw, joueur, ventes PSA 10)], les plus vendues d'abord."""
     c = _cx()
     try:
@@ -196,7 +216,14 @@ def cartes_psa10(n_min=N10_MIN):
     finally:
         c.close()
     vues = {}
-    for joueur, titre in rows:
+    for i, (joueur, titre) in enumerate(rows):
+        if i % 500 == 499:
+            time.sleep(0.01)                                  # des dizaines de milliers de titres : le serveur respire
+            if battre and i % 5000 == 4999:
+                battre()
+        t = str(titre or "").lower()
+        if "psa" not in t or "10" not in t:
+            continue                                          # ni PSA ni 10 dans le titre : inutile de le decoder
         q = carte_du_titre(titre, joueur)
         if q:
             v = vues.setdefault(q, [joueur, 0])
@@ -219,11 +246,11 @@ def _dans_archives(q, debut):
     return bool(n and n >= ARCHIVE_MIN and dernier and str(dernier)[:10] >= frais)
 
 
-def construire_plan_raw():
+def construire_plan_raw(battre=None):
     """Phase 2 : la recherche raw de chaque carte vue assez souvent en PSA 10. -> nombre de recherches a faire."""
     _run_maj()
     debut, fin = fenetre()
-    cartes = cartes_psa10()[:RAW_MAX]
+    cartes = cartes_psa10(battre=battre)[:RAW_MAX]
     n = 0
     with _verrou:
         c = _cx()
@@ -304,20 +331,22 @@ def _collecter(plafond, arret, pause):
     import vendues
     if not historique.actif():
         return {"ok": False, "erreur": "Clé CompSniper absente (COMPSNIPER_CLE)"}
+    jeton = uuid.uuid4().hex
     with _verrou:
-        if ETAT["en_cours"]:
+        r0 = _run()
+        if ETAT["en_cours"] or vivante(r0):
             deja = True
         else:
             deja = False
             ETAT["en_cours"] = True
     if deja:
         return {**bilan(), "deja": True}
-    r0 = _run()
     plafond = int(plafond or r0.get("plafond") or PLAFOND_DEFAUT)
     if r0.get("statut") in (None, "aucune"):
-        _run_maj(statut="en_cours", plafond=plafond, credits=0, debut=time.time(), battement=time.time(), texte="Le plan", erreur=None)
+        _run_maj(statut="en_cours", plafond=plafond, credits=0, debut=time.time(), battement=time.time(), texte="Le plan", erreur=None, jeton=jeton)
     else:
-        _run_maj(statut="en_cours", plafond=plafond, battement=time.time(), texte="Reprise", erreur=None)
+        _run_maj(statut="en_cours", plafond=plafond, battement=time.time(), texte="Reprise", erreur=None, jeton=jeton)
+    a_moi = lambda: _run().get("jeton") == jeton
     fin_statut = "interrompue"
     try:
         c = _cx()
@@ -337,7 +366,7 @@ def _collecter(plafond, arret, pause):
                 if not _run().get("raw_planifie"):
                     _texte("Phase 2 : les cartes vues en PSA 10")
                     try:
-                        construire_plan_raw()                   # la phase 1 est finie : les versions raw
+                        construire_plan_raw(battre=lambda: _run_maj(battement=time.time()))     # la phase 1 est finie : les versions raw
                     except Exception as e:
                         fin_statut = "erreur"
                         _run_maj(erreur="Phase 2 : " + repr(e)[:120])
@@ -353,6 +382,9 @@ def _collecter(plafond, arret, pause):
                 page = (pages or 0) + 1
                 vus = set()
                 while True:
+                    if not a_moi():                           # une autre collecte a pris le relais : celle-ci s'arrete, sans rien toucher
+                        fin_statut = None
+                        return None
                     if arret and arret():
                         fin_statut = "arretee"
                         _texte("Arrêtée")
@@ -396,7 +428,10 @@ def _collecter(plafond, arret, pause):
                         _plan_maj(q, fini=1, raison=f"refusee (HTTP {refusee})", le=time.time())
                         break
                     historique._compter(False)                # 1 page = 1 credit, compte comme les autres
-                    _run_maj(credits=(_run().get("credits") or 0) + 1, battement=time.time())
+                    cr = (_run().get("credits") or 0) + 1
+                    _run_maj(credits=cr, battement=time.time())
+                    if cr % 100 == 0:                         # le journal du serveur : ou en est la collecte
+                        print(f"Donnees PSA : {cr} credits (phase {phase} : {q}, page {page})", flush=True)
                     v = historique.lire_reponse(d, taux)
                     ids = {x.get("item_id") or (x["titre"] + "|" + x["le"]) for x in v}
                     neuves = ids - vus
@@ -425,12 +460,23 @@ def _collecter(plafond, arret, pause):
                     page += 1
                     time.sleep(pause)
                 time.sleep(pause)
+        if not a_moi():
+            fin_statut = None
+            return None
         fin_statut = "terminee"
         _texte("Terminée")
         return None
     finally:
         ETAT["en_cours"] = False
-        _run_maj(statut=fin_statut, battement=time.time())
+        try:
+            if fin_statut is None or not a_moi():
+                print("Donnees PSA : une autre collecte a pris le relais, celle-ci s'arrete", flush=True)
+            else:
+                _run_maj(statut=fin_statut, battement=time.time())
+                r = _run()
+                print(f"Donnees PSA : {fin_statut} ({r.get('credits') or 0} credits{' ; ' + str(r.get('erreur')) if r.get('erreur') else ''})", flush=True)
+        except Exception as e:
+            print("Donnees PSA (fin) : " + repr(e)[:160], flush=True)
 
 
 def _plan_maj(q, **kw):
@@ -445,7 +491,7 @@ def _plan_maj(q, **kw):
 
 def lancer(plafond=None):
     """L'admin lance (ou relance) la collecte, en fond."""
-    if ETAT["en_cours"]:
+    if ETAT["en_cours"] or vivante():
         return {**bilan(), "deja": True}
     import historique
     if not historique.actif():
@@ -467,6 +513,8 @@ def continuer_si_besoin():
     r = _run()
     st = r.get("statut") or "aucune"
     if st not in ("en_cours", "interrompue", "attente_mois", "erreur"):
+        return None
+    if vivante(r):                                            # elle tourne (son battement est frais) : on ne la double jamais
         return None
     if st == "erreur" and time.time() - (r.get("battement") or 0) < 15 * 60:
         return None
@@ -492,7 +540,7 @@ def bilan():
         n = n_f = pg = n1 = n1_f = nv = nj = 0
         raisons = {}
     r = _run()
-    vivant = ETAT["en_cours"] or (r.get("statut") == "en_cours" and time.time() - (r.get("battement") or 0) < 180)
+    vivant = ETAT["en_cours"] or vivante(r)
     return {"ok": True, "en_cours": bool(vivant), "statut": r.get("statut") or "aucune", "texte": r.get("texte"),
             "phase": 2 if r.get("raw_planifie") else 1, "joueurs": int(nj), "recherches": int(n), "recherches_finies": int(n_f),
             "cartes_raw": int(n - n1), "pages": int(pg), "ventes": int(nv), "raisons": raisons,

@@ -42,7 +42,7 @@ CARTE_VENTES_MIN = 12            # ventes de la carte dans les deux periodes
 CARTE_PERIODE_MIN = 4            # au moins 4 ventes dans chacune des deux periodes
 CARTE_SEMAINE_MIN = 4            # ventes dans la fenetre de 3 semaines pour un point de la courbe d'une carte
 DISPERSION_MAX = 2.5             # q75 / q25 des prix d'avant : au-dela, la recherche melange plusieurs cartes : rien n'est annonce
-N_LISTE_CARTES = 25
+N_LISTE_CARTES = 100             # 26 nov 2026 (« le top 100 pour les 2 ») : 25 -> 100 au plus ; seules les cartes CONFIRMEES y entrent
 LISTE_VENTES_MIN = 20            # dans les listes « en hausse / en baisse » : une carte qui a au moins 20 ventes
 # 25 nov 2026, 22 h 06 (Mathieu : « on se fout des paralleles sans valeur qui se vendent 20 $ et moins, a part les Young Guns ») :
 # hors Young Guns, une carte ne compte que si elle se vend d'habitude 20 $ et plus (la mediane de ses ventes). Par la VALEUR et non
@@ -455,6 +455,40 @@ def croiser(pc, mes, auj):
     return pc
 
 
+# 26 nov 2026 (Mathieu, capture de « ▼1 ●2 » : « c'est juste plus complique pour rien » ; puis « Oui A, ca doit etre comprehensible
+# en 1 sec ») : « Joueur + cartes » = UN chiffre par joueur : toutes ses cartes mesurees, ensemble (chacune comparee a elle-meme, les
+# 30 derniers jours contre les 60 d'avant), exactement les cartes qu'on voit en touchant le joueur. Le meme test que LA carte d'un
+# joueur (p < 0,01 et la courbe dans le meme sens) : sans mouvement net, le joueur n'est dans aucune liste.
+JOUEUR_CARTES_MIN = 2
+JOUEUR_VENTES_MIN = 40               # comme une sorte
+FORMAT = 2                           # le fichier garde « joueurs » : un fichier d'avant est refait au prochain tour
+
+
+def joueurs_ensemble(pc, mes, auj):
+    """-> {cle du joueur: la mesure de toutes ses cartes PUBLIEES ensemble, « cartes » : leurs cles}."""
+    parj = {}
+    for j, jn, k, m in mes:
+        cle = jn + "|" + k + ("|" + str(m["saison"]) if m.get("saison") else "")
+        if cle in pc:
+            g = parj.setdefault(jn, {"joueur": j, "mes": [], "cles": []})
+            g["mes"].append(m)
+            g["cles"].append(cle)
+    out = {}
+    for jn, g in parj.items():
+        if len(g["mes"]) < JOUEUR_CARTES_MIN:
+            continue
+        a = _agreger(g["mes"], auj, CROISE_SEMAINE_MIN)
+        if a["n"] < JOUEUR_VENTES_MIN:
+            continue
+        a["net"] = bool(a["net"] and a["p"] is not None and a["p"] < P_CARTE)
+        confirme, sens = _sens(a)
+        out[jn] = {"cle": "joueur:" + jn, "joueur": g["joueur"], "nom": g["joueur"], "pct": a["pct"], "brut": a["brut"], "p": a["p"],
+                   "confirme": confirme, "n": a["n"], "n_re": a["n_re"], "n_cartes": len(g["mes"]), "serie": a["serie"],
+                   "n_recents": a["n_recents"], "d_rec": a["d_rec"], "coherent": a["coherent"], "sens": sens,
+                   "cartes": sorted(g["cles"], key=lambda c: -pc[c]["n"])}
+    return out
+
+
 def _mesures(cartes, auj):
     """Une mesure par carte EXACTE (un joueur, une sorte, une saison) qui passe tous les garde-fous -> [(joueur, cle du joueur,
     sorte, mesure)]. Sert a la carte du joueur et a la sorte tous joueurs."""
@@ -554,7 +588,9 @@ def listes(cartes, auj=None, n=N_LISTE):
     ps, pc = par_sorte(None, auj, mes), croiser(par_carte(None, auj, mes), mes, auj)
     gros = {k: x for k, x in pc.items() if x["n"] >= LISTE_VENTES_MIN}
     tri = lambda d, s, nb: sorted((x for x in d.values() if x["sens"] == s), key=lambda x: ((-x["pct"] if s == "hausse" else x["pct"]), x["p"] or 1))[:nb]
+    pj = joueurs_ensemble(pc, mes, auj)
     return {"hausses": tri(ps, "hausse", n), "baisses": tri(ps, "baisse", n), "sortes": ps, "n_sortes": len(ps),
+            "joueurs": pj, "joueurs_hausses": tri(pj, "hausse", N_LISTE_JOUEURS), "joueurs_baisses": tri(pj, "baisse", N_LISTE_JOUEURS), "format": FORMAT,
             "cartes": pc, "cartes_hausses": tri(gros, "hausse", N_LISTE_CARTES), "cartes_baisses": tri(gros, "baisse", N_LISTE_CARTES),
             "n_cartes": len(pc), "n_ventes": sum(m["n_av"] + m["n_re"] for _j, _jn, _k, m in mes), "jours": [JOURS_RECENT, JOURS_AVANT]}
 
@@ -628,7 +664,7 @@ def calculer_si_besoin():
         age = time.time() - os.path.getmtime(_chemin())
     except OSError:
         age = None
-    if age is not None and age < AUX_JOURS * 86400:
+    if age is not None and age < AUX_JOURS * 86400 and (lire() or {}).get("format") == FORMAT:
         return None
     with _verrou:
         if _ETAT["en_cours"] or time.time() - _ESSAI["le"] < ESSAI_S:
@@ -813,7 +849,14 @@ def page():
     for x in pc.values():
         pj.setdefault(x["cle"].split("|")[0], []).append(x)
     gr = sorted((sorted(l, key=lambda x: -x["n"]) for l in pj.values() if len(l) >= 2), key=lambda l: -sum(x["n"] for x in l))[:N_LISTE_JOUEURS]
+    def pub_j(x):                                # un joueur : son chiffre, et ses cartes une par une (pour la fenetre)
+        d = public(x)
+        d.update(niveau="joueur", n_cartes=x["n_cartes"], cartes=[public(pc[c]) for c in x.get("cartes") or [] if c in pc])
+        d.pop("saison", None)
+        return d
     return {"hausses": [public(x) for x in r.get("cartes_hausses") or []], "baisses": [public(x) for x in r.get("cartes_baisses") or []],
+            "joueurs": ({"hausses": [pub_j(x) for x in r.get("joueurs_hausses") or []], "baisses": [pub_j(x) for x in r.get("joueurs_baisses") or []],
+                         "n": len(r.get("joueurs") or {})} if r.get("format") == FORMAT else None),
             "par_joueur": [{"joueur": l[0]["joueur"], "n": sum(x["n"] for x in l), "cartes": [public(x) for x in l]} for l in gr],
             "croise_mesure": CROISE_MESURE,
             "toutes": [public(x) for x in sorted(ps.values(), key=lambda x: -x["n"])], "n_sortes": len(ps), "n_cartes": len(pc),

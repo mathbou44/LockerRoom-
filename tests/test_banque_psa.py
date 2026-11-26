@@ -123,10 +123,10 @@ banque_psa._page = page4
 APP.clear()
 r = banque_psa.continuer_si_besoin()
 assert r and r["ok"], r
-for _ in range(200):
-    if not banque_psa.ETAT["en_cours"] and banque_psa.bilan()["statut"] != "en_cours":
-        break
-    time.sleep(0.05)
+import threading
+for th in threading.enumerate():                 # la collecte tourne dans son fil : on attend qu'il finisse
+    if th.name == "donnees-psa":
+        th.join(60)
 b = banque_psa.bilan()
 assert b["statut"] == "terminee" and b["raisons"] == {"refusee (HTTP 400)": 1, "pages max": 1}, b
 assert APP[0] == ("a b psa 10", 1) and len(APP) == 1 + banque_psa.PAGES_MAX and b["credits"] == banque_psa.PAGES_MAX, (len(APP), b["credits"])   # la page refusee ne coute rien
@@ -138,6 +138,49 @@ banque_psa._page = page401
 b = banque_psa.collecter(pause=0)
 assert b["statut"] == "erreur" and b["erreur"] == "CompSniper HTTP 401", b
 print("GARDE-FOUS OK")
+
+# ---- 4 bis. JAMAIS DEUX COLLECTES (26 nov, 13 h 28, journal : « Donnees PSA : reprise (en_cours) » 45 s apres le lancement : la
+#           boucle de l'heure a relance une collecte qui venait de partir ; deux collectes paieraient chaque page deux fois)
+import contextlib
+c = banque_psa._cx(); c.execute("UPDATE plan SET fini=0, pages=0 WHERE q='c d psa 10'"); c.commit(); c.close()
+APP.clear()
+banque_psa._page = page4
+# (a) le battement : « en_cours » et un battement frais = elle tourne (meme si le drapeau en memoire dit non) : rien ne la double
+banque_psa._run_maj(statut="en_cours", battement=time.time() - 20, erreur=None)
+assert banque_psa.ETAT["en_cours"] is False and banque_psa.vivante()
+assert banque_psa.continuer_si_besoin() is None, "la boucle de l'heure ne relance pas une collecte qui tourne"
+assert banque_psa.lancer().get("deja") is True and banque_psa.collecter(pause=0).get("deja") is True and not APP, "le bouton non plus"
+assert banque_psa.bilan()["en_cours"] is True
+# (b) un battement de plus de 3 minutes : elle est morte (redemarrage) : la reprise part
+banque_psa._run_maj(battement=time.time() - banque_psa.VIVANTE_S - 5)
+assert not banque_psa.vivante()
+# (c) le jeton : une collecte qui tourne s'arrete des qu'une autre a pris le relais, sans toucher au statut ni payer une page de plus
+lent = threading.Event()
+def page_lente(q, p, debut, fin):
+    APP.append((q, p)); lent.wait(5)
+    return {"results": [v(f"l{p}{i}", "c d card", j=3) for i in range(50)]}
+banque_psa._page = page_lente
+jl = io.StringIO()
+with contextlib.redirect_stdout(jl):
+    assert banque_psa.continuer_si_besoin()["ok"]
+    for _ in range(100):
+        if APP: break
+        time.sleep(0.02)
+    assert APP == [("c d psa 10", 1)] and banque_psa.ETAT["en_cours"]
+    jeton1 = banque_psa._run()["jeton"]
+    assert jeton1 and len(jeton1) == 32
+    banque_psa._run_maj(jeton="une-autre-collecte")            # une autre collecte (un autre processus) prend le relais
+    cr0 = banque_psa._run()["credits"]
+    lent.set()
+    for _ in range(200):
+        if not banque_psa.ETAT["en_cours"]: break
+        time.sleep(0.02)
+assert not banque_psa.ETAT["en_cours"] and APP == [("c d psa 10", 1)], APP          # elle n'a pas demande la page 2
+r_ = banque_psa._run()
+assert r_["statut"] == "en_cours" and r_["jeton"] == "une-autre-collecte" and r_["credits"] == cr0 + 1, r_     # le statut reste a l'autre
+assert "une autre collecte a pris le relais" in jl.getvalue(), jl.getvalue()
+banque_psa._run_maj(statut="interrompue", jeton=None)
+print("JAMAIS DEUX OK")
 
 # ---- 5. admin seulement ; le serveur et l'ecran
 import lockerroom

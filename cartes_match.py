@@ -383,6 +383,24 @@ def _sp_game_used(t):
     return bool(_RE_SP_GU.search(norm(t or "")))
 
 
+# 26 nov 2026 (Mathieu : « si ce sont de fausses valeurs, oui, il faut les enlever ») : une carte RAW vendue comme une future 10
+# (« PSA 10 ? », « PSA 10 Contender », « Possible PSA 10 ») etait lue comme une PSA 10 et acceptee comme comparable d'une vraie
+# PSA 10 (une Sennecke Young Guns « PSA 10 Contender » a 100 $, la vraie PSA 10 : 675 $). Elle est maintenant refusee quand on
+# cherche une carte gradee. Mesure sur nos archives (52 544 ventes « PSA 10 / PSA 9 » de 120 jours) : 8 ventes touchees, toutes
+# des raw. La regle est ETROITE expres : un « ? » n'importe ou dans le titre (« HOF? », « next MLB? »), « should be a 10 » (une
+# vraie PSA 9 dont le vendeur trouve la note severe) ou « PSA 10 possible black label » (une vraie PSA 10) restent acceptees :
+# une regle large aurait enleve 45 vraies cartes gradees. Elle n'ajoute que des refus.
+_RE_ESPERE = re.compile(r"\b(psa|bgs|sgc|cgc)\s*(10|9\.5|9)\s*(\?|(candidate|contender|worthy|hopeful|quality|ready(?!\s+to\s+ship)|"
+                        r"(potential|possible)(?!\s+(black|bgs|cross)))\b)"
+                        r"|\b(possible|possibly|potential|potentially)\s+(psa|bgs|sgc|cgc|gem)\b"
+                        r"|\b(ungraded|not\s+graded)\b", re.I)
+
+
+def espere_note(titre):
+    """Une raw qui espere une note (« PSA 10 ? », « PSA 10 contender ») : pas une carte gradee."""
+    return bool(_RE_ESPERE.search(str(titre or "")))
+
+
 def raisons_refus(c, titre, appris=None):
     """[] si l'annonce est la meme carte, sinon pourquoi pas (en mots simples)."""
     a = _decoder_memo(titre)
@@ -445,8 +463,10 @@ def raisons_refus(c, titre, appris=None):
     if c["grade"]:
         if not a["grade"] or a["grade"]["cie"] != c["grade"]["cie"] or (c["grade"]["note"] and a["grade"]["note"] != c["grade"]["note"]):
             r.append("autre gradation")
+        elif espere_note(titre):
+            r.append("pas gradée (espère la note)")
     elif c["veut_grade"]:
-        if not a["grade"]:
+        if not a["grade"] or espere_note(titre):
             r.append("pas gradée")
     elif a["grade"] and not grade_bas(a["grade"]):          # 22 nov 2026 : une vente sous 9 compte comme une brute
         r.append("gradée")

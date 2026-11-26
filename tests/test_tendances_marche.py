@@ -79,21 +79,33 @@ marche_joueurs.liste_haut = lambda n=40, **k: [{"nom": f"Haut {i:02d}", "vs_medi
 lockerroom.Api._TEND_IQ.update(v=None, le=0)
 rp = api.tendances_iq()
 pb, ph = [x["marche"]["vs_mediane_pct"] for x in rp["cats"]["bas"]], [x["marche"]["vs_mediane_pct"] for x in rp["cats"]["haut"]]
-assert len(pb) == 25 and len(ph) == 25 and lockerroom.Api.TEND_TOP == 25, (len(pb), len(ph))
+# 26 nov 2026 (« le top 100 pour les 2 ») : 100 au plus ; ici 30 bons joueurs de chaque cote : les 30 y sont
+assert len(pb) == 30 and len(ph) == 30 and lockerroom.Api.TEND_TOP == 100, (len(pb), len(ph))
 assert pb == sorted(pb) and pb[0] == -32 and ph == sorted(ph, reverse=True) and ph[0] == 38, (pb[:3], ph[:3])       # le plus gros ecart d'abord
 assert all(x.get("nom") and not x.get("verrou") for x in rp["cats"]["bas"] + rp["cats"]["haut"]) and "gratuit" not in rp      # en Pro : tout se lit
 rg = api._tendances_gratuit(rp)
 for cat_ in ("bas", "haut"):
     Lg = rg["cats"][cat_]
-    assert len(Lg) == 25 and all(x.get("verrou") for x in Lg[:20]) and not any(x.get("verrou") for x in Lg[20:]), cat_
-    assert all(set(x) == {"verrou", "marche"} and set(x["marche"]) == {"vs_mediane_pct", "courbe"} for x in Lg[:20]), "une ligne verrouillee : son % et sa courbe, jamais le nom"
+    assert len(Lg) == 30 and all(x.get("verrou") for x in Lg[:25]) and not any(x.get("verrou") for x in Lg[25:]), cat_
+    assert all(set(x) == {"verrou", "marche"} and set(x["marche"]) == {"vs_mediane_pct", "courbe"} for x in Lg[:25]), "une ligne verrouillee : son % et sa courbe, jamais le nom"
     assert [x["marche"]["vs_mediane_pct"] for x in Lg] == [x["marche"]["vs_mediane_pct"] for x in rp["cats"][cat_]]     # le meme ordre, les memes %
-    assert [x["nom"] for x in Lg[20:]] == [x["nom"] for x in rp["cats"][cat_][20:]]                                     # les 5 du bas : tels quels
-assert "Bas 0" not in json.dumps(rg["cats"]["bas"][:20]) and rg["gratuit"] == {"verrous": 40, "libres": 5, "top": 25}
+    assert [x["nom"] for x in Lg[25:]] == [x["nom"] for x in rp["cats"][cat_][25:]]                                     # les 5 du bas : tels quels
+assert "Bas 0" not in json.dumps(rg["cats"]["bas"][:25]) and rg["gratuit"] == {"verrous": 50, "libres": 5, "top": 100}
+# au-dela de 100 bons joueurs : les 100 plus gros ecarts seulement
+lb0, lh0 = marche_joueurs.liste_bas, marche_joueurs.liste_haut
+for i in range(30, 130):
+    NOTES[f"Bas {i:03d}"] = 80.0
+    I[f"Bas {i:03d}"] = {"actif": True, "indice": 60, "equipe": "MTL", "criteres": {}, "pastilles": []}
+marche_joueurs.liste_bas = lambda n=40, **k: lb0(n) + [{"nom": f"Bas {i:03d}", "vs_mediane_pct": -(40 + i), "sous_sommet_pct": -50, "bas_depuis_j": 40, "haut_depuis_j": 0, "hist_j": 364, "courbe": [1.0, 0.9]} for i in range(30, 130)][:max(0, n - 30)]
+lockerroom.Api._TEND_IQ.update(v=None, le=0)
+r100 = api.tendances_iq()["cats"]["bas"]
+assert len(r100) == 100 and r100[0]["marche"]["vs_mediane_pct"] == -169 and r100[-1]["marche"]["vs_mediane_pct"] == -70, (len(r100), r100[0]["marche"], r100[-1]["marche"])
+marche_joueurs.liste_bas = lb0
+lockerroom.Api._TEND_IQ.update(v=None, le=0)
 assert rp["cats"]["bas"][0].get("nom"), "la reponse gardee pour tous n'est pas touchee par le Gratuit"
 pt = api._tendances_gratuit({**rp, "cats": {**rp["cats"], "bas": rp["cats"]["bas"][:4], "haut": []}})                  # une courte liste : rien de verrouille
 assert not any(x.get("verrou") for x in pt["cats"]["bas"]) and pt["gratuit"]["verrous"] == 0
-print("OK test_tendances_marche (top 25 : %s ... %s ; %s ... %s ; Gratuit : 20 verrouilles, 5 lisibles)" % (pb[0], pb[-1], ph[0], ph[-1]))
+print("OK test_tendances_marche (top 100 au plus : %s ... %s ; %s ... %s ; Gratuit : les 5 derniers lisibles)" % (pb[0], pb[-1], ph[0], ph[-1]))
 lockerroom.VENTE_PROUVEE = True
 print("OK test_tendances_marche (a acheter : %s ; a vendre : %s ; fiche : %s)" % ([x["nom"] for x in a], [x["nom"] for x in v], "long" if lg is not None else "sans fiche ici"))
 

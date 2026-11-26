@@ -2513,6 +2513,21 @@ class Api:
             banque_psa._run_maj(plafond=plafond)
         return banque_psa.lancer(plafond)
 
+    # 26 nov 2026 (Mathieu : « savoir les cartes qui valent le plus la peine d'etre gradees [...] on va commencer a l'implanter
+    # dans Admin, le temps qu'elle soit parfaite ») : la liste « A grader » (a_grader.py) : raw, PSA 10 et PSA 9 de la MEME
+    # carte sur la meme periode, ce qui reste apres les frais. Des prix : ADMIN seulement.
+    def admin_a_grader(self):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import a_grader
+        return a_grader.page()
+
+    def admin_a_grader_calculer(self):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import a_grader
+        return a_grader.lancer()
+
     # 15 nov 2026 (Mathieu : « on ne doit jamais arreter d'iterer et d'ameliorer SlabIQ ») : le moment d'achat (Young Guns),
     # ses regles en place, chaque iteration de la semaine (garde ou change, et pourquoi) et le journal en direct
     def admin_moment_yg(self):
@@ -9182,7 +9197,10 @@ class Api:
     # (vs la normale de 12 mois) parmi les bons joueurs dont le marche est a son plus bas / plus haut depuis 30 jours et plus.
     # En Gratuit, les TEND_GRATUIT derniers rangs se lisent ; les autres gardent leur rang, leur % et leur petite courbe, mais
     # ni le nom ni la fiche du joueur (rien a contourner : le serveur ne les envoie pas).
-    TEND_TOP, TEND_GRATUIT, TEND_PCT_MIN = 25, 5, 1
+    # 26 nov 2026 (Mathieu, devant « See all 16 » : « juste 16 risers ? On devrait en avoir le top 100 pour les 2 ») : 100 au plus
+    # dans chaque liste (joueurs et cartes). Le plafond monte, pas les regles : une liste reste plus courte quand moins de joueurs
+    # ou de cartes passent les garde-fous (une hausse non confirmee n'est jamais ajoutee pour faire le compte).
+    TEND_TOP, TEND_GRATUIT, TEND_PCT_MIN = 100, 5, 1
 
     def tendances_iq(self):
         r = self._tendances_iq0()
@@ -9217,6 +9235,7 @@ class Api:
                 so[k] = [{"verrou": True, "pct": x.get("pct"), "sens": x.get("sens"), "serie": x.get("serie")} for x in L[:n]] + L[n:]
             so["toutes"] = []
             so["par_joueur"] = []               # 26 nov 2026 : « Joueur + cartes » (toutes les cartes d'un joueur) : Pro
+            so["joueurs"] = None                # (un chiffre par joueur, toutes ses cartes ensemble : Pro aussi)
             out["sortes"] = so
         return out
 
@@ -9310,7 +9329,7 @@ class Api:
                 if sig in ("bas", "haut"):               # le plus gros ecart d'abord (− pour « bas », + pour « haut »), les 25 premiers
                     l.sort(key=lambda f: (f["marche"].get("vs_mediane_pct") or 0) * (1 if sig == "bas" else -1))
                     l = l[:self.TEND_TOP]
-                cats[sig] = l[:40]
+                cats[sig] = l[:self.TEND_TOP if sig in ("bas", "haut") else 40]
         except Exception as e:
             print("Tendances (acheter / vendre) : " + repr(e), flush=True)
             cats.setdefault("acheter", [])

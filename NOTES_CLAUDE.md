@@ -1194,8 +1194,98 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
     recherche raw n'a pas l'année ; même période pour les trois ; ce qui reste après frais PSA et eBay), puis le badge du Radar.
   * **Onglet « Player + cards » : « c'est juste plus compliqué pour rien »** (12 h 50, capture « ▼1 ●2 »). Proposé A (un seul
     chiffre par joueur : toutes ses cartes ensemble sur 30 jours, En hausse / En baisse, même look que Cards ; on touche = ses
-    cartes une par une) ou B (deux signaux côte à côte) → « Oui A, ça doit être compréhensible en 1 sec ». À faire au paquet
-    suivant : `_agreger` sur toutes les cartes mesurées du joueur (comme `croiser` le fait pour « le reste »).
+    cartes une par une) ou B (deux signaux côte à côte) → « Oui A, ça doit être compréhensible en 1 sec ».
+    FAIT (p105) : `tendance_sortes.joueurs_ensemble(pc, mes, auj)` : `_agreger` sur les cartes PUBLIÉES du joueur (exactement
+    celles qu'on voit en le touchant ; les notes d'une même carte comptent), 2 cartes et 40 ventes au moins, le même test que
+    LA carte d'un joueur (p < 0,01 et la courbe dans le même sens) ; sans mouvement net, le joueur n'est dans aucune liste.
+    Gardé dans le fichier (`joueurs`, `joueurs_hausses`, `joueurs_baisses`, `format: 2`) ; `calculer_si_besoin` refait un fichier
+    d'avant (sans `format`) sans attendre 3 jours : après un déploiement, l'onglet revient au premier calcul (~10 min) ;
+    d'ici là `page()["joueurs"]` vaut None et l'onglet est caché. `page()["joueurs"] = {hausses, baisses, n}` (chaque joueur :
+    pct, serie, n, n_cartes, `cartes` = ses cartes pour la fenêtre) ; `par_joueur` (l'ancienne forme) est encore envoyé pour une
+    app pas rechargée. Gratuit : `so["joueurs"] = None`. Écran : puces En hausse / En baisse, rangées « rang, nom, N cartes ·
+    N ventes, courbe, % », « Voir les N » ; la fenêtre du joueur : « Ses N cartes ensemble », puis chaque carte. Plus de ▲▼●.
+    Sur ma copie des ventes (148 cartes publiées) : 15 joueurs, 3 en hausse (Levi +60, Cooley +31, Kaprizov +13), 7 en baisse
+    (Martone −42, C. Hutson −25, Celebrini −16, Demidov −12, Schaefer −9, Bedard −9, Sennecke −7), 5 sans mouvement net.
+    Aperçu : `/home/claude/vue/tend5.py` (données : `/tmp/v26/joueurs_auj.py` → `page_sortes2.json`).
+    À polir : la carte « Smith Young Guns » de Celebrini est la vraie #499 « Young Guns Teammates Celebrini/Smith » (libellé
+    à clarifier) ; au cell `ajusterTiq` ne montre que 3 rangées alors qu'une 4e tiendrait.
+  * **13 h 31 – 13 h 32, AVANT que p105 soit poussé : il change d'idée, Trending passe à DEUX onglets.** « On pourrait mettre la
+    note du joueur à côté du trend ? Comme ça on aurait seulement 2 onglets ? Pour carte c'est rising et falling et joueur c'est
+    highest et lowest : garder rising et falling pour les 2 » puis, devant « See all 16 » : « Juste 16 risers ? On devrait en
+    avoir le top 100 pour les 2 ». Demandé et répondu (deux questions à choix) : 2 onglets EN HAUT (Players | Cards), la note
+    du joueur seulement sur les lignes des joueurs (sur une carte, un « A+ » se lirait comme la note de la carte).
+    FAIT (dans p105, qui remplace la vue A à l'écran) : l'onglet « Joueur + cartes » et tout son code d'écran sont enlevés
+    (`joueurs_ensemble` reste calculé et envoyé par le serveur, sans écran : à réutiliser dans la fiche du joueur au besoin) ;
+    joueurs : puces « En hausse » (`haut`) puis « En baisse » (`bas`), comme les cartes ; titres « Joueurs en hausse / en
+    baisse » (`CATS_IQ`, panneaux) ; la ligne garde son fait (« Au plus bas en 12 mois ») ; `noteM(x)` : la lettre SlabIQ du
+    joueur à droite du %, classe `.tiq-nj` (ATTENTION : `.tiq-lt` existait déjà, c'est le titre d'une liste en `display:flex`) ;
+    au cell les colonnes sont resserrées (`:has(.tiq-nj)` : rang 18, courbe 50, pastille 64, espace 8) pour garder 137 px au
+    nom. La puce « Joueurs » (les plus recherchés) n'existe plus quand les tendances des cartes sont là : la liste est dans
+    « Plus de listes » (`top` n'est plus exclu de `autres`) et dans la 3e colonne à l'ordi. Aperçu : `/home/claude/vue/tend6.py`.
+    TOP 100 : `Api.TEND_TOP` 25 → 100 (et `cats[bas|haut]` n'est plus coupé à 40), `N_LISTE_CARTES` 25 → 100. Le plafond
+    monte, PAS les règles : « 16 » n'était pas un plafond, c'est le nombre de cartes dont la hausse est confirmée (p < 0,01,
+    20 ventes, courbe dans le même sens) sur 225 cartes mesurées ; sur ma copie : 14 hausses et 36 baisses confirmées sur 148
+    (25 baisses seulement étaient montrées). Pour avoir vraiment 100 hausses il faut mesurer ~6 fois plus de cartes : (1) la
+    relecture finit de rafraîchir les ~400 cartes qui passent les autres garde-fous ; (2) importer dans les archives les
+    recherches raw de la phase 2 de la collecte PSA (des cartes exactes, 120 jours, toutes notes) APRÈS avoir vérifié leurs
+    libellés sur un export, puis monter `LR_RELIRE_MOIS` (1 000 → ~5 000 par mois pour ~1 500 cartes) : son accord d'abord.
+  * 13 h 27 : il lance la collecte PSA (plafond 10 000, 36 080 crédits utilisés ce mois, dispo 12 420 avant la réserve).
+    `banque_psa.py` (p105) : l'étape 2 saute les titres sans « psa » ni « 10 » et respire tous les 500 titres ; une ligne de
+    journal aux 100 crédits (« Donnees PSA : N credits (phase P : recherche, page X) ») et à la fin de chaque tour.
+    À FAIRE pour la liste « À grader » : une route d'export admin de `banque_psa.sqlite` (pour valider l'analyse sur ma copie).
+  * **ANOMALIE NON EXPLIQUÉE, 13 h 28** : journal « Donnees PSA : reprise (en_cours) » 45 s après son lancement (13 h 27 min 46).
+    La boucle de l'heure (première passe, 180 s après le démarrage) a donc vu `ETAT["en_cours"]` à faux ET le statut
+    « en_cours » dans la base. Un seul worker gunicorn (vérifié : `-w 1`, un seul « Booting worker »), aucune trace d'erreur
+    dans le journal, impossible à reproduire en local (`/tmp/simu_psa.py` : `continuer_si_besoin` rend bien None pendant
+    qu'elle tourne). Soit le premier fil est mort sans trace, soit deux collectes ont tourné en même temps (chaque page payée
+    deux fois) jusqu'au redémarrage suivant. Demandé à Mathieu : une capture de la fenêtre (crédits ≈ pages : une seule ;
+    crédits ≈ 2 x pages : deux). CORRIGÉ dans p105, dans la BASE (vrai même entre deux processus) : (1) `vivante()` : statut
+    « en_cours » et battement de moins de 180 s = elle tourne : ni la boucle, ni le bouton, ni `collecter` ne la doublent ;
+    (2) le JETON : chaque collecte écrit le sien en partant et le relit avant chaque page ; s'il a changé, elle s'arrête sans
+    toucher au statut (« une autre collecte a pris le relais »). `cartes_psa10(battre=…)` bat pendant le décodage de l'étape 2.
+    La fin de chaque tour est écrite dans le journal (statut, crédits, erreur). Test : « JAMAIS DEUX OK ».
+  * 13 h 24 : « c'est poussé » (commit 0e7c136 = p104, en ligne à 13 h 25, aucune erreur au démarrage). Journal 13 h 09 :
+    « Tendance des cartes : 54 cartes relues (54 / 1000 credits ce mois-ci, 1 a venir) » : la relecture des cartes exactes tourne.
+- **26 nov, 14 h – 14 h 45 : la liste « À grader » (Admin), paquet p106.** `a_grader.py` + `tests/test_a_grader.py`.
+  * `classer(titre, joueur)` → ((joueur, recherche raw, année, /N, numéro de carte), « raw » | « 10 » | « 9 ») ou None. Le décodeur
+    de `cartes_match` a des pièges, tous couverts par le test : (1) « PSA 10 ? », « Possible PSA 10 », « PSA 10 ready »,
+    « contender » sont lus comme une PSA 10 → écartés (`_RE_ESPOIR`) [ce piège existe AUSSI dans les comps de l'app : une raw
+    « PSA 10 ? » est acceptée comme comparable d'une PSA 10 : À CORRIGER dans `cartes_match`] ; (2) une PSA 8 et moins a
+    `grade = None` et `grade_bas` rempli, « graded 9 » / « slab » n'ont aucune note → jamais comptées comme raw
+    (`_RE_GRADEE`) ; (3) une numérotée /100 est refusée par `raisons_refus(cible(q))` si la recherche ne dit pas « /100 » → on
+    teste avec `q + " /N"` ; (4) une couleur seule (« Gold ») a `carte_nommee` vrai mais `ident` vide → il faut un SET ;
+    (5) abîmée (`_RE_ABIMEE`) : pas une raw à grader.
+  * `analyser(ventes)` : dédoublonne par numéro d'annonce, range par titre, rattache une vente sans année / sans numéro à la
+    carte seulement s'il n'y en a qu'une (90 %), LA MÊME PÉRIODE pour raw et PSA 10 (depuis le jour où les deux sont
+    couvertes), médianes, 5 raw et 5 PSA 10 au moins (4 → 5 dès l'essai), PSA 9 dès 3 ventes sinon vide, prix trop étalés
+    (q75 / q25 > 3) → pas listée. Par carte : `reste10`, `reste9` (frais eBay 13,25 % + 0,40 $, PSA + envoi 41 $), `seuil`
+    (part de 10 pour ne pas perdre ; 0 = rentable même en 9 ; None = PSA 9 inconnue ou perd même en 10), `rendement` (net de
+    la PSA 10 / (raw + 41 $)) : la liste est classée par rendement (classer par PSA 10 / raw mettait en tête des cartes à
+    2 $). JAMAIS de chance de 10 ni de profit espéré.
+  * Essai sur ma copie des archives, 60 joueurs (`/tmp/v26/proto_grader.py`, 181 013 ventes, 116 s) : 103 cartes. Tête de
+    liste : Sennecke YG 2025-26 (raw 78 $, PSA 10 675 $, PSA 9 213 $ : +466 / +65), Slafkovsky YG, Boldy YG (31 → 377),
+    Celebrini YG (542 → 3 030), Gauthier YG (38 → 406 : +273 / −1), Misa YG (41 → 417), Hutson YG (112 → 748), Demidov YG.
+    La PSA 9 vaut en général 20 à 30 % de la PSA 10.
+  * Serveur : `_ventes_serveur()` = toute la collecte PSA (`banque_psa.sqlite`) + nos archives pour les mêmes joueurs
+    (`q >= "<joueur> " AND q < "<joueur>!"`) ; `calculer()` en fond (`lancer`, `refaire_si_besoin` dans la boucle de l'heure :
+    une fois par 20 h, seulement si la collecte a des ventes), gardé dans `a_grader.json`. Routes `admin_a_grader`,
+    `admin_a_grader_calculer` ; export `/admin/psa_export.tsv.gz` (titre, prix, date, recherche, joueur, id).
+    Écran : Admin > Mesures > Données PSA > « La liste À grader » (`feuilleAGrader`), prix = ADMIN seulement.
+  * À FAIRE : le badge « À grader » du Radar (Admin d'abord), le test sur l'historique avant Pro, les libellés (« Skates
+    Silver » = Silver Skates), les Renewed numérotées de deux façons (#201 et #YGR-10 font deux cartes).
+- **26 nov, 14 h 26 : « Si ce sont de fausses valeurs, oui, il faut les enlever »** (une raw « PSA 10 ? » comptée comme PSA 10
+  dans les comps). Paquet p107. `cartes_match.espere_note(titre)` (`_RE_ESPERE`) ; `raisons_refus` : quand la carte cherchée est
+  gradée (ou « graded »), une vente qui espère sa note est refusée (« pas gradée (espère la note) ») ; cherchée raw : inchangé
+  (elle reste refusée « gradée ») ; la règle n'ajoute que des refus. `a_grader` utilise la même fonction.
+  LA RÈGLE EST ÉTROITE EXPRÈS, mesurée sur 52 544 ventes « PSA 10 / PSA 9 » de 120 jours (`/tmp/v26/espoir.py`) : la note
+  suivie de « ? », « contender », « candidate », « worthy », « ready » (pas « ready to ship »), « potential / possible » (pas
+  « possible black label ») ; « possible / potential PSA|gem » ; « ungraded », « not graded ». PAS : un « ? » ailleurs dans
+  le titre (40 titres : « HOF? », « next MLB? » : de vraies PSA 10), « should be a 10 » (de vraies PSA 9), « raw »,
+  « future » (« Team of the Future »). Effet réel (`espoir_effet.py`) : 3 ventes acceptées deviennent refusées ; une valeur
+  change vraiment : « beckett sennecke young guns psa 10 » 606 $ → 667 $ (la « PSA 10 Contender » à 100 $ sur 7 ventes).
+  `base_ventes.TRI_VERSION` 1 → 2 : les verdicts gardés des ventes qui portent ces mots sont refaits une fois (une base déjà
+  en version 1 ne refait que ceux-là). Tests : `tests/test_espere_note.py`. Suite complète : 303 fichiers, 0 échec.
+  Vu en passant, NON corrigé : « PSA 10 possible black label » est refusée comme « variante black » (une vraie PSA 10 perdue).
 - **Demandé pour demain (21 h 02)** : « améliore SlabIQ et refais nos tests avec les nouvelles data une fois obtenues ; tu devrais
   aller chercher tout automatiquement » → refaire les tests sur les ventes de la collecte de 3 ans ; SlabIQ ne change que si le test
   le prouve ; le test publié sur le site doit tourner seul sur le serveur (tâche `g_c_auto`), sans export à la main.

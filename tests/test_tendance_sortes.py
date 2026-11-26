@@ -353,6 +353,79 @@ assert "par_joueur" in pg and pg["croise_mesure"] == ts_.CROISE_MESURE and all(l
 import inspect, lockerroom as lr_
 assert 'so["par_joueur"] = []' in inspect.getsource(lr_.Api._tendances_gratuit), "Gratuit : pas la vue Joueur + cartes"
 
+# ---------------------------------------------------------------- 26 nov 2026 : « Joueur + cartes » = UN chiffre par joueur
+# (Mathieu, capture de « ▼1 ●2 » : « c'est juste plus complique pour rien » ; « Oui A, ca doit etre comprehensible en 1 sec »)
+def ensemble(cartes_j):                          # {joueur: [(sorte, pct, n)]} -> (pc, joueurs_ensemble)
+    mes = [(j, j.lower(), k, mesure_de(p_, n_)) for j, l in cartes_j.items() for k, p_, n_ in l]
+    pc = ts_.par_carte(None, MAINT, mes)
+    return pc, ts_.joueurs_ensemble(pc, mes, MAINT)
+pc_, je = ensemble({"Monte Fort": [("young guns", +30, 30), ("young guns canvas", +25, 30), ("dazzlers green", +35, 30)],
+                    "Baisse Net": [("young guns", -20, 30), ("young guns psa 10", -25, 30)],
+                    "Une Carte": [("young guns", +30, 30)],
+                    "Bouge Pas": [("young guns", +1, 30), ("young guns canvas", -1, 30)],
+                    "Tire Deux": [("young guns", +30, 30), ("young guns canvas", -30, 30)],
+                    "Peu Vendu": [("young guns", +30, 6), ("young guns canvas", +30, 6)]})
+assert set(je) == {"monte fort", "baisse net", "bouge pas", "tire deux"}, set(je)      # 2 cartes mesurees et 40 ventes au moins
+m_ = je["monte fort"]
+assert m_["sens"] == "hausse" and 20 <= m_["pct"] <= 35 and m_["n_cartes"] == 3 and m_["n"] == 180 and m_["joueur"] == "Monte Fort" and m_["cle"] == "joueur:monte fort"
+assert sorted(m_["cartes"]) == sorted(k for k in pc_ if k.startswith("monte fort|")), "exactement les cartes qu'on voit en touchant le joueur"
+assert je["baisse net"]["sens"] == "baisse" and je["baisse net"]["n_cartes"] == 2, "les notes d'une meme carte comptent : ce sont toutes SES cartes"
+assert je["bouge pas"]["sens"] == "stable" and je["tire deux"]["sens"] == "stable", "sans mouvement net : dans aucune liste"
+assert ts_.JOUEUR_CARTES_MIN == 2 and ts_.JOUEUR_VENTES_MIN == 40 and ts_.FORMAT == 2
+# le meme test que LA carte d'un joueur (p < 0,01), pas celui d'une sorte (p < 0,10)
+src_ts = inspect.getsource(ts_.joueurs_ensemble)
+assert 'a["p"] < P_CARTE' in src_ts
+# dans le fichier, puis a l'ecran : deux listes, un % par joueur, ses cartes pour la fenetre, jamais un prix
+mes_ = [(j, j.lower(), k, mesure_de(p_, n_)) for j, l in {"Monte Fort": [("young guns", +30, 30), ("young guns canvas", +25, 30)], "Baisse Net": [("young guns", -20, 30), ("young guns canvas", -25, 30)],
+                                                             "Bouge Pas": [("young guns", +1, 30), ("young guns canvas", -1, 30)]}.items() for k, p_, n_ in l]
+vrai_mes = ts_._mesures
+ts_._mesures = lambda cartes, auj: mes_
+try:
+    L_ = ts_.listes([], MAINT)
+finally:
+    ts_._mesures = vrai_mes
+assert L_["format"] == 2 and [x["joueur"] for x in L_["joueurs_hausses"]] == ["Monte Fort"] and [x["joueur"] for x in L_["joueurs_baisses"]] == ["Baisse Net"] and len(L_["joueurs"]) == 3
+vrai_lire = ts_.lire
+ts_.lire = lambda: json.loads(json.dumps(L_))
+try:
+    pg2 = ts_.page()
+    J2 = pg2["joueurs"]
+    assert J2["n"] == 3 and len(J2["hausses"]) == 1 and len(J2["baisses"]) == 1
+    h_ = J2["hausses"][0]
+    assert h_["joueur"] == "Monte Fort" and h_["niveau"] == "joueur" and h_["net"] is True and h_["pct"] > 0 and h_["n_cartes"] == 2 and len(h_["cartes"]) == 2 and len(h_["serie"]) >= 2
+    assert all(c["niveau"] == "carte" and c["joueur"] == "Monte Fort" for c in h_["cartes"]) and "saison" not in h_
+    assert "prix" not in json.dumps(J2) and "mediane" not in json.dumps(J2), "jamais un prix"
+    # un fichier d'avant (sans « joueurs ») : la vue n'est pas envoyee, et le calcul est refait au prochain tour
+    vieux = {k: v for k, v in L_.items() if k not in ("joueurs", "joueurs_hausses", "joueurs_baisses", "format")}
+    ts_.lire = lambda: json.loads(json.dumps(vieux))
+    assert ts_.page()["joueurs"] is None
+finally:
+    ts_.lire = vrai_lire
+assert '(lire() or {}).get("format") == FORMAT' in inspect.getsource(ts_.calculer_si_besoin), "un fichier d'avant est refait sans attendre 3 jours"
+assert 'so["joueurs"] = None' in inspect.getsource(lr_.Api._tendances_gratuit), "Gratuit : pas la vue Joueur + cartes"
+# 26 nov 2026, 13 h 31 (Mathieu, captures de Lowest / Highest / Players : « on pourrait mettre la note du joueur a cote du trend ?
+# comme ca on aurait seulement 2 onglets ; garder Rising et Falling pour les 2 ») : DEUX onglets (Joueurs | Cartes), la vue
+# « Joueur + cartes » disparait de l'ecran (la mesure reste sur le serveur) ; joueurs : En hausse | En baisse, la note SlabIQ du
+# joueur a droite de son % ; les memes mots pour les joueurs et les cartes
+sx2 = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "source", "src_app.html"), encoding="utf-8").read()
+assert "modeT === 'mix'" not in sx2 and "data-jmix" not in sx2 and "Player + cards" not in sx2 and "tiq-mode3\"" not in sx2, "plus d'onglet « Joueur + cartes »"
+assert "[['joueurs', tt('Joueurs', 'Players')], ['sortes', tt('Cartes', 'Cards')]].map(" in sx2, "deux onglets en haut"
+assert "▲ en hausse · ▼ en baisse" not in sx2, "plus de symboles a decoder"
+assert "[['vendre', aH ? tt('En hausse', 'Rising') : tt('À vendre', 'To sell'), aV || aH], ['bas', tt('En baisse', 'Falling'), aB]," in sx2, "joueurs : En hausse d'abord, puis En baisse, comme les cartes"
+assert "tt('Plus bas', 'Lowest') : tt('Au plus bas', 'Lowest')" not in sx2 and "'Highest'" not in sx2 and "At their lowest" not in sx2 and "At their highest" not in sx2
+assert "['bas', tt('Joueurs en baisse', 'Falling players'), 'vert'], ['haut', tt('Joueurs en hausse', 'Rising players'), 'vert']" in sx2
+assert "const OPT = [['bas', tt('En hausse', 'Rising')], ['vendre', tt('En baisse', 'Falling')], ...(T_.length ? [['toutes', tt('Par sorte', 'By type')]] : [])];" in sx2, "cartes : inchange"
+# la note du joueur : a droite de son %, sur les lignes des listes de faits seulement ; une ligne verrouillee garde la place, vide
+assert "const noteM = (x) =>" in sx2 and "${FAIT(k) ? noteM(x) : ''}</button>`; };" in sx2 and "${sg(v)}</span>${noteM(null)}</button>" in sx2
+assert ".tiq-nj{flex:none; width:26px;" in sx2 and 'class="tiq-nj"' in sx2, "« tiq-lt » est deja le titre d'une liste : la note a sa propre classe"
+lig_s = sx2[sx2.index("        const ligneS = (x, rg) =>"):sx2.index("        const panS = ")]
+assert "noteM" not in lig_s, "pas de note du joueur sur une ligne de carte (elle se lirait comme la note de la carte)"
+# « Les joueurs les plus recherches » : plus de puce au cell quand les tendances des cartes sont la ; la liste reste dans « Plus de listes »
+assert "['joueurs', tt('Joueurs', 'Players'), top10.length > 0 && !SO]" in sx2
+assert "!['bas', 'haut', 'vendre', 'marche_bas', 'en_feu', 'rebond', 'recrue'].includes(k)" in sx2
+# le top 100 (« juste 16 risers ? On devrait en avoir le top 100 pour les 2 ») : le plafond monte, pas les regles
+assert ts_.N_LISTE_CARTES == 100 and lr_.Api.TEND_TOP == 100 and ts_.P_CARTE == 0.01 and ts_.LISTE_VENTES_MIN == 20
+
 # ---------------------------------------------------------------- 26 nov 2026 : relire les cartes exactes (1 000 credits par mois au plus)
 import historique
 assert ts_.RELIRE_MOIS == 1000 and ts_.plafond_relire() == 1000 and ts_.RELIRE_AGE_J == ts_.FRAIS_J - ts_.AUX_JOURS - 1
@@ -394,7 +467,7 @@ assert "tendance_sortes.relire_si_besoin()" in src("server.py")
 assert "a_relire" in json.load(open(ch2, encoding="utf-8")) and "a_relire" not in json.dumps(ts_.page()), "la liste a relire reste sur le serveur"
 
 app = src("ui/app.html")
-for m in ("data-tmode=", "data-jmix=", "resteTD", "tiq-mixv", "it-vper", "data-per="):
+for m in ("data-tmode=", "tiq-nj", "resteTD", "it-vper", "data-per="):
     assert m in app, m
 # 26 nov 2026 (Mathieu : « bug apres avoir refresh », le titre et la recherche de Trending descendus par-dessus les onglets) : pendant
 # « tirer pour actualiser », #vue est decale par un transform ; la position de l'en-tete collant se mesure SANS ce decalage, et se

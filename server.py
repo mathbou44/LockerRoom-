@@ -1630,6 +1630,46 @@ def _id_vente_export(url):
     return m.group(1) if m else ""
 
 
+@app.route("/admin/psa_export.tsv.gz")
+def admin_psa_export():
+    """26 nov 2026 : les ventes de la collecte « Donnees PSA » (banque_psa : titre, prix CAD, date, recherche, joueur, numero de
+    l'annonce), compressees, envoyees en continu par petits blocs (comme l'export des ventes). Admin seulement."""
+    import zlib
+    from flask import Response, stream_with_context
+    import banque_psa as _bp
+    if not api._est_admin(reel=True):
+        abort(403)
+    if time.time() - _EXPORT_V.get("psa", 0) < 600:
+        return ("Un export est déjà en cours : attends qu'il finisse", 429)
+    _EXPORT_V["psa"] = time.time()
+
+    def flux():
+      try:
+        z = zlib.compressobj(4, zlib.DEFLATED, 31)
+        yield z.compress(b"titre\tprix\tle\tq\tjoueur\tid\n")
+        c = _bp._cx()
+        try:
+            cur = c.execute("SELECT titre, prix, le, q, joueur, cle FROM ventes")
+            while True:
+                rows = cur.fetchmany(1500)
+                if not rows:
+                    break
+                bloc = "".join("\t".join(str(x if x is not None else "").replace("\t", " ").replace("\n", " ").replace("\r", " ") for x in r) + "\n" for r in rows)
+                out = z.compress(bloc.encode("utf-8"))
+                if out:
+                    yield out
+                time.sleep(0.05)
+        except Exception:
+            pass
+        finally:
+            c.close()
+        yield z.flush()
+      finally:
+        _EXPORT_V.pop("psa", None)
+    return Response(stream_with_context(flux()), mimetype="application/gzip",
+                    headers={"Content-Disposition": 'attachment; filename="psa_ventes.tsv.gz"', "Cache-Control": "no-store", "X-Accel-Buffering": "no"})
+
+
 @app.route("/admin/ventes_export.tsv.gz")
 def admin_ventes_export():
     """18 nov 2026 (Mathieu : « travaille sur SlabIQ cette nuit avec nos nouvelles donnees ») : TOUTES nos ventes archivees
@@ -2022,6 +2062,11 @@ def _valeurs_auto():
             banque_psa.continuer_si_besoin()
         except Exception as e:
             print("Donnees PSA : " + repr(e)[:160], flush=True)
+        try:                                    # 26 nov 2026 - la liste « A grader » (admin) : refaite une fois par jour, sans credit
+            import a_grader
+            a_grader.refaire_si_besoin()
+        except Exception as e:
+            print("A grader : " + repr(e)[:160], flush=True)
         try:                                    # 10 nov 2026 - le banc de validation (backtest valeur, deals, tendance ; 1 fois/jour)
             import banc
             banc.passe_si_besoin()

@@ -414,7 +414,9 @@ A_TRIER = {"n": 0}
 # « Renewed » / « Achievement »). Le verdict GARDE (table accepte) des ventes que ces regles peuvent toucher est efface UNE fois par
 # base (PRAGMA user_version) : la passe suivante les retrie avec la regle d'aujourd'hui. Sans ca, les tendances des joueurs
 # garderaient pour toujours les « Young Guns Renewed » a 4 $ rangees avec les vraies Young Guns de Crosby ou McDavid.
-TRI_VERSION = 1
+# Version 2 (26 nov, 14 h 30 ; Mathieu : « si ce sont de fausses valeurs, il faut les enlever ») : une raw qui espere une note
+# (« PSA 10 Contender ») n'est plus le comparable d'une carte gradee (cartes_match.espere_note) : ses verdicts gardes aussi.
+TRI_VERSION = 2
 
 
 def retrier_si_regle_change():
@@ -424,11 +426,17 @@ def retrier_si_regle_change():
             c = _cx()
             try:
                 c.execute("CREATE TABLE IF NOT EXISTS accepte (q TEXT, cle TEXT, ok INTEGER, PRIMARY KEY (q, cle))")
-                if c.execute("PRAGMA user_version").fetchone()[0] >= TRI_VERSION:
+                v0 = c.execute("PRAGMA user_version").fetchone()[0]
+                if v0 >= TRI_VERSION:
                     return 0
+                quoi = []
+                if v0 < 1:
+                    quoi += ["v.titre LIKE '%renew%'", "v.titre LIKE '%achievement%'", "v.titre LIKE '%YGR%'", "v.titre LIKE '%YGA%'", "v.titre LIKE '% +%'"]
+                if v0 < 2:
+                    quoi += ["v.titre LIKE '%" + m + "%'" for m in ("contender", "candidate", "worthy", "hopeful", "potential", "possibl", "quality", "ungraded", "not graded",
+                                                                     "10?", "10 ?", "9?", "9 ?", "10 ready", "9 ready")]
                 n = c.execute("DELETE FROM accepte WHERE ok = 1 AND EXISTS (SELECT 1 FROM ventes v WHERE v.q = accepte.q AND v.cle = accepte.cle "
-                              "AND (v.titre LIKE '%renew%' OR v.titre LIKE '%achievement%' OR v.titre LIKE '%YGR%' OR v.titre LIKE '%YGA%' "
-                              "OR v.titre LIKE '% +%'))").rowcount
+                              "AND (" + " OR ".join(quoi) + "))").rowcount
                 c.execute("PRAGMA user_version = %d" % TRI_VERSION)
                 c.commit()
                 return n
