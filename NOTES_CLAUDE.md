@@ -929,6 +929,50 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
 - **Leçons du soir** : `tendDe` et `.tiq-lt` existaient déjà (collision : erreur JS, puis style) : TOUJOURS chercher un nom dans
   tout le fichier avant de le créer. `tests/test_blessures.py` exige le texte exact « [data-np], .w-go ».
 - **Suite complète le 25 nov, 22 h 40 : 298 fichiers, 0 échec** (168 s et 285 s), après la triple vérification.
+- **26 nov, 7 h 30 – 8 h 30 : push de p98, export du 26, et le TEST SUR L'HISTORIQUE (demande de Mathieu : « je m'attends à la perfection ;
+  qu'après ton analyse il nous soit impossible d'améliorer davantage notre modèle »)**.
+  * Push de Mathieu à 7 h 29 (commit 63ed9a5, en ligne 7 h 30). À 8 h 18, le serveur n'avait PAS encore écrit sa ligne « Tendance
+    des sortes : … » (le calcul se fait à la FIN d'un tour du chasseur, au plus un tour par heure, et rien n'est publié tant que
+    les ventes ne sont pas triées) : à relire dans le journal Render.
+  * Export du 26 nov (`ventes_hockey (6).tsv.gz`, pris dans ses Téléchargements, copie dans `/home/claude/export_2611/`) :
+    1 993 717 lignes, 1 392 350 ventes uniques (+127 000 depuis le 24 : 2023 : 18 520 ; 2024 : 187 824 ; 2025 : 310 588 ;
+    2026 : 875 381). Travail dans `/tmp/v26/` (base sqlite complète, `pipeline.py`, `mesure.py`, `histo.py`, `analyse*.py`,
+    `double*.py`, `radar_joueur.py` ; la VM ne les garde pas).
+  * Tendances sur l'export du 26 (vrai chemin) : 148 cartes mesurées (143 Young Guns et variantes), 127 joueurs, 14 hausses et
+    37 baisses confirmées ; 2 sortes (Young Guns −9 % sur 129 cartes ; Young Guns PSA 10 −1 %).
+  * TEST SUR L'HISTORIQUE (`histo.py`) : à chaque quinzaine depuis janvier 2024, chaque carte exacte mesurée COMME le module (avec
+    les seules ventes d'avant), puis les 30 et 60 jours suivants : 4 918 mesures, 387 cartes, 205 joueurs. Résultats (médiane du
+    mois suivant, intervalle à 90 % ré-échantillonné par carte ou par joueur) :
+    - une HAUSSE confirmée : +1,0 % [0,0 ; +2,0] le mois suivant, 0,0 % de 30 à 60 jours : elle ne continue pas ;
+    - une BAISSE confirmée : −2,5 % puis −5,0 %, mais c'est l'effet « nouveau produit » : carte de la saison en cours −7,2 %,
+      carte d'une saison passée −0,1 % ;
+    - carte de la saison en cours, peu importe le signal : −3 à −7 % par mois (déjà dans le modèle : la vague) ;
+    - « DOUBLE HAUSSE » (son idée : la carte monte ET les autres cartes du joueur montent) : +5,8 % le mois suivant, 84 % se
+      revendent à 90 % du prix et plus… mais 85 des 225 cas sont Macklin Celebrini (+10,3 %) ; sans lui +2,2 % [0,0 ; +7,3] ;
+      sans les 5 joueurs les plus présents 0,0 % [−3,3 ; +2,4] ; un joueur = une voix (23 joueurs) : +1,9 %, 10 montent, 8
+      baissent. PAS un signal. L'étiquette verte « Double hausse / Double baisse » est RETIRÉE des listes ; il reste une note
+      neutre dans la fenêtre (« À noter : le marché de ce joueur… est aussi à son plus haut »).
+    - le marché du joueur EN BAISSE (ses autres cartes) : ses cartes perdent encore 3,6 % [−5,9 ; −1,7] le mois suivant (29
+      joueurs ; tient en 2024 et 2026, sans les 5 plus présents). MAIS testé dans le VRAI test du Radar Pro (`radar_joueur.py`,
+      les 735 achats publiés, même définition du succès) : joueur en baisse 87,6 %, stable 88,5 %, en hausse 87,7 % ; « sauter les
+      joueurs en baisse » : 87,8 % (rien de gagné) et 250 achats de moins. Les règles du Radar (liquidité, pas plus de 10 %
+      au-dessus de ce qu'elle se vend) couvrent déjà ça. AUCUNE règle ajoutée, la lettre SlabIQ ne change pas.
+  * TESTS DU SITE refaits sur l'export du 26, SANS écrire (`LR_TESTS_TRAV=/tmp/v26/ts`, 11 min) ; publié (24 nov) → refait :
+    Radar Pro 638 achats, 87,1 % [84,6 ; 89,7] → 735 achats, 87,8 % [85,3 ; 90,2] ; accord 0,684 → 0,692 ; rho 0,929 → 0,952 ;
+    corrections 112 → 118 ; hasard 12,7 % → 12,5 % ; profit après frais 28,5 % → 28,2 % ; SIMULATION d'un an : rendement
+    +10,5 % → +7,9 %, bat le hasard 92 % → 87 %, écart 635 $ → 497 $, p10 +97 $ → −94 $, p90 1 268 $ → 1 081 $ ; inversions
+    [B, C] → [A-, B+] et [B, C]. PAS publié : il doit dire « publie » (la simulation baisse).
+  * Trois constats sur la MESURE elle-même (à lui dire, rien changé) : (1) les 735 achats du Radar Pro viennent de 33 joueurs,
+    62 % de 5 joueurs (Schaefer 135, Fowler 93, Sennecke 89, Celebrini 71, Demidov 70) : l'intervalle publié [85,3 ; 90,2] traite
+    chaque achat comme indépendant ; ré-échantillonné par joueur : [81 ; 94]. Sans ces 5 joueurs : 88,1 % (277 achats, 28 joueurs).
+    (2) par sorte : Young Guns 91 % (524), YG PSA 10 85 % (111), variantes 81 % (54), Future Watch Auto 61 % (41 achats, 8
+    joueurs : trop peu pour une règle ; Misa 1 réussi sur 14). (3) les « inversions » A- / B+ et B / C viennent de la mesure
+    « combien de fois la carte est revendue » : une numérotée ou une auto (rare) revient 0,4 à 1,5 % du temps, une Young Guns
+    7 à 17 %, quelle que soit la lettre : c'est la rareté, pas une erreur de lettre.
+  * Suite complète le 26 nov, 8 h 30 : 298 fichiers, 0 échec. Livré (p99) : `source/src_app.html`, `ui/app.html`,
+    `tests/test_tendance_sortes.py`, `NOTES_CLAUDE.md`. PAS poussé.
+  * EN ATTENTE de lui : « publie » (les tests du site) ; « corrige » (cartes_match : Young Guns Renewed, lots) ; les crédits pour
+    relire les cartes exactes ; l'état du méga test.
 - **Demandé pour demain (21 h 02)** : « améliore SlabIQ et refais nos tests avec les nouvelles data une fois obtenues ; tu devrais
   aller chercher tout automatiquement » → refaire les tests sur les ventes de la collecte de 3 ans ; SlabIQ ne change que si le test
   le prouve ; le test publié sur le site doit tourner seul sur le serveur (tâche `g_c_auto`), sans export à la main.

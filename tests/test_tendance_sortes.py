@@ -274,7 +274,7 @@ assert tb and tb["cle"] == "jacob fowler|young guns|2025" and tb["pct"] == c3["p
 src = lambda f: open(os.path.join(RAC, f), encoding="utf-8").read()
 assert "tendance_sortes.calculer_si_besoin()" in src("deals.py")
 app = src("ui/app.html")
-for m in ("data-td=", "feuilleSorte", "data-tmode=", "badgeTend", "bandeTend", "ajusterPS", "psg", "tiq-mode", "tiq-dbl"):
+for m in ("data-td=", "feuilleSorte", "data-tmode=", "badgeTend", "bandeTend", "ajusterPS", "psg", "tiq-mode"):
     assert m in app, m
 s0 = src("source/src_app.html")
 assert "t.niveau !== 'carte') return ''" in s0                              # le badge de la tuile : seulement LA carte du joueur
