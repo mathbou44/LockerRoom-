@@ -4289,6 +4289,10 @@ body.zp-ouvert{overflow:hidden}
 #rv-aj .ic-h{flex:none; width:20px; height:20px; color:var(--acc)}
 #rv-s{scroll-margin-bottom:96px}
 .fa-med.fa-per{color:var(--or)}
+/* 26 nov 2026 : la watchlist marque les encans gagnes (vert, comme Profit a l'accueil) */
+html body .w-ligne.w-gg{border-color:color-mix(in srgb, #30D158 60%, var(--ligne)) !important; background:linear-gradient(160deg, color-mix(in srgb, #30D158 16%, var(--carte)), var(--carte)) !important; opacity:1 !important}
+html body .w-ligne.w-gg .w-tps.gagne{background:#30D158 !important; color:#0B0B10 !important; font-weight:800}
+html body .w-ligne.w-gg .w-gagne small{color:#30D158 !important} html body .w-ligne.w-gg .w-gagne b{color:#fff !important}
 /* 20 h 11 (« couleur fade ») : un vendeur choisi se voit : la pastille pleine, a la couleur de l'app */
 #rv-l .fv-p{color:#111118; background:var(--acc); border-color:transparent; font-weight:700} #rv-l .fv-p button{color:#111118; opacity:.7}
 .io-sg{border-top:1px solid color-mix(in srgb, var(--ligne) 60%, transparent)} .io-sg[hidden]{display:none}
@@ -11943,6 +11947,9 @@ async function chargerWatch(){
   // max, et l'ecart ; tant qu'il n'est pas trouve : la derniere mise vue
   const finW = (x, cur) => {
     const mm = x.mise_max, f = x.final;
+    // 26 nov 2026, 21 h 50 (Mathieu : « devrait etre marque celle qu'on gagne ») : l'encan est dans tes achats eBay
+    if (x.gagne) return `<div class="w-pr2"><div class="w-final w-gagne"><small>${x.paye != null ? tt('Gagnée · payé', 'Won · paid') : tt('Gagnée', 'Won')}</small><b>${x.paye != null ? argent(x.paye, 0) : f != null ? argent(f, 0) : cur}</b></div>
+      ${mm != null ? `<div><small>${tt('Ta mise max', 'Your max bid')}</small><b>${argent(mm, 0)}</b></div>` : ''}</div>`;
     if (f == null) return `<div class="w-pr2"><div><small>${tt('Dernière mise vue', 'Last bid seen')}</small><b>${cur}</b></div>${r.prix ? `<div class="w-fin-at"><small>${tt('Prix final', 'Final price')}</small><b>${tt('on le cherche…', 'looking it up…')}</b></div>` : ''}</div>`;
     const d = mm != null ? f - mm : null;
     return `<div class="w-pr2"><div class="w-final"><small>${tt('Vendue', 'Sold')}</small><b>${argent(f, 0)}</b></div>
@@ -11951,10 +11958,10 @@ async function chargerWatch(){
   };
   const ligne = (x) => {
     const cur = argent((x.total || 0) - (x.port || 0), 0), fini = x.etat === 'fini', dep = x.etat === 'depasse';
-    const temps = fini ? tt('Terminé', 'Ended') : x.encan ? finCourt(x.reste_min) : tt('Achat imm.', 'Buy now');
-    return `<div class="w-ligne e-${x.etat}" ${attrsAnnonce(x)} role="button" tabindex="0">
+    const temps = fini ? (x.gagne ? tt('Gagnée', 'Won') : tt('Terminé', 'Ended')) : x.encan ? finCourt(x.reste_min) : tt('Achat imm.', 'Buy now');
+    return `<div class="w-ligne e-${x.etat}${x.gagne ? ' w-gg' : ''}" ${attrsAnnonce(x)} role="button" tabindex="0">
       <div class="w-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" decoding="async" data-oe="rm">` : ''}
-        <span class="w-tps ${!fini && x.encan && x.reste_min != null && x.reste_min <= 60 ? 'bientot' : ''}">${x.encan && !fini ? icH() : ''}${temps}</span>
+        <span class="w-tps ${x.gagne ? 'gagne' : !fini && x.encan && x.reste_min != null && x.reste_min <= 60 ? 'bientot' : ''}">${x.encan && !fini ? icH() : ''}${temps}</span>
         ${x.ebay_le && !fini ? `<span class="w-eb">✓ eBay</span>` : ''}</div>
       <div class="w-mil"><div class="w-t">${esc(titreCourt(x.titre))}</div>
         ${fini ? finW(x, cur) : ''}${fini ? '' : `<div class="w-pr2"><div class="${dep ? 'rouge' : ''}"><small>${x.encan ? tt('Mise', 'Bid') : tt('Prix', 'Price')}</small><b>${cur}</b></div>

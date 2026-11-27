@@ -11760,6 +11760,21 @@ class Api:
             resume["profit"] = round(sum(x["profit"] for x in out if x.get("profit") is not None), 2)
         return {"ok": True, "cartes": out, "resume": resume, "ebay": bool(ebay_compte.statut().get("connecte"))}
 
+    def _achats_par_item(self):
+        """26 nov 2026, 21 h 50 (Mathieu, la watchlist : « devrait etre marque celle qu'on gagne ») : les achats eBay du compte par
+        numero d'annonce : {numero: {« cout », « devise », « date »}}. {} si aucun achat ou si la table ne se lit pas."""
+        try:
+            c = self._db()
+            try:
+                self._achats_table(c)
+                rows = c.execute("SELECT item_id, SUM(cout), MAX(devise), MAX(date) FROM achats_ebay WHERE item_id IS NOT NULL AND item_id <> '' GROUP BY item_id").fetchall()
+            finally:
+                c.close()
+        except Exception as e:
+            print("Achats par annonce : " + repr(e)[:120], flush=True)
+            return {}
+        return {str(r[0]): {"cout": r[1], "devise": r[2], "date": r[3]} for r in rows}
+
     def _mes_achats_titre(self, titre, item_id=None):
         """9 nov 2026 (Mathieu : « quand j'affiche une carte, l'app doit chercher si on l'a deja achetee : pour le prix paye
         (profit) et pour ne pas prendre notre achat dans les comps, tout sauf notre deal ») : (achats de la MEME carte, les 3

@@ -771,7 +771,24 @@ def liste(api):
         x["reste_min"] = int((f - maint).total_seconds() // 60) if f and x["encan"] else None
     # 31 oct 2026 (Mathieu : « trier par defaut ceux qui finissent en premier vers les derniers ») : par heure de fin
     # seulement (une mise depassee reste a sa place) ; les prix fixes ensuite, les encans termines a la fin
-    lst.sort(key=lambda x: (1 if x["etat"] == "fini" else 0, x["reste_min"] if x["reste_min"] is not None else 10 ** 7))
+    # 26 nov 2026, 21 h 50 (Mathieu, capture de la section « Ended » : « devrait etre marque celle qu'on gagne ») : un encan
+    # termine dont le numero d'annonce est dans les achats eBay du compte est GAGNE : la ligne le dit, avec ce qui a ete paye
+    # (seulement si l'achat est en dollars canadiens : on n'affiche pas un montant dans une autre devise comme s'il l'etait).
+    # L'achat arrive avec la synchro eBay du compte : une carte gagnee a l'instant peut rester « Terminé » jusque-la.
+    if any(x["etat"] == "fini" for x in lst):
+        try:
+            achats = api._achats_par_item() if hasattr(api, "_achats_par_item") else {}
+        except Exception:
+            achats = {}
+        for x in lst:
+            if x["etat"] != "fini" or not achats:
+                continue
+            m = re.search(r"\d{9,14}", str(x.get("item_id") or ""))
+            a = achats.get(m.group(0)) if m else None
+            if a:
+                x["gagne"] = True
+                x["paye"] = round(float(a["cout"]), 2) if a.get("cout") and str(a.get("devise") or "CAD").upper() == "CAD" else None
+    lst.sort(key=lambda x: (1 if x["etat"] == "fini" else 0, 0 if x.get("gagne") else 1, x["reste_min"] if x["reste_min"] is not None else 10 ** 7))
     return {"ok": True, "cartes": lst, "n": len(lst), "reglages": reglages(api), "prix": bool(prix_ok)}
 
 

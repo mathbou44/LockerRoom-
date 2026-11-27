@@ -1573,3 +1573,11 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   qu'on bug ou on est incomplet » : mesurer d'autres sortes (O-Pee-Chee Platinum, SPx, Credentials, Allure…) depuis nos archives.
 - **Collecte PSA relancée par lui à 21 h 40** (501 joueurs, 365 jours, 1 221 recherches, plafond laissé à 10 000).
 - `tests/test_comps_fraiches.py`. Suite complète, 22 h : 314 fichiers, 0 échec.
+- **p116 poussé par Claude à 21 h 54 (commit 76bfb47 ; son mot à 21 h 50 : « push quand t'es prêt »)**, par GitHub Desktop (PC
+  déverrouillé). En ligne à 21 h 56. Journal au démarrage : « Limite quotidienne d'appels eBay presque atteinte : reprise
+  automatique demain » (Deals fin proche et prix fixes en pause) : le chasseur ne relit plus eBay ce soir.
+- **Watchlist : les encans gagnés sont marqués (p117 ; 21 h 50 : « devrait être marqué celle qu'on gagne »)** :
+  `Api._achats_par_item()` (table `achats_ebay`) ; `watchlist.liste` pose `gagne` et `paye` (seulement si l'achat est en $ CA) sur
+  un encan TERMINÉ dont le numéro d'annonce est dans les achats du compte ; les gagnés d'abord dans « Ended ». Écran : pastille
+  verte « Gagnée », « Gagnée · payé 25 $ » à la place de « on le cherche… ». L'achat arrive avec la synchro eBay : une carte gagnée
+  à l'instant peut rester « Terminé » jusque-là. `tests/test_watchlist_gagnee.py`. Suite : 315 fichiers, 0 échec.
