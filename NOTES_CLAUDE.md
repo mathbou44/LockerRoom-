@@ -1511,3 +1511,33 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   propositions) et à l'ordi. `tests/test_cueillette_filtres.py`. Suite complète : 311 fichiers, 0 échec.
 - **Règle D des comps (proposée, PAS livrée, attend son oui)** : quand le même titre exact s'est déjà vendu dans les 60 jours, la
   valeur ne dépasse pas cette vente. Banc (2 500 ventes cachées, 323 cas) : trop haut ×1,5 : 6,2 % → 3,8 % ; à ± 25 % : 57 % → 53 %.
+- **Règle « même titre » des comps, LIVRÉE (p114 ; son oui à 20 h 03 : « mets une règle pour ne plus que ça arrive »)** :
+  `deals.plafonner_meme_titre` : quand le même titre exact que l'annonce s'est déjà vendu dans les 60 jours (nos archives du
+  joueur, toutes recherches : `q` commence par le nom du joueur ; mémoire 30 min par joueur, `_MEME`), la valeur ne dépasse pas
+  cette vente, qui passe en tête des ventes montrées (`meme: True`). Branchée dans `valeur_annonce`, `valeur_ou_saison`, les deux
+  chaînes de secours du chasseur et la fiche d'annonce (`lockerroom.py`, après `vm`). La fiche écrit « le même titre s'est vendu
+  83 $ le 19 nov ». Un plafond, jamais un plancher ; base occupée : la règle se tait. Vérifié sur la copie des archives : Martone
+  373 $ → 82,88 $ ; Doan 127,97 $ → 25,99 $. `tests/test_meme_titre.py`.
+- **Bouton des filtres mort à l'ordi après « Appliquer » (20 h 12)** : au 2e dessin du Radar, `brancherRondsDeals` posait le clic
+  sur l'ANCIEN `#dr-fil` (encore dans l'en-tête), puis `rangerRecherche` retirait l'ancienne barre. Maintenant `rangerRecherche()`
+  AVANT `brancherRondsDeals()`. Leçon : rejouer avec de VRAIS clics (`pg.click`), pas en appelant la fonction.
+- **Cueillette, suite (20 h 11 – 20 h 12)** : les propositions ne passent plus sous « Appliquer » (`scrollIntoView` +
+  `scroll-margin-bottom`) ; pastilles pleines lilas ; `deals_vendeurs_liste` renvoie `proposes` (suivis + `VENDEURS_DEFAUT` +
+  `RAMASSAGE_DEFAUT` + vendeurs des annonces du Radar) : CF31 n'était pas dans la liste réglée en ligne.
+- **Palette de l'accueil (relevée dans le navigateur)** : les couleurs système d'iOS : bleu #0A84FF (Radar), vert #30D158
+  (Profit), orange #FF9F0A (Inventaire), rose #FF375F (Tendances), mauve #BF5AF2 (Breaks), cyan #64D2FF (À faire) ; recette : halo
+  radial 34 % dans le coin + dégradé 24 % → 10 % + contour 48 %.
+- **Admin aux couleurs de l'accueil, simplifié (p115 ; 19 h 10 – 19 h 11, « go pour admin aussi » à 20 h 03)** : un seul bloc CSS, le
+  DERNIER du style (« L'admin prend la PALETTE DE L'ACCUEIL ») : `.ceo{--i-vert … --i-cyan}` ; les tuiles de chiffres
+  (`.ceo-kpis`, `.adm-kpi2`) et les tuiles « Outils admin » (`.adm-grille2 > .adm-tu`) prennent la recette de l'accueil, une
+  couleur par tuile ; libellés en minuscules ; en-têtes de carte sans rayures, avec un point de couleur ; la liste « À faire »
+  sans l'étiquette répétée (la pastille du numéro porte l'urgence). `tests/test_admin_couleurs.py`.
+- **« Worth grading » en tuiles (19 h 25)** : `ligneG` + `etatG` : `ag-ok` vert (rentable même en 9), `ag-seu` orange (il faut une
+  part de 10), `ag-per` rose (perd même en 10), `ag-inc` bleu (PSA 9 pas mesurée). Vu en feuille (ordi et 393 × 852) ; PAS vu dans
+  le panneau Tendances lui-même (pas de données locales pour cet onglet) : à regarder en ligne.
+- **Tâches du tableau à jour (19 h 11 : « refresh les données »)** : `SEMIS["apple_26nov"]` (TestFlight ; captures + fiche +
+  envoi ; Small Business Program) et `CLOS["clos_apple_26nov"]` (`ap_build` fait, `ap_soumettre` remplacée). 26 tâches ouvertes
+  (18 à lui, 8 à Claude), comme après le ménage du 23 nov.
+- **Suite complète, 20 h 50 : 313 fichiers, 0 échec.**
+- **À faire (20 h 46, capture de la fiche d'annonce à l'ordi, 1377 × 841)** : « devrait pas avoir de scroll bar » : la fiche doit
+  tenir sans défiler (les tuiles Joueur / Vendeur étaient coupées).

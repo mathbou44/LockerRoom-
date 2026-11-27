@@ -55,4 +55,22 @@ api = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "t.db"))
 r = api.deals_ramassage(["SlabSharksInc", "remi-card-trader", "un nom<script>"])
 assert r["ramassage"] == ["remi-card-trader", "slabsharksinc", "unnomscript"], r["ramassage"]
 assert api._chez_ramassage() == {"slabsharksinc", "remi-card-trader", "unnomscript"}
+# ---- 4. 20 h 12 (« il detecte pas cf31 ») : les vendeurs proposes = suivis + ceux de depart + ceux du Radar
+import deals as _d
+_d.vendeurs_suivis = lambda: ["savage.cards", "wests01"]            # une liste reglee en ligne, sans CF31
+_d.lire_vite = lambda: {"deals": [{"item_id": "1", "vendeur": "SlabSharksInc"}, {"item_id": "2", "vendeur": "nouveau_vendeur-99"}, {"item_id": "3", "vendeur": "<b>pas un nom</b>"}],
+                        "encans": {"a": {"vendeur": "encan.cards"}}}
+r = api.deals_vendeurs_liste()
+p_ = [v.lower() for v in r["proposes"]]
+assert "cf31_sports_cards" in p_ and "remi-card-trader" in p_ and "savage.cards" in p_, p_
+assert "nouveau_vendeur-99" in p_ and "encan.cards" in p_ and p_.count("slabsharksinc") == 1, p_
+assert not any("<" in v for v in r["proposes"]) and r["vendeurs"] == ["savage.cards", "wests01"]
+assert "r.proposes || r.vendeurs" in src
+
+# ---- 5. 20 h 12 (« le filtre ouvre plus depuis que j'ai pick les local pick up ») : a l'ordi, la barre est rangee dans l'en-tete
+# AVANT de brancher ses boutons (sinon le clic va sur l'ancien bouton, retire juste apres)
+d0 = src.index("async function chargerDeals(frais){")
+cd = src[d0:src.index("\nfunction ", d0 + 10)]
+assert "  rangerRecherche();\n  brancherRondsDeals(F, sp);" in cd and cd.count("brancherRondsDeals(F, sp);") == 1, "ranger d'abord, brancher ensuite"
+assert "z.scrollIntoView({block: 'nearest'})" in filtres or "scrollIntoView({block: 'nearest'})" in src and "#rv-s{scroll-margin-bottom:96px}" in src
 print("test_cueillette_filtres OK")

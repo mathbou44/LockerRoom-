@@ -12,8 +12,9 @@ claude = [t for t in ouv if re.match(r"\s*claude\b", t["titre"], re.I)]
 # 1. la liste tient sur un ecran : 87 ouvertes avant, 25 apres (18 a lui, 7 a Claude)
 assert len(ouv) <= 26 and len(ouv) - len(claude) <= 18 and len(claude) <= 8, (len(ouv), len(claude))
 # 2. Apple reste en tete, tel quel, avec ses dates
-assert [T[i]["etat"] for i in ("ap_accord", "ap_build", "ap_soumettre")] == ["a_faire"] * 3
-assert [t["id"] for t in ceo.taches(c)[:3]] == ["ap_accord", "ap_build", "ap_soumettre"]
+assert [T[i]["etat"] for i in ("ap_accord", "ap_build", "ap_soumettre")] == ["a_faire", "fait", "fait"]      # 26 nov : le build est lance, l'envoi redecoupe (apple_26nov)
+ids_ = [t["id"] for t in ceo.taches(c)]
+assert ids_[0] == "ap_accord" and {"ap2_testflight", "ap2_small", "ap2_soumettre"} <= set(ids_[:9]), ids_[:9]      # 26 nov : Apple reste en haut, par date
 # 3. chaque tache fermee par le menage a sa raison, et celle qui la remplace existe et est ouverte
 M = ceo.CLOS["clos_menage_23nov"]
 titres_ouverts = " | ".join(t["titre"] for t in ouv)
@@ -37,7 +38,7 @@ T["g_cell"]["etat"] = "fait"; T["sr_2fa"]["etat"] = "a_faire"
 n = len(c["taches"]); c = ceo._semer(c); T2 = {t["id"]: t for t in c["taches"]}
 assert len(c["taches"]) == n and T2["g_cell"]["etat"] == "fait" and T2["sr_2fa"]["etat"] == "a_faire"
 # 6. sur SA liste d'avant (deja semee, des taches cochees a la main) : le menage passe une fois, sans rien doubler
-avant = ceo._semer({"semis": ["menage_23nov", "clos_menage_23nov", "auto_23nov", "clos_auto_23nov"], "taches": []})          # sa liste, telle qu'elle etait a 20 h
+avant = ceo._semer({"semis": ["menage_23nov", "clos_menage_23nov", "auto_23nov", "clos_auto_23nov", "apple_26nov", "clos_apple_26nov"], "taches": []})          # sa liste, telle qu'elle etait a 20 h
 assert not any(t["id"].startswith("g_") for t in avant["taches"]) and sum(t["etat"] != "fait" for t in avant["taches"]) == 87
 avant["semis"] = [x for x in avant["semis"] if "menage" not in x]
 next(t for t in avant["taches"] if t["id"] == "sr_github")["etat"] = "fait"           # il l'avait deja fait

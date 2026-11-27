@@ -1857,7 +1857,21 @@ class Api:
         # 12 nov 2026 (revue : on ne nomme pas les vendeurs prioritaires) : l'ordre de priorite reste a l'admin ; les autres
         # voient la liste par ordre alphabetique
         vs = sorted(_d.vendeurs_suivis(), key=(lambda v: _d.rang_ordre(v)) if self._est_admin() else (lambda v: str(v).lower()))
-        return {"ok": True, "vendeurs": vs, "ramassage": sorted(self._chez_ramassage())}
+        # 26 nov 2026, 20 h 12 (Mathieu, la cueillette dans les filtres : « il detecte pas cf31 ») : la liste reglee en ligne ne
+        # contenait pas tous les vendeurs. Les vendeurs PROPOSES pour la cueillette : les suivis, ceux de depart (dont Savage,
+        # Remi et CF31) et tous ceux qui ont une annonce dans le Radar en ce moment.
+        prop = {str(v).strip().lower(): str(v).strip() for v in list(_d.VENDEURS_DEFAUT) + list(_d.RAMASSAGE_DEFAUT) + list(vs) if str(v).strip()}
+        try:
+            dd = _d.lire_vite() or {}
+            for cle_ in ("deals", "encans", "suivis"):
+                lst = dd.get(cle_) or []
+                for x in (lst.values() if isinstance(lst, dict) else lst):
+                    v = str((x or {}).get("vendeur") or "").strip() if isinstance(x, dict) else ""
+                    if v and re.fullmatch(r"[A-Za-z0-9._*-]{2,64}", v):
+                        prop.setdefault(v.lower(), v)
+        except Exception as e:
+            print("Vendeurs proposes : " + repr(e)[:120], flush=True)
+        return {"ok": True, "vendeurs": vs, "ramassage": sorted(self._chez_ramassage()), "proposes": sorted(prop.values(), key=str.lower)}
 
     def deals_ramassage(self, liste):
         """Les vendeurs ou l'utilisateur ramasse sur place : le port ne compte pas dans ses deals."""
@@ -13286,6 +13300,15 @@ class Api:
         src_vm = "echange" if vm and isinstance(vs_[1], list) and any(isinstance(x, dict) and x.get("_ech") for x in vs_[1]) else "vendues"
         if vm and med and n >= 3:                 # 3 nov 2026 (revue) : le meme plafond que le chasseur (deals.valeur_annonce)
             vm = min(vm, round(med * 0.85, 2))
+        # 26 nov 2026 (Mathieu, Josh Doan Violet Pixels /65 et Porter Martone Auto Patch /175 : « mets une regle pour ne plus
+        # que ca arrive ») : la meme regle que le chasseur : le meme titre exact deja vendu dans les 60 jours plafonne la
+        # valeur, et cette vente passe en tete des ventes montrees (deals.plafonner_meme_titre)
+        if vm:
+            pm_ = _deals.plafonner_meme_titre({"titre": t, "item_id": item_id}, (vm, src_vm, len(ventes or []), list(ventes or [])))
+            if pm_ and pm_[0] < vm:
+                moi_ = pm_[3][0]
+                vm = pm_[0]
+                ventes = [moi_] + [x for x in (ventes or []) if not (str(x.get("le") or "")[:10] == moi_["le"] and abs(float(x.get("prix") or 0) - moi_["prix"]) < 0.01)]
         valeur = vm
         juger = bool(vm)
         # 7 nov 2026 (Mathieu : « la Ron Francis : mettre les annees a cote pour la meme carte, montrer les cartes similaires

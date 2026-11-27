@@ -359,6 +359,22 @@ CLOS = {"clos_auto_23nov": {"r_donnees": "Retirée le 23 nov (« je veux pas cli
                        "v_piles": "Fait par Claude le 21 nov : les piles sont lues ; la cause des minutes lentes après une mise à jour est corrigée."}}
 
 
+# 26 nov 2026, 19 h 11 (Mathieu, le tableau de bord : « refresh les donnees, je ne crois pas que tout est up to date ») : la suite
+# Apple disait encore « mardi » et « mercredi ». Ce qui est fait se ferme (19 h 07 : « j'en ai lance un hier sur Codemagic ») ;
+# ce qui reste tient en deux gestes, plus la tache du Small Business Program (19 h 08 : « non, pas fait »). Pas plus de
+# taches qu'avant le menage du 23 nov (« 86 taches c'est bcp trop ») : 3 de plus, 2 de moins.
+SEMIS["apple_26nov"] = [
+    ("ap2_testflight", "Apple : vérifier le build dans TestFlight, puis tester « S'abonner » et « Restaurer »", "Codemagic : le build du 25 nov doit être vert. App Store Connect → TestFlight : il y apparaît 10 à 30 minutes après. Sur ton iPhone : « S'abonner », puis « Restaurer mes achats ».", 1, None, "https://appstoreconnect.apple.com", "2026-11-26"),
+    ("ap2_soumettre", "Apple : 6 captures en vue Pro, la fiche, la note de révision, puis soumettre", "Captures en français et en anglais, toujours en vue Pro (jamais Admin). La fiche est dans mobile/APP_STORE.md. Le code de démo, c'est toi qui le mets dans la note. Décoche les pays de l'Union européenne. Sortie manuelle. Après l'envoi : un seul push par jour, tard le soir, jusqu'à l'approbation.", 1, None, "https://appstoreconnect.apple.com", "2026-11-27"),
+    ("ap2_small", "Apple : s'inscrire au Small Business Program (2 minutes)", "La commission d'Apple passe de 30 % à 15 %. Ça ne bloque pas le lancement, mais la réponse peut prendre des semaines : à faire tout de suite.", 1, None, "https://developer.apple.com/app-store/small-business-program/enroll/", "2026-11-26"),
+]
+SEMIS_PROJET["apple_26nov"] = "lancement"
+CLOS["clos_apple_26nov"] = {
+    "ap_build": "Fait le 25 nov : l'abonnement est créé et le build est lancé sur Codemagic (Mathieu, 26 nov).",
+    "ap_soumettre": "Remplacée le 26 nov par deux tâches à jour : TestFlight, puis captures, fiche et envoi.",
+}
+
+
 def taches(cfg=None):
     """Les taches, la plus importante d'abord (priorite, puis echeance, puis la plus vieille)."""
     cfg = cfg if cfg is not None else lire()

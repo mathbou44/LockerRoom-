@@ -4287,6 +4287,9 @@ body.zp-ouvert{overflow:hidden}
 .io-plus:disabled{opacity:.3}
 /* 26 nov 2026 : la cueillette locale dans les filtres : les vendeurs proposes s'ouvrent SOUS le champ, une rangee chacun */
 #rv-aj .ic-h{flex:none; width:20px; height:20px; color:var(--acc)}
+#rv-s{scroll-margin-bottom:96px}
+/* 20 h 11 (« couleur fade ») : un vendeur choisi se voit : la pastille pleine, a la couleur de l'app */
+#rv-l .fv-p{color:#111118; background:var(--acc); border-color:transparent; font-weight:700} #rv-l .fv-p button{color:#111118; opacity:.7}
 .io-sg{border-top:1px solid color-mix(in srgb, var(--ligne) 60%, transparent)} .io-sg[hidden]{display:none}
 .io-sgb{display:flex; align-items:center; width:100%; min-height:44px; padding:0 16px 0 46px; border:0; background:none; color:var(--acc); font:500 17px/1.2 var(--f-txt, inherit); text-align:left; cursor:pointer}
 .io-sgb + .io-sgb{border-top:1px solid color-mix(in srgb, var(--ligne) 60%, transparent)} .io-sgb:active{background:var(--carte2)}
@@ -7166,6 +7169,64 @@ html body .onglets .pastille[hidden], html body .onglets .cloche-n[hidden]{displ
 .ceo-entw-f{position:absolute; inset:0; background:rgba(5,5,8,.55); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px)}
 .ceo-entw-c{position:relative; width:min(880px, 92vw); padding:22px 24px !important; border-radius:24px !important}
 .ceo-entw-x{position:absolute; top:5px; right:8px; z-index:2; width:34px; height:34px; border-radius:50%; border:1px solid var(--ligne); background:var(--carte2); color:var(--texte); font-size:20px; line-height:1; cursor:pointer}
+/* ============================================================================================================
+   26 nov 2026, 19 h 10 – 19 h 11 (Mathieu, captures du tableau de bord admin : « les couleurs sont fades, on doit les mettre
+   dans le meme style que celles que t'as deja modifie comme l'accueil » ; « pense toujours Apple iOS, simplifie la section
+   admin au complet »). L'admin prend la PALETTE DE L'ACCUEIL (les couleurs systeme d'iOS : vert Profit, bleu Radar, orange
+   Inventaire, rose Tendances, mauve Breaks, cyan A faire) et sa recette (un halo dans le coin, un fond teinte, un contour
+   de la meme couleur). Simplifie comme Reglages d'iOS : des libelles en minuscules (plus de MAJUSCULES espacees), des
+   en-tetes de carte sans rayures, une liste « A faire » sans l'etiquette repetee sur chaque ligne (la pastille du numero
+   dit deja l'urgence : rouge, or, lilas).
+   ============================================================================================================ */
+.ceo{--i-vert:#30D158; --i-bleu:#0A84FF; --i-orange:#FF9F0A; --i-rose:#FF375F; --i-mauve:#BF5AF2; --i-cyan:#64D2FF}
+/* les chiffres du haut et toutes les grilles de chiffres de l'admin : une couleur par tuile, dans l'ordre de l'accueil */
+html body .ceo :is(.ceo-kpis, .adm-kpi2, .adm-grille2) > :nth-child(6n+1){--tt:var(--i-vert)} html body .ceo :is(.ceo-kpis, .adm-kpi2, .adm-grille2) > :nth-child(6n+2){--tt:var(--i-rose)}
+html body .ceo :is(.ceo-kpis, .adm-kpi2, .adm-grille2) > :nth-child(6n+3){--tt:var(--i-bleu)} html body .ceo :is(.ceo-kpis, .adm-kpi2, .adm-grille2) > :nth-child(6n+4){--tt:var(--i-orange)}
+html body .ceo :is(.ceo-kpis, .adm-kpi2, .adm-grille2) > :nth-child(6n+5){--tt:var(--i-mauve)} html body .ceo :is(.ceo-kpis, .adm-kpi2, .adm-grille2) > :nth-child(6n+6){--tt:var(--i-cyan)}
+/* « Net par mois » : vert quand il est positif (la 2e tuile est rose par defaut : un net negatif) */
+html body .ceo .ceo-k6 > .ceo-k.vert:nth-child(2){--tt:var(--i-vert)} html body .ceo .ceo-k6 > .ceo-k:nth-child(1){--tt:var(--i-vert)}
+html body .ceo :is(.ceo-kpis, .adm-kpi2) > .ceo-k, html body .ceo .adm-grille2 > .adm-tu{
+  background:radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--tt) 34%, transparent), transparent 62%),
+    linear-gradient(160deg, color-mix(in srgb, var(--tt) 24%, color-mix(in srgb, var(--carte) 86%, transparent)), color-mix(in srgb, var(--tt) 10%, color-mix(in srgb, var(--carte) 70%, transparent))) !important;
+  border-color:color-mix(in srgb, var(--tt) 48%, var(--ligne)) !important}
+html body .ceo .ceo-kpis .ceo-k::before{display:none}
+html body .ceo .ceo-k span{font:600 13px/1.2 var(--f-txt, inherit) !important; letter-spacing:0 !important; text-transform:none !important; color:color-mix(in srgb, var(--tt) 55%, #fff) !important}
+html body .ceo .ceo-k b{color:#fff} html body .ceo .ceo-k.vert b{color:var(--i-vert)} html body .ceo .ceo-k.rouge b{color:#FF6B81} html body .ceo .ceo-k.or b{color:var(--i-orange)}
+html body .ceo .ceo-k small{color:rgba(255,255,255,.72) !important}
+html body .ceo .adm-grille2 > .adm-tu .adm-tu-i{background:color-mix(in srgb, var(--tt) 30%, transparent) !important; border-color:color-mix(in srgb, var(--tt) 60%, transparent) !important; color:#fff !important}
+html body .ceo .adm-grille2 > .adm-tu .adm-tu-t small{color:rgba(255,255,255,.7) !important}
+/* les cartes : un en-tete simple, comme un groupe de Reglages (plus de rayures ni de filet), avec un point de couleur */
+html body .ceo .ceo-c > .ceo-c-t{background:none !important; font:700 15px/1.2 var(--f-txt, inherit) !important; letter-spacing:0 !important; text-transform:none !important; color:var(--texte) !important}
+html body .ceo .ceo-c > .ceo-c-t::after{display:none}
+html body .ceo .ceo-c > .ceo-c-t::before{content:''; display:inline-block; width:8px; height:8px; margin-right:8px; border-radius:50%; background:var(--cc, var(--i-cyan)); vertical-align:1px}
+html body .ceo .ceo-c:nth-child(6n+1){--cc:var(--i-cyan)} html body .ceo .ceo-c:nth-child(6n+2){--cc:var(--i-vert)} html body .ceo .ceo-c:nth-child(6n+3){--cc:var(--i-orange)}
+html body .ceo .ceo-c:nth-child(6n+4){--cc:var(--i-mauve)} html body .ceo .ceo-c:nth-child(6n+5){--cc:var(--i-rose)} html body .ceo .ceo-c:nth-child(6n+6){--cc:var(--i-bleu)}
+html body .ceo .ceo-home-d > .ceo-c:nth-child(1){--cc:var(--i-vert)} html body .ceo .ceo-home-d > .ceo-c:nth-child(2){--cc:var(--i-orange)}
+html body .ceo .ceo-home-b2 > .ceo-c:nth-child(1){--cc:var(--i-mauve)} html body .ceo .ceo-home-b2 > .ceo-c:nth-child(2){--cc:var(--i-rose)}
+html body .ceo .ceo-c{border-color:color-mix(in srgb, var(--cc, var(--ligne)) 26%, var(--ligne)) !important}
+/* « A faire » : plus d'etiquette sur chaque ligne ; le numero porte la couleur (rouge = urgent, or = bientot, lilas = a faire) */
+html body .ceo .ceo-al-l .ceo-pr{display:none !important}
+html body .ceo .ceo-al-l.rouge .ceo-al-b > i{background:var(--i-rose) !important; color:#fff !important} html body .ceo .ceo-al-l.or .ceo-al-b > i{background:var(--i-orange) !important; color:#111118 !important}
+html body .ceo .ceo-al-l{border-color:color-mix(in srgb, var(--ligne) 70%, transparent) !important}
+/* les titres de section (Outils admin, Taxes...) : en minuscules, comme iOS */
+html body .ceo .acc-sec, html body .ceo .ceo-nav-g{text-transform:none !important; letter-spacing:0 !important; font:600 13px/1.2 var(--f-txt, inherit) !important; color:var(--doux) !important}
+html body .ceo :is(.pilule, .ceo-tadd, .ceo-qui){text-transform:none !important; letter-spacing:0 !important}
+/* 26 nov 2026, 19 h 25 (« Worth grading » : « simple, epure, beau et colore ») : une tuile par carte, la couleur dit la reponse */
+.tiq-mg{--tt:#0A84FF}
+.tiq-mg.ag-ok{--tt:#30D158} .tiq-mg.ag-seu{--tt:#FF9F0A} .tiq-mg.ag-per{--tt:#FF375F} .tiq-mg.ag-inc{--tt:#0A84FF}
+html body .tiq-m.tiq-mg{display:flex; align-items:center; gap:12px; width:100%; min-height:64px; margin:0 0 8px; padding:10px 14px 10px 10px; border-radius:16px; text-align:left;
+  border:1px solid color-mix(in srgb, var(--tt) 46%, var(--ligne)) !important;
+  background:radial-gradient(120% 110% at 0% 0%, color-mix(in srgb, var(--tt) 30%, transparent), transparent 64%),
+    linear-gradient(160deg, color-mix(in srgb, var(--tt) 20%, color-mix(in srgb, var(--carte) 86%, transparent)), color-mix(in srgb, var(--tt) 8%, color-mix(in srgb, var(--carte) 72%, transparent))) !important}
+html body .tiq-mg::before, html body .tiq-mg::after{display:none !important}
+html body .tiq-mg .tiq-rg{flex:none; width:30px; height:30px; border-radius:50%; display:grid; place-items:center; background:var(--tt); color:#0B0B10; font:800 14px/1 var(--f-txt, inherit)}
+html body .tiq-mg .tiq-mn{flex:1; min-width:0; display:flex; flex-direction:column; gap:1px}
+html body .tiq-mg .tiq-mn b{font:700 16px/1.2 var(--f-txt, inherit); color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+html body .tiq-mg .tiq-mn small{font-size:13px; line-height:1.25; color:rgba(255,255,255,.72); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+html body .tiq-mg .tiq-gs, html body .tiq-mg .tiq-gs.ok{color:color-mix(in srgb, var(--tt) 62%, #fff) !important; font-weight:600}
+html body .tiq-mg .ag-x{font:800 24px/1 var(--f-txt, inherit); color:#fff; letter-spacing:-.01em}
+@media (hover:hover){ html body .tiq-mg:hover{border-color:var(--tt) !important} } html body .tiq-mg:active{transform:scale(.985)}
+html body .ceo .acc-sec span{text-transform:none !important; letter-spacing:0 !important; font:600 14px/1.2 var(--f-txt, inherit) !important; color:var(--texte) !important}
 </style>
 <script>
 
@@ -11622,13 +11683,14 @@ async function feuilleFiltresDeals(){
     z.hidden = !q; $('#rv-in').setAttribute('aria-expanded', q ? 'true' : 'false');
     z.innerHTML = !q ? '' : L.length ? L.map(v => `<button type="button" class="io-sgb" role="option" data-rv="${esc(v)}">${esc(v)}</button>`).join('')
       : `<div class="io-sg0">${tt('Aucun vendeur à ce nom dans le Radar', 'No seller by that name in the Radar')}</div>`;
+    if (q) z.scrollIntoView({block: 'nearest'});                       // jamais sous la barre « Appliquer » (20 h 11 : « l'affichage bug »)
     $$('#rv-s [data-rv]').forEach(b => b.onclick = () => { if (RAM.length < RMAX && !RAM.some(x => cleV(x) === cleV(b.dataset.rv))) RAM.push(b.dataset.rv);
       $('#rv-in').value = ''; vibrer(); peindreRam(); peindreProp(); marquer(); }); };
   $('#rv-in').oninput = peindreProp;
   $('#rv-aj').onsubmit = (e) => { e.preventDefault(); const b = $('#rv-s [data-rv]'); if (b) b.click(); };      // Entree : la 1re proposition, jamais le texte tape
   peindreRam();
   API.deals_vendeurs_liste().then(r => { if (!r || !r.ok || !$('#rv-in')) return;
-    VEND = [...new Map([...(r.vendeurs || []), ...VEND, ...(r.ramassage || [])].map(v => [cleV(v), v])).values()];
+    VEND = [...new Map([...(r.proposes || r.vendeurs || []), ...VEND, ...(r.ramassage || [])].map(v => [cleV(v), v])).values()];
     (r.ramassage || []).forEach(v => { const n = VEND.find(x => cleV(x) === cleV(v)) || v; if (!RAM.some(x => cleV(x) === cleV(n))) { RAM.push(n); RAM0.push(cleV(n)); } });
     peindreRam(); peindreProp(); }).catch(() => {});
 
@@ -13480,7 +13542,7 @@ async function ouvrirAnnonce(base){
       ${d.valeur_source === 'autre_saison' ? `<div class="fa-pils"><span class="capsule or" style="white-space:normal; line-height:1.3">${tt(`Pas de comps pour la ${esc(d.saison_carte || 'saison')} : estimé avec ${esc((d.saisons || []).join(', '))}`, `No comps for the ${esc(d.saison_carte || 'season')}: estimated from ${esc((d.saisons || []).join(', '))}`)}</span></div>` : ''}
       ${ventes.length && d.ventes_attente ? barreProg(S.fenT0, 25, tt('Ventes déjà connues · mise à jour…', 'Known sales · updating…'), 'mince') : ''}
       ${blocMesAchats(d.mes_achats, d.deja_achetee, d.mes_retirees, d.valeur)}
-      <div class="fa-ventes">${ventes.length ? `<div class="fa-vt">${d.valeur_source === 'inscr_plancher' && d.valeur ? tt('Au moins ', 'At least ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : (d.valeur_source === 'autre_saison' || d.valeur_source === 'approx' || d.valeur_source === 'unique' || d.valeur_source === 'autre_note' || d.valeur_source === 'echange') && d.valeur ? tt('Estimé ', 'Estimated ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : d.valeur ? tt('Se vend ', 'Sells for ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : tt('Vendues récemment', 'Recently sold')} <small>${d.valeur_source === 'echange' ? tt(`ventes d’avant son échange${d.echange ? ' (' + esc(d.echange.de_nom) + ' → ' + esc(d.echange.vers_nom) + ')' : ''} comptées à ${d.echange && d.echange.sens === 'baisse' ? 70 : 90} % · glisse ›`, `pre-trade sales${d.echange ? ' (' + esc(d.echange.de_nom) + ' → ' + esc(d.echange.vers_nom) + ')' : ''} counted at ${d.echange && d.echange.sens === 'baisse' ? 70 : 90}% · swipe ›`) : d.valeur_source === 'inscr_plancher' ? tt(`plancher · ${d.nb_vendues} ventes sans inscription · glisse ›`, `floor · ${d.nb_vendues} sales without inscription · swipe ›`) : d.valeur_source === 'autre_note' ? tt(`la même carte, autre note ou compagnie · ${d.nb_vendues} vente${d.nb_vendues > 1 ? 's' : ''} ramenée${d.nb_vendues > 1 ? 's' : ''} à sa note · glisse ›`, `the same card, another grade or grader · ${d.nb_vendues} sale${d.nb_vendues > 1 ? 's' : ''} adjusted to its grade · swipe ›`) : d.valeur_source === 'unique' ? tt('une seule vente (18 mois max), valeur prudente −25 à −40 % · glisse ›', 'only one sale (18 months max), cautious value −25 to −40% · swipe ›') : d.valeur_source === 'approx' ? tt(`≈ cartes similaires · ${d.nb_vendues} ventes, −25 % · glisse ›`, `≈ similar cards · ${d.nb_vendues} sales, −25% · swipe ›`) : d.valeur_source === 'autre_saison' ? tt(`cartes similaires · ${d.nb_vendues} vente${d.nb_vendues > 1 ? 's' : ''}, −20 % · glisse ›`, `similar cards · ${d.nb_vendues} sale${d.nb_vendues > 1 ? 's' : ''}, −20% · swipe ›`) : d.valeur && ventes.length && ventes.every(v => !v.prix || v.prix > d.valeur * 1.02) ? tt(`${d.nb_vendues || ventes.length} ventes seulement : −10 % sur la plus basse · glisse ›`, `only ${d.nb_vendues || ventes.length} sales: −10% off the lowest · swipe ›`) : d.valeur && d.nb_vendues ? tt(`médiane de ${d.nb_vendues} ventes · glisse ›`, `median of ${d.nb_vendues} sales · swipe ›`) : tt('même carte · glisse ›', 'same card · swipe ›')}</small></div>
+      <div class="fa-ventes">${ventes.length ? `<div class="fa-vt">${d.valeur_source === 'inscr_plancher' && d.valeur ? tt('Au moins ', 'At least ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : (d.valeur_source === 'autre_saison' || d.valeur_source === 'approx' || d.valeur_source === 'unique' || d.valeur_source === 'autre_note' || d.valeur_source === 'echange') && d.valeur ? tt('Estimé ', 'Estimated ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : d.valeur ? tt('Se vend ', 'Sells for ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : tt('Vendues récemment', 'Recently sold')} <small>${ventes[0] && ventes[0].meme ? tt(`le même titre s’est vendu ${argent(ventes[0].prix, 0)} le ${dateCourte(ventes[0].le)} · glisse ›`, `this same listing last sold ${argent(ventes[0].prix, 0)} on ${dateCourte(ventes[0].le)} · swipe ›`) : d.valeur_source === 'echange' ? tt(`ventes d’avant son échange${d.echange ? ' (' + esc(d.echange.de_nom) + ' → ' + esc(d.echange.vers_nom) + ')' : ''} comptées à ${d.echange && d.echange.sens === 'baisse' ? 70 : 90} % · glisse ›`, `pre-trade sales${d.echange ? ' (' + esc(d.echange.de_nom) + ' → ' + esc(d.echange.vers_nom) + ')' : ''} counted at ${d.echange && d.echange.sens === 'baisse' ? 70 : 90}% · swipe ›`) : d.valeur_source === 'inscr_plancher' ? tt(`plancher · ${d.nb_vendues} ventes sans inscription · glisse ›`, `floor · ${d.nb_vendues} sales without inscription · swipe ›`) : d.valeur_source === 'autre_note' ? tt(`la même carte, autre note ou compagnie · ${d.nb_vendues} vente${d.nb_vendues > 1 ? 's' : ''} ramenée${d.nb_vendues > 1 ? 's' : ''} à sa note · glisse ›`, `the same card, another grade or grader · ${d.nb_vendues} sale${d.nb_vendues > 1 ? 's' : ''} adjusted to its grade · swipe ›`) : d.valeur_source === 'unique' ? tt('une seule vente (18 mois max), valeur prudente −25 à −40 % · glisse ›', 'only one sale (18 months max), cautious value −25 to −40% · swipe ›') : d.valeur_source === 'approx' ? tt(`≈ cartes similaires · ${d.nb_vendues} ventes, −25 % · glisse ›`, `≈ similar cards · ${d.nb_vendues} sales, −25% · swipe ›`) : d.valeur_source === 'autre_saison' ? tt(`cartes similaires · ${d.nb_vendues} vente${d.nb_vendues > 1 ? 's' : ''}, −20 % · glisse ›`, `similar cards · ${d.nb_vendues} sale${d.nb_vendues > 1 ? 's' : ''}, −20% · swipe ›`) : d.valeur && ventes.length && ventes.every(v => !v.prix || v.prix > d.valeur * 1.02) ? tt(`${d.nb_vendues || ventes.length} ventes seulement : −10 % sur la plus basse · glisse ›`, `only ${d.nb_vendues || ventes.length} sales: −10% off the lowest · swipe ›`) : d.valeur && d.nb_vendues ? tt(`médiane de ${d.nb_vendues} ventes · glisse ›`, `median of ${d.nb_vendues} sales · swipe ›`) : tt('même carte · glisse ›', 'same card · swipe ›')}</small></div>
         <div class="fv-car fa-car">${ventes.map(k => `<a class="fv" ${k.url ? `href="${esc(urlSure(k.url))}" target="_blank" rel="noopener"` : ''}><div class="fv-ph">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo, 300))}" alt="" loading="lazy" data-oe="rm">` : ''}</div>
           <b>${argent(k.prix, 0)}</b><small>${k.couleurs ? `<i class="fv-pc">${k.couleurs >= 5 ? tt('logo/tag', 'logo/tag') : k.couleurs + ' ' + tt('coul.', 'col.')}</i> ` : ''}${k.saison ? esc(k.saison) + ' · ' : ''}${k.note ? esc(k.note) + ' · ' : ''}${k.le ? dateCourte(k.le) : ''}</small></a>`).join('')}</div>
         ${d.patch && d.patch.couleurs ? `<div class="fa-patch"><b>${tt('Patch', 'Patch')} ${d.patch.couleurs >= 5 ? tt('logo / tag', 'logo / tag') : d.patch.couleurs + ' ' + tt(d.patch.couleurs > 1 ? 'couleurs' : 'couleur', d.patch.couleurs > 1 ? 'colors' : 'color')}</b> · ${Math.abs(d.patch.ratio - 1) >= 0.03 ? tt(`ventes ramenées à cette patch (${d.patch.ratio > 1 ? '+' : '−'}${Math.round(Math.abs(d.patch.ratio - 1) * 100)} %)`, `sales adjusted to this patch (${d.patch.ratio > 1 ? '+' : '−'}${Math.round(Math.abs(d.patch.ratio - 1) * 100)}%)`) : tt('comme les ventes', 'like the sales')}</div>` : ''}`
@@ -14419,8 +14481,12 @@ async function chargerDeals(frais){
     ${d.secours ? `<div class="sous" style="margin-top:8px">${tt('Dernière liste vérifiée', 'Last checked list')} · ${new Date(d.secours_le).toLocaleTimeString(LOC(), {hour:'2-digit', minute:'2-digit'})} · ${tt('le chasseur prépare la nouvelle', 'the hunter is preparing the new one')}</div>` : ''}
     ${P.length ? `<div class="bloc-t" style="margin:22px 0 6px">${tt('À surveiller', 'To watch')} <span class="sous">${tt('15 à 30 % sous la valeur : pas encore un deal, mais un bon prix', '15–30% under value: not a deal yet, but a good price')}</span></div>
       <div class="grille-c">${P.map(tuileDeal).join('')}</div>` : ''}`;
-  brancherRondsDeals(F, sp);
+  // 26 nov 2026, 20 h 12 (Mathieu : « le filtre ouvre plus depuis que j'ai pick les local pick up ») : a l'ordi, la barre (recherche
+  // + Filtres) est deplacee dans l'en-tete. Au 2e dessin du Radar (apres « Appliquer »), l'ANCIENNE barre y etait encore quand
+  // on branchait les boutons : le clic etait pose sur l'ancien bouton (le premier « #dr-fil » de la page), puis l'ancienne
+  // barre etait retiree : le nouveau bouton restait sans clic. On range D'ABORD (une seule barre), on branche ensuite.
   rangerRecherche();
+  brancherRondsDeals(F, sp);
   suiteDeals();
   const da = $('#d-aide'); if (da) da.onclick = feuilleAideDeals;
   const dxi = $('#d-x-iq'); if (dxi) dxi.onclick = () => { vibrer(); expliquerSlabIQ(); };
@@ -15437,7 +15503,11 @@ async function vueTendancesIQ(arg){
       const brMode = () => $$('[data-tmode]', z).forEach(b => b.onclick = () => { if (modeT === b.dataset.tmode) return; vibrer(); S.tiqMode = b.dataset.tmode; peindre(); });
       if (modeT === 'grader') {
         const nb = (n) => Number(n || 0).toLocaleString(tt('fr-CA', 'en-CA')), C = AG.cartes;
-        const ligneG = (x, i) => `<button class="tiq-m tiq-mg" data-ag="${i}"><i class="tiq-rg">${i + 1}</i><span class="tiq-mn"><b>${esc(x.joueur)}</b><small>${esc(agNom(x))}</small><small class="tiq-gs${x.seuil === 0 ? ' ok' : ''}">${agSeuil(x)}</small></span><em class="ag-x">${agRend(x)}</em></button>`;
+        // 26 nov 2026, 19 h 25 (Mathieu, capture de « Worth grading » : « revoir le layout, ca fait pas pantoute Apple iOS style ;
+        // ca doit etre simple, epure, beau et colore ») : une TUILE par carte, a la couleur de sa reponse (la palette de l'accueil) :
+        // vert = rentable meme si elle revient 9 ; orange = il faut une part de 10 ; rose = perd meme en 10 ; bleu = PSA 9 pas mesuree.
+        const etatG = (x) => x.seuil === 0 ? 'ag-ok' : x.seuil != null ? 'ag-seu' : x.reste9 != null && x.reste10 <= 0 ? 'ag-per' : 'ag-inc';
+        const ligneG = (x, i) => `<button class="tiq-m tiq-mg ${etatG(x)}" data-ag="${i}"><i class="tiq-rg">${i + 1}</i><span class="tiq-mn"><b>${esc(x.joueur)}</b><small>${esc(agNom(x))}</small><small class="tiq-gs${x.seuil === 0 ? ' ok' : ''}">${agSeuil(x)}</small></span><em class="ag-x">${agRend(x)}</em></button>`;
         const ouvrirG = (x) => { if (!x) return; ouvrirFeuille(`<h3>${tt('À grader', 'Worth grading')}</h3>${agCarte(x)}
           <p class="sous" style="margin-top:10px">${tt(`${agRend(x)} : si elle revient PSA 10, la revente rapporte ${decFr((Math.round(x.rendement * 10) / 10).toFixed(1))} fois ce que tu as mis (la carte raw + ${argent(AG.frais_psa, 0)} de PSA et d’envoi), frais eBay enlevés. Des ventes réelles des ${x.jours} derniers jours, la même carte. Aucune chance de 10 n’est supposée.`, `${agRend(x)}: if it grades PSA 10, the resale brings ${(Math.round(x.rendement * 10) / 10).toFixed(1)} times what you put in (the raw card + ${argent(AG.frais_psa, 0)} of PSA and shipping), eBay fees removed. Real sales from the last ${x.jours} days, the same card. No odds of a 10 are assumed.`)}</p>`); };
         const brG = (zone) => $$('[data-ag]', zone).forEach(b => b.onclick = () => { vibrer(); ouvrirG(C[+b.dataset.ag]); });

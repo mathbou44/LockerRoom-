@@ -1057,7 +1057,93 @@ def _annonces_permis():
     return os.environ.get("LR_PRIX_ANNONCES") == "1"
 
 
+# 26 nov 2026, 19 h 16 – 20 h 03 (Mathieu, deux fiches du Radar : la Josh Doan O-Pee-Chee Platinum Rookie Auto Violet Pixels /65
+# annoncee 128 $ alors que LE MEME titre, du meme vendeur, s'etait vendu 26 $ le 5 nov ; la Porter Martone Team Canada Juniors
+# Auto Patch /175 annoncee 356 $ alors que le meme titre s'etait vendu 83 $ le 19 nov : « c'est inacceptable » ; « mets une
+# regle pour ne plus que ca arrive »). Les ventes etaient dans nos archives, mais sous une AUTRE recherche (« josh doan rookie
+# auto », « porter martone ») que celle de la carte, et une vente sous le tiers de la mediane est ecartee comme aberrante.
+# LA REGLE : quand le meme titre exact (le meme vendeur qui remet sa carte en vente) s'est deja vendu dans les 60 derniers
+# jours, n'importe ou dans nos archives du joueur, la valeur ne DEPASSE PAS cette derniere vente, et la fiche la montre en
+# premier. Mesure avant de livrer (2 500 ventes recentes cachees, 323 cas ou le meme titre s'etait deja vendu) : annonces
+# 1,5 fois trop hautes 6,2 % -> 3,8 % ; justes a +/- 25 % : 57 % -> 53 % (on annonce plus souvent trop bas : le prix de la
+# prudence). Trois regles plus larges ont ete essayees et REJETEES par le meme banc : « la derniere vente basse fixe la
+# valeur » (la vente suivante remonte 9 fois sur 10), « toutes les ventes du joueur » et un tri assoupli (annee, numero).
+MEME_TITRE_J = 60
+_MEME = {}                           # joueur -> (heure, {titre normalise: [(date, prix, cle, photo, url)]})
+_MEME_S = 30 * 60
+_verrou_meme = threading.Lock()
+
+
+def _titre_exact(t):
+    return " ".join(str(t or "").lower().split())
+
+
+def _ventes_meme_titre(a, cib, maint=None):
+    """Les ventes du MEME titre exact que l'annonce, dans nos archives du joueur, depuis MEME_TITRE_J jours : la plus recente
+    en dernier. [] si le titre est trop court, le joueur inconnu ou la base occupee : jamais d'attente, jamais d'erreur."""
+    import cartes_match
+    titre = _titre_exact(a.get("titre"))
+    j = cartes_match.norm((cib or {}).get("joueur") or "")
+    if len(titre) < 20 or len(j.split()) < 2 or (a.get("sport") or "hockey") != "hockey":
+        return []
+    t = time.time()
+    with _verrou_meme:
+        e = _MEME.get(j)
+    if not e or t - e[0] > _MEME_S:
+        par = {}
+        try:
+            import base_ventes
+            depuis = ((maint or datetime.now()) - timedelta(days=MEME_TITRE_J)).strftime("%Y-%m-%d")
+            c = base_ventes._cx()
+            try:
+                for cle, prix, le, photo, url, tv in c.execute(
+                        "SELECT cle, prix, le, photo, url, titre FROM ventes WHERE q >= ? AND q < ? AND le >= ?", (j, j + "{", depuis)):
+                    if prix and prix > 0:
+                        par.setdefault(_titre_exact(tv), {})[str(cle)] = (str(le)[:10], float(prix), str(cle), photo, url)
+            finally:
+                c.close()
+        except Exception as ex:                      # sqlite3.Error, base absente : la regle se tait
+            print("Deals (meme titre) : " + repr(ex)[:120], flush=True)
+            return []
+        e = (t, {k: sorted(v.values()) for k, v in par.items()})
+        with _verrou_meme:
+            if len(_MEME) > 400:
+                _MEME.clear()
+            _MEME[j] = e
+    moi = str(a.get("item_id") or "")
+    return [v for v in e[1].get(titre, []) if v[2] != moi]
+
+
+def plafonner_meme_titre(a, va, cib=None, maint=None):
+    """La valeur d'une annonce (le resultat de valeur_annonce et des autres) ne depasse pas la derniere vente du meme titre
+    exact (60 jours) ; cette vente passe en tete des ventes montrees, marquee « meme »."""
+    if not va or not va[0]:
+        return va
+    try:
+        import cartes_match
+        cib = cib or cartes_match.cible_titre(a.get("titre") or "")
+        memes = _ventes_meme_titre(a, cib, maint)
+    except Exception as ex:
+        print("Deals (meme titre) : " + repr(ex)[:120], flush=True)
+        return va
+    if not memes:
+        return va
+    le, prix, cle, photo, url = memes[-1]
+    if prix >= va[0]:
+        return va
+    montrees = list(va[3] or []) if len(va) > 3 else []
+    if montrees and montrees[0].get("meme"):
+        return va
+    moi = {"titre": a.get("titre"), "le": le, "photo": photo, "url": url, "prix": prix, "meme": True}
+    reste = [v for v in montrees if not (str(v.get("le") or "")[:10] == le and abs(float(v.get("prix") or 0) - prix) < 0.01)]
+    return (round(prix, 2),) + tuple(va[1:3]) + ([moi] + reste[:5],) + tuple(va[4:])
+
+
 def valeur_annonce(a, ventes, actives, cib=None):
+    return plafonner_meme_titre(a, _valeur_annonce0(a, ventes, actives, cib=cib), cib=cib)
+
+
+def _valeur_annonce0(a, ventes, actives, cib=None):
     """La valeur de LA carte d'une annonce : ventes de la meme carte, seulement si elle est SURE (valeur_sure) ; les
     autres annonces de la meme carte (moins 15 %) ne servent que de plafond. -> (valeur, source, n, ventes) ou None."""
     import cartes_match
@@ -1390,8 +1476,8 @@ def valeur_ou_saison(a, ventes, actives, cib=None):
     """La valeur de la carte (ses propres ventes) ; sinon celle des saisons voisines (valeur_autre_saison), dite comme telle."""
     # 16 nov 2026 (Mathieu, Luke Hughes Honorable Numbers /43 : « faut pas que ca arrive, surtout quand on a les comps ») :
     # UNE vente de LA carte passe avant les cartes similaires
-    return valeur_annonce(a, ventes, actives, cib=cib) or valeur_autre_saison(a, ventes, cib=cib) or valeur_unique(a, ventes, cib=cib) \
-        or valeur_autre_note(a, ventes, cib=cib) or valeur_approx(a, ventes, cib=cib)
+    return valeur_annonce(a, ventes, actives, cib=cib) or plafonner_meme_titre(a, valeur_autre_saison(a, ventes, cib=cib) or valeur_unique(a, ventes, cib=cib)
+                                                                               or valeur_autre_note(a, ventes, cib=cib) or valeur_approx(a, ventes, cib=cib), cib=cib)
 
 
 UNIQUE_SERIE_MAX = 25            # 12 nov 2026 : une carte numerotee /25 ou moins...
@@ -2049,8 +2135,8 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
         if nv2:
             st["comps_rafraichies"] = st.get("comps_rafraichies", 0) + 1
             nv_ += list(nv2)
-            va = (valeur_annonce(a, tout_v + nv_, actives, cib=cib) or valeur_autre_saison(a, tout_v + nv_, cib)
-                  or valeur_unique(a, tout_v + nv_, cib) or valeur_autre_note(a, tout_v + nv_, cib) or valeur_approx(a, tout_v + nv_, cib))
+            va = plafonner_meme_titre(a, valeur_annonce(a, tout_v + nv_, actives, cib=cib) or valeur_autre_saison(a, tout_v + nv_, cib)
+                                      or valeur_unique(a, tout_v + nv_, cib) or valeur_autre_note(a, tout_v + nv_, cib) or valeur_approx(a, tout_v + nv_, cib), cib=cib)
         if not va or not any(_jours(v, maint) <= JOURS_FRAIS for v in (va[3] or [])):
             st["_res"] = ("comps_vieilles", None)
             deals.pop(a["item_id"], None)
@@ -3923,7 +4009,7 @@ def valoriser_suivis(rechercher=None, n_max=None):
             q_ = (cartes_match.requete_ebay(c_) or "").strip()
             av = vendues.archives(c_, jours=JOURS_MAX_HITS)
             base_ = list(vendues.en_cache(q_) or []) + list(av or [])
-            va = valeur_annonce(g, base_, [], cib=c_) or valeur_unique(g, base_, cib=c_)
+            va = valeur_annonce(g, base_, [], cib=c_) or plafonner_meme_titre(g, valeur_unique(g, base_, cib=c_), cib=c_)
             if va:
                 trouves[str(g.get("item_id"))] = va
             else:
