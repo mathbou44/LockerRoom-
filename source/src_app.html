@@ -12603,7 +12603,7 @@ const badgeSlab = (txt, ton, ic, attrs) => `<${attrs ? 'button' : 'span'} class=
 // cette pastille-là dans les cartes en inventaire, pas encore sur eBay, pour que la personne décide si elle l'affiche non gradée
 // ou l'envoie grader si elle est assez belle »). UNE pastille verte pleine, « À grader » : elle y est ou elle n'y est pas. La même
 // au Radar, dans l'inventaire et dans les Tendances ; un toucher = une phrase. La règle est sur le serveur (a_grader.vaut_grader).
-// Admin seulement pour l'instant : sa phrase porte un montant (règle des comps).
+// 27 nov 2026 : Pro, Platine et admin (les montants : admin et Platine seulement, règle des comps) ; le gratuit voit la pastille seule.
 const agDe = (x) => (x && (x.ag || (S.agParId || {})[String(x.item_id)])) || null;
 const agBadge = (ag, cls) => ag ? `<span class="sd-b b-ag ${cls || ''}" data-agp="${esc(JSON.stringify(ag))}" role="button" tabindex="0" aria-label="${esc(tt('À grader : voir pourquoi', 'Grade it: see why'))}"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_BADGE.grade}</svg><span>${tt('À grader', 'Grade it')}</span></span>` : '';
 function agTexte(a){
@@ -12613,12 +12613,15 @@ function agTexte(a){
   const risque = a.s === 0 ? tt('Même un 9 ne te fait pas perdre.', 'Even a 9 doesn’t lose money.')
     : a.s != null ? tt(`Il suffit de 1 dix sur ${n} pour ne pas perdre.`, `1 ten out of ${n} is enough to break even.`)
     : tt('Le prix de la PSA 9 n’est pas mesuré.', 'The PSA 9 price isn’t measured.');
-  return gain + ' ' + risque + ' ' + tt('Seulement si elle est belle.', 'Only if it’s clean.');
+  // 27 nov 2026 (v6) : la confiance de la carte, testee sur nos ventes passees (la promesse a-t-elle tenu au retour de PSA ?)
+  const fiable = a.c != null ? ' ' + tt(`Fiable à ${Math.round(a.c * 100)} %.`, `${Math.round(a.c * 100)}% reliable.`) : '';
+  return gain + ' ' + risque + fiable + ' ' + tt('Seulement si elle est belle.', 'Only if it’s clean.');
 }
 document.addEventListener('click', (e) => {
   const b = e.target.closest && e.target.closest('[data-agp]'); if (!b) return;
   e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); vibrer();
   let a = {}; try { a = JSON.parse(b.dataset.agp); } catch (er) {}
+  if (a.verrou) { fermerNotif(); feuillePro('a_grader'); return; }     // 27 nov 2026 : un compte gratuit voit la pastille ; le pourquoi est Pro
   notifPastille({ic: 'grade', ton: 'vert', titre: tt('À grader', 'Worth grading'), qui: [a.joueur, a.nom].filter(Boolean).join(' · '), texte: agTexte(a)});
 }, true);
 function pastillesCS(x, est){
@@ -15692,13 +15695,22 @@ async function vueTendancesIQ(arg){
       // 26 nov 2026, 15 h 06 (Mathieu : « dans trend on devrait voir la liste du top 100 a grader qui se refresh chaque semaine » ;
       // « Admin seulement » pour commencer) : un 3e onglet, seulement quand le serveur envoie la liste (il ne l'envoie qu'a l'admin).
       // Une ligne : le rang, le joueur, la carte, ce qu'il faut de 10 pour ne pas perdre, et le rendement si 10. Un toucher : les prix.
-      const AG = SO && r.a_grader && (r.a_grader.cartes || []).length ? r.a_grader : null;
+      const AG = SO && r.a_grader && ((r.a_grader.cartes || []).length || r.a_grader.verrou) ? r.a_grader : null;
       const modeT = AG && S.tiqMode === 'grader' ? 'grader' : SO && S.tiqMode === 'sortes' ? 'sortes' : 'joueurs';
       const brS = (zone) => $$('[data-sorte]', zone).forEach(b => b.onclick = () => { vibrer(); feuilleSorte(TD[b.dataset.sorte]); });
       const noteSO = () => { const nb = (n) => Number(n || 0).toLocaleString(tt('fr-CA', 'en-CA')), jr = SO.jours || [30, 60];
         return `<div class="sous tiq-note">${tt(`${nb(SO.n_cartes)} cartes et ${nb(SO.n_sortes)} sortes mesurées sur ${nb(SO.n_ventes)} ventes : les ${jr[0]} derniers jours contre les ${jr[1]} d’avant. Refait aux 3 jours.`, `${nb(SO.n_cartes)} cards and ${nb(SO.n_sortes)} card types measured on ${nb(SO.n_ventes)} sales: the last ${jr[0]} days against the ${jr[1]} before. Redone every 3 days.`)}${SO.le ? ' · ' + tt('mis à jour ', 'updated ') + esc(ilYa(SO.le)) : ''}</div>`; };
       const modeH = SO ? `<div class="tiq-mode${AG ? ' tiq-mode3' : ''}" id="tiq-mode" role="tablist">${[['joueurs', tt('Joueurs', 'Players')], ['sortes', tt('Cartes', 'Cards')], ...(AG ? [['grader', tt('À grader', 'To grade')]] : [])].map(([k, n]) => `<button role="tab" class="${modeT === k ? 'on' : ''}" data-tmode="${k}" aria-selected="${modeT === k}">${n}</button>`).join('')}</div>` : '';
       const brMode = () => $$('[data-tmode]', z).forEach(b => b.onclick = () => { if (modeT === b.dataset.tmode) return; vibrer(); S.tiqMode = b.dataset.tmode; peindre(); });
+      if (modeT === 'grader' && AG.verrou) {               // 27 nov 2026 : un compte gratuit : le nombre de cartes, le reste pour Pro
+        const ng = Number(AG.n_grader || 0).toLocaleString(tt('fr-CA', 'en-CA'));
+        z.innerHTML = `${modeH}<div class="tiq-av tiq-so tiq-mixv tiq-peu" data-on="bas"><div class="tiq-g tiq-pan bas"><div class="am-t tiq-gt">${tt('À grader', 'Worth grading')}<em class="tiq-pn">${ng}</em></div>
+          <p class="tiq-ps">${tt(`${ng} cartes valent la peine d’être gradées cette semaine, avec la confiance de chacune. Réservé à Pro.`, `${ng} cards are worth grading this week, each with its confidence. Pro only.`)}</p>
+          <div class="tiq-pf"><button class="tiq-pl2 tiq-tous" id="tiq-agpro">${tt('Passer à Pro', 'Go Pro')} ›</button></div></div></div>`;
+        const bp = $('#tiq-agpro', z); if (bp) bp.onclick = () => { vibrer(); feuillePro('a_grader'); };
+        brMode(); ajusterTiq(z);
+        return;
+      }
       if (modeT === 'grader') {
         const nb = (n) => Number(n || 0).toLocaleString(tt('fr-CA', 'en-CA')), C = AG.cartes;
         // 26 nov 2026, 19 h 25 (Mathieu, capture de « Worth grading » : « revoir le layout, ca fait pas pantoute Apple iOS style ;
@@ -15706,16 +15718,16 @@ async function vueTendancesIQ(arg){
         // vert = rentable meme si elle revient 9 ; orange = il faut une part de 10 ; rose = perd meme en 10 ; bleu = PSA 9 pas mesuree.
         const etatG = (x) => x.seuil === 0 ? 'ag-ok' : x.seuil != null ? 'ag-seu' : x.reste9 != null && x.reste10 <= 0 ? 'ag-per' : 'ag-inc';
         const ligneG = (x, i) => `<button class="tiq-m tiq-mg ${etatG(x)}" data-ag="${i}"><i class="tiq-rg">${i + 1}</i><span class="tiq-mn"><b>${esc(x.joueur)}</b><small>${esc(agNom(x))}</small><small class="tiq-gs${x.seuil === 0 ? ' ok' : ''}">${agSeuil(x)}</small></span><em class="ag-x">${agRend(x)}</em></button>`;
-        const ouvrirG = (x) => { if (!x) return; ouvrirFeuille(`<h3>${tt('À grader', 'Worth grading')}</h3>${agCarte(x)}
-          <p class="sous" style="margin-top:10px">${tt(`${agRend(x)} : si elle revient PSA 10, la revente rapporte ${decFr((Math.round(x.rendement * 10) / 10).toFixed(1))} fois ce que tu as mis (la carte raw + ${argent(AG.frais_psa, 0)} de PSA et d’envoi), frais eBay enlevés. Des ventes réelles des ${x.jours} derniers jours, la même carte. Aucune chance de 10 n’est supposée.`, `${agRend(x)}: if it grades PSA 10, the resale brings ${(Math.round(x.rendement * 10) / 10).toFixed(1)} times what you put in (the raw card + ${argent(AG.frais_psa, 0)} of PSA and shipping), eBay fees removed. Real sales from the last ${x.jours} days, the same card. No odds of a 10 are assumed.`)}</p>
+        const ouvrirG = (x) => { if (!x) return; ouvrirFeuille(`<h3>${tt('À grader', 'Worth grading')}</h3>${x.raw != null ? agCarte(x) : ''}
+          <p class="sous" style="margin-top:10px">${esc(agTexte({r: x.rendement, s: x.seuil, g10: x.reste10, c: x.conf}))} ${tt(`Des ventes réelles des ${x.jours} derniers jours, la même carte.`, `Real sales from the last ${x.jours} days, same card.`)}</p>
           <div class="agv" id="ag-v"><div class="fa-vt">${tt('En vente maintenant · raw', 'For sale now · raw')} <small>${tt('la moins chère d’abord', 'cheapest first')}</small></div><div class="lecture"><span class="roue"></span>${tt('On cherche sur eBay…', 'Searching eBay…')}</div></div>`);
           agVente(x); };
         const brG = (zone) => $$('[data-ag]', zone).forEach(b => b.onclick = () => { vibrer(); ouvrirG(C[+b.dataset.ag]); });
         z.innerHTML = `${modeH}<div class="tiq-av tiq-so tiq-mixv${C.length <= 24 ? ' tiq-peu' : ''}" data-on="bas"><div class="tiq-g tiq-pan bas"><div class="am-t tiq-gt">${tt('À grader', 'Worth grading')}<em class="tiq-pn">${C.length}</em></div>
-          <p class="tiq-ps">${tt('Si elle revient PSA 10 : ce qui revient pour 1 $ mis (la carte + les frais PSA). Des ventes réelles ; aucune chance de 10 n’est supposée.', 'If it grades PSA 10: what comes back per $1 spent (the card + PSA fees). Real sales; no odds of a 10 are assumed.')}</p>
+          <p class="tiq-ps">${tt('Si elle revient PSA 10 : ce qui revient pour 1 $ mis (la carte, PSA, les envois et les frais eBay). Des ventes réelles ; chaque carte a sa confiance.', 'If it grades PSA 10: what comes back per $1 spent (the card, PSA, shipping and eBay fees). Real sales; each card has its confidence.')}</p>
           <div class="tiq-lm">${C.map(ligneG).join('')}</div>
           <div class="tiq-pf">${C.length > 3 ? `<button class="tiq-pl2 tiq-tous" id="tiq-gtous">${tt(`Voir les ${C.length}`, `See all ${C.length}`)} ›</button>` : ''}</div></div></div>
-          <div class="sous tiq-note">${tt(`${nb(AG.n_grader != null ? AG.n_grader : C.length)} cartes à grader sur ${nb(AG.n)} mesurées (raw, PSA 10 et PSA 9 de la même carte). Refait chaque semaine. Admin seulement pour l’instant.`, `${nb(AG.n_grader != null ? AG.n_grader : C.length)} cards worth grading out of ${nb(AG.n)} measured (raw, PSA 10 and PSA 9 of the same card). Redone every week. Admin only for now.`)}${AG.le ? ' · ' + tt('mis à jour ', 'updated ') + esc(ilYa(AG.le)) : ''}</div>`;
+          <div class="sous tiq-note">${tt(`${nb(AG.n_grader != null ? AG.n_grader : C.length)} cartes à grader sur ${nb(AG.n)} mesurées (raw, PSA 10, 9 et 8 de la même carte). Refait chaque semaine.`, `${nb(AG.n_grader != null ? AG.n_grader : C.length)} cards worth grading out of ${nb(AG.n)} measured (raw, PSA 10, 9 and 8 of the same card). Redone every week.`)}${AG.le ? ' · ' + tt('mis à jour ', 'updated ') + esc(ilYa(AG.le)) : ''}</div>`;
         brG(z);
         const gt = $('#tiq-gtous', z); if (gt) gt.onclick = () => { vibrer(); ouvrirFeuille(`<h3>${tt('À grader', 'Worth grading')}<em class="tiq-pn">${C.length}</em></h3><div class="tiq-lm tiq-ltt">${C.map(ligneG).join('')}</div>`); brG($('#feuille')); };
         brMode(); ajusterTiq(z);
@@ -22837,10 +22849,12 @@ async function chargerGrader(el){
   // 27 nov 2026 : une carte mesuree par la liste « A grader » : la MEME reponse que sa pastille, la meme phrase
   const L_ = r.source === 'liste';
   const ligne = r.verdict === 'incertain' ? tt('Pas assez de ventes PSA de cette carte pour être sûr.', 'Not enough PSA sales of this card to be sure.')
-    : L_ ? (r.verdict === 'oui' ? agTexte({r: r.rendement, s: r.seuil_10, g10: r.gain})
+    : L_ ? (r.verdict === 'oui' ? agTexte({r: r.rendement, s: r.seuil_10, g10: r.gain, c: r.confiance})
+      : r.pourquoi === 'chance' ? tt(`Trop risqué : il faudrait au moins 1 dix sur ${Math.max(1, Math.floor(1 / (r.seuil_10 || .5)))}, et trop peu des cartes gradées de celle-ci sont des 10.`, `Too risky: you’d need at least 1 ten out of ${Math.max(1, Math.floor(1 / (r.seuil_10 || .5)))}, and too few graded copies of this card are 10s.`)
+      : r.pourquoi === 'gain' && r.gain == null ? tt('Même un 10 ne rapporterait pas assez une fois tout payé.', 'Even a 10 wouldn’t bring enough once everything is paid.')
       : r.gain != null && r.gain < (r.profit_min || 40) ? (r.gain > 0 ? tt(`Si elle revient PSA 10 : seulement +${argent(r.gain, 0)} une fois tout payé.`, `If it grades PSA 10: only +${argent(r.gain, 0)} after everything.`) : tt('Même un 10 ne paierait pas tout.', 'Even a 10 wouldn’t pay for everything.'))
-      : r.seuil_10 != null ? tt(`Trop risqué : il faudrait plus de 1 dix sur ${Math.max(1, Math.floor(1 / (r.seuil_max || .25)))} pour ne pas perdre.`, `Too risky: you’d need more than 1 ten out of ${Math.max(1, Math.floor(1 / (r.seuil_max || .25)))} to break even.`)
-      : tt('Le prix de la PSA 9 n’est pas mesuré : pas assez sûr.', 'The PSA 9 price isn’t measured: not sure enough.'))
+      : r.confiance != null ? tt(`Pas assez sûr : ${Math.round(r.confiance * 100)} % de confiance que ça tienne au retour de PSA (il faut ${Math.round((r.confiance_min || .85) * 100)} %).`, `Not sure enough: ${Math.round(r.confiance * 100)}% confidence it holds when it’s back from PSA (needs ${Math.round((r.confiance_min || .85) * 100)}%).`)
+      : tt('Pas assez de ventes pour mesurer la confiance.', 'Not enough sales to measure the confidence.'))
     : r.seuil_10 != null && r.brute != null
     ? `PSA 10 ${argent(r.psa10, 0)} ${tt('au lieu de', 'instead of')} ${argent(r.brute, 0)}${chance ? ' · ' + chance : ''}`
     : tt('Même un 10 ne paierait pas les frais.', 'Even a 10 wouldn’t pay the fees.');

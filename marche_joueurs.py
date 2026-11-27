@@ -44,7 +44,7 @@ import threading
 import time
 from datetime import date, datetime
 
-VERSION = 8                      # 8 (27 nov 2026) : carte exacte contre elle-meme (ventes_cartes)
+VERSION = 9                      # 8 (27 nov 2026) : carte exacte contre elle-meme (ventes_cartes) ; 9 : un « Vends » bat le hasard de 15 points
 PAS = 30                 # jours d'une tranche
 N_TRANCHES = 11          # tranches d'avant (l'annee)
 H0, H1 = 46, 74          # « deux mois apres »
@@ -60,6 +60,10 @@ BOUGE = 0.05             # « remonte » / « rebaisse » : 5 %
 TOL_DEPUIS = 0.02                 # « au plus bas en N jours » : un niveau plus bas de moins de 2 % ne compte pas (le bruit)
 SEMAINES = 26            # semaines rejouees
 N_TEST_MIN = 30
+# 27 nov 2026, 16 h 12 (Mathieu : « oui ») : une regle de vente ne donne un « Vends » que si elle bat le hasard d'au moins 15 POINTS
+# (avant : battre le hasard tout court, meme de 8 points : 53 % contre 45 %, presque du hasard). Mesure carte par carte (archives du
+# 26 nov) : restent « 60 % au-dessus de sa normale » (67 % contre 45 %, 54 cas) et, chez les etablis, 83 % contre 40 % (30 cas).
+ECART_MIN = 0.15
 ACHATS = (("sommet", 0.15), ("sommet", 0.20), ("sommet", 0.25), ("sommet", 0.30), ("mediane", 0.10), ("mediane", 0.15), ("mediane", 0.20),
           ("mediane", 0.25), ("mediane", 0.30), ("mediane", 0.35))
 # 21 nov 2026 (Mathieu : « on fait pas mieux que 70 % pour l'achat ? » ; « le voir sur des plus grands time frames ») : un creux
@@ -255,7 +259,8 @@ def verifier(P, etablis):
                  "taux": round(k / len(l), 3) if l else None, "borne": round(wilson(k, len(l)), 3),
                  "gain_med": round(statistics.median([x["apres"] / x["niveau"] - 1 for x in l]) * 100, 1) if l else None}
             essais.append(e)
-            if len(l) >= N_TEST_MIN and base is not None and e["borne"] > base and (best is None or e["borne"] > best["borne"]):
+            if (len(l) >= N_TEST_MIN and base is not None and e["borne"] > base and e["taux"] - base >= ECART_MIN
+                    and (best is None or e["borne"] > best["borne"])):
                 best = e
         jj = [x["jour"] for x in Q if x.get("jour")]
         out = {"base": round(base, 3) if base is not None else None, "base_n": len(Q), "essais": essais, "actif": best is not None,
@@ -408,7 +413,8 @@ def calculer(ventes=None, base=None, aujourd=None):
         for v in ([V.get("vente_etablis") or {}] if nom in etab else []) + [V["vente"]]:
             if "signal" in e or v.get("base") is None:
                 continue
-            ok = [t for t in v["essais"] if t["n"] >= N_TEST_MIN and t["borne"] > v["base"] and signal_vente(x, t["regle"])]
+            ok = [t for t in v["essais"] if t["n"] >= N_TEST_MIN and t["borne"] > v["base"] and t["taux"] - v["base"] >= ECART_MIN
+                  and signal_vente(x, t["regle"])]
             if ok:
                 m = max(ok, key=lambda t: t["borne"])
                 e.update(signal="vendre", taux=m["taux"], regle=m["regle"])

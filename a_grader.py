@@ -50,7 +50,7 @@ JOURS = 365                          # 26 nov, 18 h 50 (Mathieu : « besoin de p
 RAW_MIN = 5
 P10_MIN = 5                          # 4 -> 5 des le premier essai : a 4 ventes, une PSA 10 d'une autre parallele suffit a fausser la mediane
 P9_MIN = 3
-VERSION = 5                          # 2 = la regle des 60 derniers jours (26 nov) ; 3 = les titres ecrits comme l'etiquette PSA ; 4 = 12 mois, les fausses raw jetees ; 5 = la pastille « A grader » (27 nov) ;
+VERSION = 6                          # 2 = la regle des 60 derniers jours (26 nov) ; 3 = les titres ecrits comme l'etiquette PSA ; 4 = 12 mois, les fausses raw jetees ; 5 = la pastille « A grader » (27 nov) ;
                                      # une liste d'une autre version est refaite seule
 NUM_MIN = 5                          # titre « etiquette » : la carte doit deja avoir 5 ventes qui disent ce numero...
 NUM_NOTE_MIN = 3                     # ... dont 3 de la meme note, et le prix doit etre de 0,4 a 2,5 fois leur mediane
@@ -83,15 +83,148 @@ PASTILLE_SEUIL = 0.25
 PASTILLE_PROFIT = 40.0
 PASTILLE_SANS9 = 3.0
 
+# ---- VERSION 6 (27 nov 2026, 17 h 17 ; Mathieu : « on doit etre parfait sur tous les parametres avec les cartes a grader [...] Je veux
+# le mettre dans la version Pro avec confiance ») : la regle rejouee dans le passe (au 1er de chaque mois, juin 2024 -> avril 2026,
+# seulement les ventes d'avant), jugee avec les VRAIS prix 5 a 8 mois plus tard (le delai PSA d'aujourd'hui). Ce que ca a change :
+#   1. LES VRAIS FRAIS. PSA Value au Canada : 56,99 $ CA par carte (rouvert le 29 oct 2026, 90-100 jours ouvrables, assurance max
+#      500 $ US) ; au-dela, Standard 59,99 $ US (1 000 $), Priority 79,99 $ US (1 500 $), Express 199 $ US (2 500 $) ; la taxe sur le
+#      service ; l'envoi aller-retour ; la raw achetee : port + TPS/TVQ ; la revente : les frais de l'app (deals.net_revente).
+#      Avant : 41 $ en tout, sans taxe ni port. Avec les vrais frais, une PSA 9 ne paie presque jamais : on grade pour un 10.
+#   2. LES PSA 8. Le decodeur ne les rangeait pas ; mesurees : une PSA 8 se vend au prix de la raw (mediane 0,98). Une carte qui ne
+#      sort pas 10 vaut une 9 ou une 8 dans la proportion vendue de cette carte (avant : toujours une 9). « 1 dix sur 4 suffit »
+#      n'etait vrai au retour que 28 a 42 % du temps avec les vrais frais.
+#   3. LES CARTES NEUVES (premiere vente il y a moins de 6 mois) : leur PSA 10 vaut 0,77 a 0,85 de son prix au retour : x 0,80.
+#   4. LA CONFIANCE PAR CARTE : la chance que la promesse tienne au retour (si elle sort 10 elle rapporte, ET il faut au plus 1 dix
+#      sur 2 pour ne pas perdre), apprise sur toutes les cartes mesurees (regression logistique + arbres, modeles/a_grader_confiance.json).
+#      Mois gardes de cote (oct 2025 -> avr 2026), modele appris sans eux : confiance >= 85 % -> la promesse a tenu 95 % du temps
+#      (borne basse 89 %, 26 cartes) pour un acheteur, 96 % (borne basse 92 %, 48 cartes) pour une carte deja a soi.
+FX_USD = 1.425                                # $ CA pour 1 $ US (nov 2026)
+PSA_PALIERS = ((500 * FX_USD, 56.99), (1000 * FX_USD, 59.99 * FX_USD), (1500 * FX_USD, 79.99 * FX_USD), (2500 * FX_USD, 199 * FX_USD), (1e12, 349 * FX_USD))
+ENVOI_PSA = 8.0                               # $ CA par carte : l'envoi a PSA et le retour, en lot
+PORT_ACHAT = 6.0                              # $ CA : le port de la raw achetee
+NEUF_J, NEUF_FACTEUR = 180, 0.80
+P8_DEFAUT = 0.85                              # PSA 8 pas mesuree : 85 % de la raw
+P8_MIN = 3
+PROMESSE = 0.5                                # il faut au plus 1 dix sur 2
+CONFIANCE_MIN = 0.85
+# 5. LE GARDE-FOU DE LA CHANCE (27 nov, 18 h) : la confiance juge les PRIX, pas la chance d'un 10. Une Gretzky 1987 O-Pee-Chee (raw 22 $,
+#    PSA 10 2 543 $) avait 98 % de confiance alors que 8 % seulement de ses gradees vendues sont des 10. La part de 10 qu'il faut ne doit
+#    pas depasser CHANCE_REALISTE x la part des 10 parmi les gradees vendues de la carte (reduite : on revend plus souvent un 10 qu'un 8,
+#    comme grader.py). Mois gardes : la promesse a tenu 97 % (acheteur, borne basse 89 %) et 99 % (deja a soi, borne basse 98 %).
+CHANCE_REALISTE = 0.7
+VARIABLES = ("marge9", "seuil", "marge10", "cout", "marge_n10", "age", "n10", "c10", "et10", "et_raw", "elan", "part10", "part9", "fenetre",
+             "a9", "elan_joueur", "n_cartes_joueur", "saisons", "young_guns")
+_MODELE = {"v": None, "essaye": False}
 
-def vaut_grader(x):
-    """Une carte mesuree de la liste -> True si elle porte la pastille « A grader »."""
+
+def _taxe():
+    import deals
+    return deals.TAXE_ACHAT
+
+
+def _net(v):
+    import deals
+    return deals.net_revente(v)
+
+
+def frais_psa_de(v10):
+    """PSA pour une carte dont la PSA 10 vaut v10 ($ CA) : le palier qu'il faut, la taxe sur le service, l'envoi."""
+    f = next(fr for cap, fr in PSA_PALIERS if v10 <= cap)
+    return f * (1 + _taxe()) + ENVOI_PSA
+
+
+def regle(x, proprio=False):
+    """Une carte mesuree -> ce qu'elle rapporte si elle sort 10, si elle sort 9, et la part de 10 qu'il faut pour ne pas perdre.
+    proprio : la carte est deja a soi (l'inventaire) : elle « coute » ce qu'on aurait en la vendant raw ; sinon on l'achete (port, taxes)."""
+    d = NEUF_FACTEUR if (x.get("age_j") or 0) < NEUF_J else 1.0
+    raw = float(x["raw"]); v10 = float(x["psa10"]) * d
+    v9 = float(x["psa9"]) * d if x.get("psa9") else None
+    v8 = min(float(x["psa8"]) * d if x.get("psa8") else raw * P8_DEFAUT, raw * 1.5)
+    a9, a8 = x.get("c9") or 0, (x.get("c8") or 0) + (x.get("c7") or 0)
+    s9 = a9 / (a9 + a8) if a9 + a8 >= 5 else 0.5
+    vn = (s9 * v9 + (1 - s9) * v8) if v9 is not None else v8
+    c = (_net(raw) if proprio else (raw + PORT_ACHAT) * (1 + _taxe())) + frais_psa_de(v10)
+    r10, rn = _net(v10) - c, _net(vn) - c
+    s = 0.0 if rn >= 0 else (9.9 if r10 <= 0 else -rn / (r10 - rn))
+    return {"cout": c, "v10": v10, "vn": vn, "r10": r10, "r9": (_net(v9) - c) if v9 is not None else None, "seuil": s}
+
+
+def variables(x, proprio=False, auj=None):
+    """Les variables de la confiance (dans l'ordre de VARIABLES ; les memes que l'apprentissage)."""
+    import math
+    r = regle(x, proprio); c = r["cout"]
+    r9 = r["r9"] if r["r9"] is not None else -999
+    a9, a8 = x.get("c9") or 0, (x.get("c8") or 0) + (x.get("c7") or 0)
+    n = (x.get("c10") or 0) + a9 + a8
+    p10 = float(x["psa10"])
+    auj = str(auj or x.get("auj") or datetime.now(timezone.utc).date().isoformat())
+    saisons = min(max(int(auj[:4]) - int(x.get("annee") or auj[:4]) - (auj[5:7] < "09"), 0), 10) / 10
+    return [math.copysign(math.log1p(abs(max(r9, -500)) / 10), r9), min(r["seuil"], 1.5), math.log(max(_net(r["v10"]), 1) / c), math.log(c),
+            math.log(max(_net(r["vn"]), 1) / c), min(x.get("age_j") or 0, 365) / 365, math.log1p(x.get("n10") or 0), math.log1p(x.get("c10") or 0),
+            float(x.get("et10") or 1.0), float(x.get("et_raw") or 1.0), math.log((x.get("p10_90") or p10) / (x.get("p10_365") or p10)),
+            (x.get("c10") or 0) / n if n else 0.0, a9 / (a9 + a8) if a9 + a8 else 0.5, (x.get("fenetre") or JOURS) / 365, 1.0 if x.get("psa9") else 0.0,
+            float(x.get("elan_j") or 0.0), math.log(max(1, x.get("n_j") or 1)), saisons, 1.0 if "young guns" in str(x.get("q") or "") else 0.0]
+
+
+def _modele():
+    """Le modele de confiance (texte, jamais pickle) : {« achat » | « proprio » : (moyennes, ecarts, poids, biais, [arbres])}."""
+    if _MODELE["essaye"]:
+        return _MODELE["v"]
+    _MODELE["essaye"] = True
     try:
-        if float(x.get("reste10") or 0) < PASTILLE_PROFIT:
-            return False
-        if x.get("seuil") is not None:
-            return float(x["seuil"]) <= PASTILLE_SEUIL
-        return x.get("psa9") is None and float(x.get("rendement") or 0) >= PASTILLE_SANS9
+        import lightgbm as lgb
+        import numpy as np
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "modeles", "a_grader_confiance.json"), encoding="utf-8") as f:
+            m = json.load(f)
+        assert tuple(m["variables"]) == VARIABLES
+        _MODELE["v"] = {k: (np.array(v["mu"]), np.array(v["sd"]), np.array(v["coef"]), float(v["biais"]), [lgb.Booster(model_str=t) for t in v["arbres"]])
+                        for k, v in m["modeles"].items()}
+    except Exception as e:
+        print("A grader (modele de confiance) : " + repr(e)[:160], flush=True)
+    return _MODELE["v"]
+
+
+def confiance(x, proprio=False, auj=None):
+    """La chance (0 a 1) que la promesse tienne quand la carte reviendra de PSA ; None sans modele."""
+    M = _modele()
+    if not M:
+        return None
+    import numpy as np
+    mu, sd, w, b, arbres = M["proprio" if proprio else "achat"]
+    X = np.array([variables(x, proprio, auj)], dtype=float)
+    lr = 1 / (1 + np.exp(-(((X - mu) / sd) @ w + b)))
+    return float((lr[0] + np.mean([a.predict(X)[0] for a in arbres])) / 2)
+
+
+def _part10(x):
+    n = sum(int(x.get(k) or 0) for k in ("c10", "c9", "c8", "c7"))
+    return round(int(x.get("c10") or 0) / n, 3) if n else 0.0
+
+
+def pourquoi_non(e):
+    """Une carte mesuree SANS pastille (sa forme courte, _compact) -> « gain » (un 10 ne rapporte pas 40 $), « confiance » (pas
+    assez sur que ca tienne au retour) ou « chance » (il faudrait plus de 10 que cette carte n'en donne)."""
+    if not e or e.get("ok"):
+        return None
+    if e.get("g10") is None or float(e["g10"]) < PASTILLE_PROFIT or e.get("s") is None:
+        return "gain"
+    if e.get("c") is None or float(e["c"]) < CONFIANCE_MIN:
+        return "confiance"
+    return "chance"
+
+
+def vaut_grader(x, proprio=False):
+    """Une carte mesuree de la liste -> True si elle porte la pastille « A grader » : si elle sort 10, il reste au moins
+    PASTILLE_PROFIT $, la confiance que la promesse tienne au retour est d'au moins CONFIANCE_MIN, et la part de 10 qu'il faut reste
+    realiste (CHANCE_REALISTE x la part des 10 parmi les gradees vendues de la carte)."""
+    try:
+        r10 = x.get("reste10_p" if proprio else "reste10")
+        c = x.get("conf_p" if proprio else "conf")
+        s = x.get("seuil_p" if proprio else "seuil")
+        n = sum(int(x.get(k) or 0) for k in ("c10", "c9", "c8", "c7"))
+        part10 = int(x.get("c10") or 0) / n if n else 0.0
+        return (r10 is not None and c is not None and s is not None and float(r10) >= PASTILLE_PROFIT and float(c) >= CONFIANCE_MIN
+                and float(s) <= CHANCE_REALISTE * part10)
     except (TypeError, ValueError):
         return False
 
@@ -100,19 +233,23 @@ def _compact(x):
     """Ce que la pastille garde d'une carte (pour la retrouver par un titre, et l'expliquer en une ligne)."""
     return {"j": x.get("cle_joueur"), "q": x.get("q"), "an": x.get("annee"), "se": x.get("serie"), "num": x.get("num"), "joueur": x.get("joueur"), "nom": x.get("nom"),
             "r": x.get("rendement"), "s": x.get("seuil"), "raw": x.get("raw"), "p10": x.get("psa10"), "p9": x.get("psa9"), "g10": x.get("reste10"), "g9": x.get("reste9"),
-            "jours": x.get("jours"), "ok": bool(x.get("grader") if "grader" in x else vaut_grader(x))}
+            "jours": x.get("jours"), "ok": bool(x.get("grader") if "grader" in x else vaut_grader(x)),
+            "c": x.get("conf"), "cp": x.get("conf_p"), "g10p": x.get("reste10_p"), "sp": x.get("seuil_p"), "rp": x.get("rendement_p"), "pt": _part10(x),
+            "okp": bool(x.get("grader_p") if "grader_p" in x else vaut_grader(x, proprio=True))}
 
 # une carte gradee que le decodeur laisse sans note (PSA 8 et moins, une compagnie rare) : jamais comptee comme une raw
 _RE_GRADEE = re.compile(r"\b(psa|bgs|bvg|sgc|cgc|csg|tag|beckett|ksa|hga|gma|mnt|isa|aca|bccg|ags|rcg)\s*\d|\b(graded|slab|slabbed|gradee?)\b", re.I)
 
 
 def frais_psa():
-    import grader
-    return grader.FRAIS_PSA + grader.ENVOI_PSA
+    """v6 : ce que coute PSA pour une carte au palier Value (56,99 $ CA), taxe sur le service et envoi compris (a l'ecran)."""
+    return round(frais_psa_de(0), 2)
 
 
 # la mesure de la couverture (voir analyser) : le titre DIT-il PSA 10 ou PSA 9 ? et les mots d'un titre qui peuvent nommer une sorte
 _RE_NOTE_TITRE = re.compile(r"\bpsa[\s\-]*(10|9)(?![\d.])", re.I)
+_RE_NOTE_BAS = re.compile(r"\bpsa[\s\-]*(8|7)(?![\d.])", re.I)       # v6 : les PSA 8 et 7 (le decodeur ne les range pas)
+_RE_AUTRE_CIE = re.compile(r"\b(bgs|bvg|sgc|cgc|csg|tag|beckett|ksa)\b", re.I)
 N_INCONNUES = 25
 N_EXEMPLES = 2                       # vrais titres gardes par paire de mots (le journal : c'est par la que je les lis)
 _MOTS_VIDES = set("psa gem mint mt rc rookie rookies card cards hockey nhl the and of for with a an in on upper deck ud graded grade pop new "
@@ -333,15 +470,25 @@ def analyser(ventes, aujourd=None, jours=JOURS, respirer=None):
                 elif raison == "lot ou autre carte" and dit == "10" and len(ex_lot) < 4 * N_EXEMPLES and i % 7 == 0:
                     ex_lot.append(str(titre)[:110])
         if not r:
+            # v6 : une PSA 8 ou 7 : le titre lu comme une PSA 9 pour trouver LA carte (un lot « PSA 7 PSA 8 » ou une autre compagnie : non)
+            t8 = str(titre or "")
+            m8 = _RE_NOTE_BAS.search(t8)
+            if m8 and not _RE_AUTRE_CIE.search(t8) and len({z.group(1) for z in _RE_NOTE_BAS.finditer(t8)}) == 1:
+                try:
+                    r8 = classer(_RE_NOTE_BAS.sub("PSA 9", t8), joueur)
+                except Exception:
+                    r8 = None
+                if r8 and r8[1] == "9":
+                    cartes.setdefault(r8[0], {"raw": [], "10": [], "9": [], "8": [], "7": []})[m8.group(1)].append((le, float(prix)))
             continue
         rangees += 1
-        cartes.setdefault(r[0], {"raw": [], "10": [], "9": []})[r[1]].append((le, float(prix)))
+        cartes.setdefault(r[0], {"raw": [], "10": [], "9": [], "8": [], "7": []})[r[1]].append((le, float(prix)))
         if joueur:
             noms.setdefault(r[0][0], joueur)
     # une vente sans annee (ou sans numero) dans son titre : a la saison (au numero) de la carte s'il n'y en a qu'une (90 % des
     # ventes qui la disent), sinon ecartee. D'abord l'annee (parmi les ventes du meme numero quand elle en a un), puis le numero
     # (parmi les ventes de la meme saison).
-    vide = lambda: {"raw": [], "10": [], "9": []}
+    vide = lambda: {"raw": [], "10": [], "9": [], "8": [], "7": []}
     nb = lambda g: sum(len(x) for x in g.values())
     def seul(compte):
         tot = sum(compte.values())
@@ -452,22 +599,40 @@ def analyser(ventes, aujourd=None, jours=JOURS, respirer=None):
         m9 = statistics.median(p9) if len(p9) >= P9_MIN else None
         if m_raw <= 0:
             continue
-        cout = m_raw + fp
-        r10 = net(m10) - cout
-        r9 = (net(m9) - cout) if m9 is not None else None
-        seuil = None                                           # la part de 10 qu'il faut pour ne pas perdre (si la 9 est connue)
-        if r9 is not None:
-            seuil = 0.0 if r9 >= 0 else (None if r10 <= 0 else round(-r9 / (r10 - r9), 3))
+        # v6 (voir regle) : la PSA 8, combien de chaque note en 12 mois, l'etalement, la PSA 10 des 90 derniers jours, l'age de la carte
+        h8 = [p for d, p in g["8"] if d >= d0]
+        d90 = (auj - timedelta(days=90)).isoformat()
+        r90 = [p for d, p in g["10"] if d >= d90]
+        tous10 = [p for _, p in g["10"]]
+        prem = min(d for k in g for d, _ in g[k])
         sorte = " ".join(w for w in q.split() if w not in set(j.split()))
-        out.append({"joueur": noms.get(j) or beau_nom(j), "cle_joueur": j, "q": q, "nom": ts.libelle(sorte), "annee": an, "serie": se, "num": num,
-                    "rendement": round(net(m10) / cout, 2),
-                    "raw": round(m_raw, 2), "psa10": round(m10, 2), "psa9": round(m9, 2) if m9 is not None else None,
-                    "n_raw": len(raw), "n10": len(p10), "n9": len(p9), "rapport": round(m10 / m_raw, 2),
-                    "reste10": round(r10, 2), "reste9": round(r9, 2) if r9 is not None else None, "seuil": seuil,
-                    "du": d0, "jours": (auj - datetime.strptime(d0, "%Y-%m-%d").date()).days, "fenetre": fenetre})
+        x = {"joueur": noms.get(j) or beau_nom(j), "cle_joueur": j, "q": q, "nom": ts.libelle(sorte), "annee": an, "serie": se, "num": num,
+             "raw": round(m_raw, 2), "psa10": round(m10, 2), "psa9": round(m9, 2) if m9 is not None else None,
+             "psa8": round(statistics.median(h8), 2) if len(h8) >= P8_MIN else None,
+             "n_raw": len(raw), "n10": len(p10), "n9": len(p9), "n8": len(h8), "rapport": round(m10 / m_raw, 2),
+             "c10": len(g["10"]), "c9": len(g["9"]), "c8": len(g["8"]), "c7": len(g["7"]), "et_raw": round(_etale(raw), 4), "et10": round(_etale(p10), 4),
+             "p10_90": statistics.median(r90) if len(r90) >= 3 else None, "p10_365": statistics.median(tous10) if len(tous10) >= 3 else None,
+             "age_j": (auj - datetime.strptime(prem, "%Y-%m-%d").date()).days, "auj": auj.isoformat(),
+             "du": d0, "jours": (auj - datetime.strptime(d0, "%Y-%m-%d").date()).days, "fenetre": fenetre}
+        a, b = regle(x), regle(x, proprio=True)
+        x.update(rendement=round(_net(a["v10"]) / a["cout"], 2), cout=round(a["cout"], 2), reste10=round(a["r10"], 2),
+                 reste9=round(a["r9"], 2) if a["r9"] is not None else None, seuil=None if a["seuil"] >= 9 else round(a["seuil"], 3),
+                 reste10_p=round(b["r10"], 2), seuil_p=None if b["seuil"] >= 9 else round(b["seuil"], 3), rendement_p=round(_net(b["v10"]) / b["cout"], 2))
+        out.append(x)
+    # v6 : l'elan du JOUEUR (la mediane, sur ses cartes mesurees, de sa PSA 10 des 90 derniers jours contre 12 mois), puis la confiance
+    import math
+    elan = {}
+    for x in out:
+        elan.setdefault(x["cle_joueur"], []).append(math.log((x["p10_90"] or x["psa10"]) / (x["p10_365"] or x["psa10"])))
+    for i, x in enumerate(out):
+        if respirer and i % 50 == 49:
+            respirer(i)
+        x["elan_j"], x["n_j"] = round(float(statistics.median(elan[x["cle_joueur"]])), 5), len(elan[x["cle_joueur"]])
+        cf, cp = confiance(x), confiance(x, proprio=True)
+        x["conf"], x["conf_p"] = (round(cf, 3) if cf is not None else None), (round(cp, 3) if cp is not None else None)
     out.sort(key=lambda x: (-x["rendement"], -x["reste10"]))
     for x in out:
-        x["grader"] = vaut_grader(x)
+        x["grader"], x["grader_p"] = vaut_grader(x), vaut_grader(x, proprio=True)
     for n in ("10", "9"):
         couv[n]["raisons"] = dict(sorted(couv[n]["raisons"].items(), key=lambda x: -x[1]))
     couv["sortes_inconnues"] = [[d, n] for d, n in sorted(mots_inconnus.items(), key=lambda x: (-x[1], x[0]))[:N_INCONNUES] if n >= 3]
@@ -554,6 +719,7 @@ def calculer():
     r = analyser(((_cle_vente(c), t, p, le, j) for c, t, p, le, j in _ventes_serveur()), respirer=respirer)
     r["secondes"] = round(time.time() - t0)
     ch = _chemin()
+    journal(r)
     with open(ch + ".tmp", "w", encoding="utf-8") as f:
         json.dump(r, f, ensure_ascii=False)
     os.replace(ch + ".tmp", ch)
@@ -585,6 +751,25 @@ def calculer():
     except Exception as e:
         print("A grader (couverture) : " + repr(e)[:120], flush=True)
     return r
+
+
+def journal(r):
+    """27 nov 2026 (la pastille ouverte a Pro ; la condition du rapport de confiance) : chaque liste calculee garde ses pastilles
+    (la carte, la confiance, les prix du jour) dans DONNEES/a_grader_journal.jsonl, pour les juger 6 a 8 mois plus tard avec les
+    vraies ventes : si la promesse tombe sous 85 % pendant 3 mois, la pastille retourne en admin. Une ligne par carte, une fois par jour."""
+    try:
+        le = datetime.now(timezone.utc).date().isoformat()
+        ch = os.path.join(os.path.dirname(_chemin()), "a_grader_journal.jsonl")
+        if os.path.exists(ch) and os.path.getsize(ch) > 50_000_000:
+            return
+        with open(ch, "a", encoding="utf-8") as f:
+            for x in r.get("cartes") or []:
+                if x.get("grader") or x.get("grader_p"):
+                    f.write(json.dumps({"le": le, "v": VERSION, "j": x.get("cle_joueur"), "q": x.get("q"), "an": x.get("annee"), "se": x.get("serie"), "num": x.get("num"),
+                                        "raw": x.get("raw"), "p10": x.get("psa10"), "p9": x.get("psa9"), "p8": x.get("psa8"), "s": x.get("seuil"), "sp": x.get("seuil_p"),
+                                        "c": x.get("conf"), "cp": x.get("conf_p"), "a": bool(x.get("grader")), "p": bool(x.get("grader_p"))}, ensure_ascii=False) + "\n")
+    except Exception as e:
+        print("A grader (journal) : " + repr(e)[:120], flush=True)
 
 
 def lire():
@@ -652,6 +837,20 @@ def refaire_si_besoin():
     return lancer()
 
 
+PRIX_LISTE = ("raw", "psa10", "psa9", "psa8", "reste10", "reste9", "reste10_p", "cout", "p10_90", "p10_365")
+
+
+def pour_niveau(t, niveau):
+    """27 nov 2026 (Mathieu : « go pousse tout dans Pro, Platine et admin ; pour le free on doit limiter ») : l'onglet « A grader »
+    selon le forfait. « comps » (admin, Platine) : tout ; « pro » : la liste SANS AUCUN PRIX (regle des comps) ; « gratuit » : le
+    nombre de cartes seulement, le reste verrouille (Passe a Pro)."""
+    if niveau == "comps":
+        return t
+    if niveau == "pro":
+        return {**{k: v for k, v in t.items() if k != "frais_psa"}, "cartes": [{k: v for k, v in x.items() if k not in PRIX_LISTE} for x in t.get("cartes") or []]}
+    return {"cartes": [], "verrou": True, "n_grader": t.get("n_grader") or len(t.get("cartes") or []), "n": t.get("n"), "le": t.get("le")}
+
+
 def top_tendances():
     """Pour l'onglet « A grader » de Trending (ADMIN seulement pour l'instant : la liste porte des prix) : les N_TOP premieres."""
     v = lire()
@@ -684,10 +883,10 @@ def _index():
     return d
 
 
-def pastille(titre, joueur=None):
-    """La carte de la liste qui porte la pastille « A grader » (voir mesure), ou None."""
+def pastille(titre, joueur=None, proprio=False):
+    """La carte de la liste qui porte la pastille « A grader » (voir mesure), ou None. proprio : une carte deja a soi (l'inventaire)."""
     e = mesure(titre, joueur)
-    return e if e and e.get("ok", True) else None
+    return e if e and e.get("okp" if proprio else "ok", True) else None
 
 
 def mesure(titre, joueur=None):
@@ -727,11 +926,14 @@ def mesure(titre, joueur=None):
     return r
 
 
-def pour_client(e, prix=False):
-    """Ce que l'app recoit pour une pastille : le rendement et le seuil ; les prix seulement pour l'admin (regle des comps)."""
+def pour_client(e, prix=False, verrou=False):
+    """Ce que l'app recoit pour une pastille : le rendement et le seuil ; les prix seulement pour l'admin (regle des comps).
+    verrou (27 nov 2026, un compte gratuit) : la pastille seule ; la toucher ouvre « Passe a Pro »."""
     if not e:
         return None
-    o = {"r": e.get("r"), "s": e.get("s"), "jours": e.get("jours"), "nom": e.get("nom"), "joueur": e.get("joueur"), "an": e.get("an")}
+    if verrou:
+        return {"verrou": True, "nom": e.get("nom"), "joueur": e.get("joueur"), "an": e.get("an")}
+    o = {"r": e.get("r"), "s": e.get("s"), "c": e.get("c"), "jours": e.get("jours"), "nom": e.get("nom"), "joueur": e.get("joueur"), "an": e.get("an")}
     if prix:
         o.update(raw=e.get("raw"), p10=e.get("p10"), p9=e.get("p9"), g10=e.get("g10"))
     return o

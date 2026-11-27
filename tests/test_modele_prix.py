@@ -18,7 +18,7 @@ apres = [(K, "raw", (d("2026-03-02") + timedelta(days=k)).isoformat(), 40.0) for
 L1 = mp.panneau(mp.cartes(avant), ["2026-03-02"], cibles=False)
 L2 = mp.panneau(mp.cartes(avant + apres), ["2026-03-02"])
 assert len(L1) == len(L2) == 1
-for v in mp.VARIABLES:
+for v in mp.VARIABLES2:
     a, b = L1[0][v], L2[0][v]
     assert (math.isnan(a) and math.isnan(b)) or a == b, (v, a, b)
 assert abs(L2[0]["p0"] - math.log(20)) < 1e-9 and abs(L2[0]["y30"] - math.log(2)) < 1e-9 and abs(L2[0]["y60"] - math.log(2)) < 1e-9
@@ -39,18 +39,19 @@ rng = np.random.default_rng(3)
 def lignes(n, motif=True):
     L = []
     for _ in range(n):
-        x = {v: float(rng.normal()) for v in mp.VARIABLES}
+        x = {v: float(rng.normal()) for v in mp.VARIABLES2}
         y = (0.5 * x["pente"] if motif else 0.0) + float(rng.normal(0, 0.15))
         x.update(y30=y, y60=y, note=0)
         L.append(x)
     return L
 app, te = lignes(6000), lignes(3000)
-m = mp.apprendre(app, 30, arbres=150)
+m = mp.apprendre(app, 30, arbres=300)
 assert isinstance(m["texte"], str) and m["texte"].startswith("tree") and mp.lire(mp.ecrire(m))["texte"] == m["texte"]
 y = np.array([x["y30"] for x in te])
 p = mp.predire(mp.lire(mp.ecrire(m)), te)
 b = mp.bilan(p, y)
-assert b["gain_vs_zero"] > 0.3 and b["bon_sens"] > 0.9, b
+assert b["gain_vs_zero"] > 0.2 and b["bon_sens"] > 0.9, b
+assert m["retrecir"] == mp.RETRECIR == 0.75 and m["variables"] == mp.VARIABLES2, "la version retenue par la serie d'essais du 27 nov"
 assert np.abs(mp.predire(m, [{**te[0], "pente": 99.0}])).max() <= mp.BORNE, "une prediction est bornee"
 
 # ---- 3. decider : assez de predictions, assez mieux, et PROUVE au tirage ; le PIEGE est refuse

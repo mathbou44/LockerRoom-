@@ -4587,18 +4587,21 @@ class Api:
                                 and (r.get("emplacement") or "") not in ("Collection", "eBay") and not r.get("envoi_json"))
         # 27 nov 2026 (Mathieu : « on peut meme mettre cette pastille-la dans les cartes en inventaire, pas encore sur eBay, pour
         # que la personne decide si elle l'affiche non gradee ou l'envoie grader si elle est assez belle ») : la pastille
-        # « A grader » sur une carte NON gradee, pas vendue, pas sur eBay et pas deja en envoi. Admin seulement pour l'instant.
+        # « A grader » sur une carte NON gradee, pas vendue, pas sur eBay et pas deja en envoi. 27 nov 2026 : Pro, Platine et admin ;
+        # le gratuit voit la pastille seule (_niveau_ag)
         try:
-            if self._est_admin():
+            niv = self._niveau_ag()
+            if True:
                 import a_grader
                 for r in out:
                     if (r.get("statut") in ("Vendue", "Listée") or r.get("item_number") or str(r.get("grade") or "").strip() or r.get("envoi_json") or r.get("soumission_id")
                             or (r.get("sport") or "hockey") != "hockey"):
                         continue
                     t = r.get("titre") or " ".join(str(r.get(k) or "") for k in ("annee", "marque", "set_nom", "joueur", "parallele", "numero")).strip()
-                    e = a_grader.pastille(t, r.get("joueur"))
+                    e = a_grader.pastille(t, r.get("joueur"), proprio=True)      # v6 : elle est deja a toi (pas de taxe ni de port a l'achat)
                     if e:
-                        r["ag"] = a_grader.pour_client(e, prix=True)
+                        r["ag"] = (a_grader.pour_client(e, verrou=True) if niv == "gratuit" else
+                                   dict(a_grader.pour_client(e, prix=niv == "comps"), c=e.get("cp"), s=e.get("sp"), r=e.get("rp"), **({"g10": e.get("g10p")} if niv == "comps" else {})))
         except Exception as e:
             print("A grader (inventaire) : " + repr(e)[:160], flush=True)
         # 16 nov 2026 (le moment de VENDRE, mesure sur la banque YG : une Young Guns sortie depuis moins de 60 jours valait
@@ -9249,11 +9252,11 @@ class Api:
         try:                                    # 26 nov 2026 (Mathieu : « dans trend on devrait voir la liste du top 100 a grader qui se
             # refresh chaque semaine » ; « Admin seulement » pour commencer) : la liste porte des PRIX -> jamais envoyee a un autre
             # que l'admin (ni au Pro, ni a l'admin qui regarde l'app comme un client)
-            if isinstance(r, dict) and r.get("ok") and self._est_admin():
+            if isinstance(r, dict) and r.get("ok"):
                 import a_grader
                 ag = a_grader.top_tendances()
                 if ag.get("cartes"):
-                    r = {**r, "a_grader": ag}
+                    r = {**r, "a_grader": a_grader.pour_niveau(ag, self._niveau_ag())}       # 27 nov 2026 : Pro sans prix, gratuit verrouille
         except Exception as e:
             print("Tendances (a grader) : " + repr(e), flush=True)
         try:
@@ -12570,8 +12573,8 @@ class Api:
         vendre en ce moment, pour qu'on puisse aller les voir rapidement puis decider de les acheter ; en encan ou en vente
         directe »). Les annonces eBay EN COURS de la MEME carte (a_grader.classer : meme joueur, sorte, saison, /N, numero), RAW
         seulement (jamais une gradee), la moins chere d'abord (prix + port). ADMIN seulement, comme la liste."""
-        if not self._est_admin():
-            return {"ok": False, "raison": "admin"}
+        if self._niveau_ag() == "gratuit":                       # 27 nov 2026 : Pro, Platine et admin (des annonces eBay en cours)
+            return {"ok": False, "raison": "pro"}
         import a_grader
         q = re.sub(r"\s+", " ", str(q or "")).strip().lower()[:80]
         if len(q.split()) < 3:
@@ -12631,14 +12634,24 @@ class Api:
             Api._AG_ANN[k] = (time.time(), out, le)
         return {"ok": True, "annonces": out, "le": le}
 
+    def _niveau_ag(self):
+        """27 nov 2026 (Mathieu : « go pousse tout dans Pro, Platine et admin ; pour le free on doit limiter » ; son choix : la pastille
+        visible, le detail pour Pro) : « comps » (admin, Platine : les montants), « pro » (la pastille et sa confiance, jamais un
+        prix), « gratuit » (la pastille seule ; la toucher ouvre Passe a Pro)."""
+        if comps_permis(self):
+            return "comps"
+        try:
+            return "pro" if forfaits.est_pro() else "gratuit"
+        except Exception:
+            return "gratuit"
+
     def _a_grader_de(self, annonces, cle="item_id", titre=lambda x: x.get("titre")):
         """27 nov 2026 (Mathieu : « une pastille dans Radar [...] tres, tres simple pour le end user de comprendre rapidement
         qu'est-ce qui est a grader ou non ») : {identifiant: la pastille « A grader »} pour les cartes NON gradees de la liste
         (a_grader.pastille : meme joueur, meme sorte, meme saison). ADMIN seulement pour l'instant (la pastille de l'admin porte
         des prix) ; envoyee A COTE des annonces, jamais ecrite dedans (elles sont partagees entre les comptes)."""
         try:
-            if not self._est_admin():
-                return {}
+            niv = self._niveau_ag()
             import a_grader
             o = {}
             for x in annonces or []:
@@ -12647,7 +12660,7 @@ class Api:
                     continue
                 e = a_grader.pastille(titre(x), x.get("joueur"))
                 if e:
-                    o[str(k)] = a_grader.pour_client(e, prix=True)
+                    o[str(k)] = a_grader.pour_client(e, prix=niv == "comps", verrou=niv == "gratuit")
             return o
         except Exception as e:
             print("A grader (pastille) : " + repr(e)[:160], flush=True)
@@ -13749,6 +13762,16 @@ class Api:
         if len(titre) < 3 or grader.gradee(titre):
             return {"ok": False, "raison": "gradee"}
         if not comps_permis(self):
+            # 27 nov 2026 : le Pro recoit la reponse de la liste « A grader », SANS AUCUN PRIX (regle des comps)
+            try:
+                import a_grader
+                e = a_grader.mesure(titre) if self._niveau_ag() == "pro" else None
+                if e:
+                    return {"ok": True, "source": "liste", "verdict": "oui" if e.get("ok") else "non", "seuil_10": e.get("s"), "rendement": e.get("r"),
+                            "chance_10": None, "jours": e.get("jours"), "seuil_max": a_grader.PROMESSE, "confiance": e.get("c"), "confiance_min": a_grader.CONFIANCE_MIN,
+                            "pourquoi": a_grader.pourquoi_non(e)}
+            except Exception as ex:
+                print("A grader (fiche Pro) : " + repr(ex)[:160], flush=True)
             return {"ok": False, "raison": "comps"}
         # 27 nov 2026 (la pastille « A grader ») : une carte MESUREE par la liste (raw, PSA 10 et PSA 9 de la meme carte, ventes
         # reelles) recoit la MEME reponse que sa pastille : jamais « A grader » sur la tuile et « Non » dans la fiche
@@ -13758,7 +13781,8 @@ class Api:
             if e:
                 return {"ok": True, "source": "liste", "verdict": "oui" if e.get("ok") else "non", "gain": e.get("g10"), "psa10": e.get("p10"),
                         "psa9": e.get("p9"), "brute": e.get("raw"), "seuil_10": e.get("s"), "chance_10": None, "rendement": e.get("r"),
-                        "frais": a_grader.frais_psa(), "jours": e.get("jours"), "profit_min": a_grader.PASTILLE_PROFIT, "seuil_max": a_grader.PASTILLE_SEUIL}
+                        "frais": a_grader.frais_psa(), "jours": e.get("jours"), "profit_min": a_grader.PASTILLE_PROFIT, "seuil_max": a_grader.PROMESSE,
+                        "confiance": e.get("c"), "confiance_min": a_grader.CONFIANCE_MIN, "pourquoi": a_grader.pourquoi_non(e)}
         except Exception as ex:
             print("A grader (fiche) : " + repr(ex)[:160], flush=True)
         try:

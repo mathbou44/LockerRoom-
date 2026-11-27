@@ -1751,3 +1751,70 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   ajusté (3 cartes, `series_cartes`). Scripts : /tmp/vj/run.py, run2.py, det.py, mem.py.
 - La fiche de la Heiskanen (14 h 01, « pas réglé même après le push ? ») : c'est voulu (une seule vente → pas de mise max), la fiche
   le dit maintenant ; à lui de dire s'il veut une règle pour une seule vente.
+
+## p125 — 27 nov 2026, 16 h 15 : premier calcul en ligne, pourquoi plus d'« À acheter », signaux de vente plus stricts
+- En ligne (commit 0d0d5d8, poussé par moi à 15 h 18 sur son « Pousse ») : 1er calcul carte exacte à 15 h 22 → fini à 15 h 53
+  (1 825 s, rangement de tous les titres une fois) : « 213 joueurs · acheter 0 (actif False) · vendre 10 ». Mémoire stable 2,7 Go.
+- Pourquoi plus d'« À acheter » (banc local) : l'ancienne réussite (61 %, gain +19 %) venait en bonne partie du mélange (un « creux » =
+  une carte moins chère tombée dans la sorte ; la « remontée » = le retour du mélange). Carte par carte, la meilleure règle passait de
+  justesse (médiane −20 %, 3 mois : 49,5 % contre 20,3 %, gain net +6,0 % pour un minimum de 5 %, 23 paris) et passe sous la barre
+  avec un jour de plus. Aucune règle d'achat = la réponse honnête ; la vérification quotidienne la remettra si les ventes la prouvent.
+- Signaux de vente (son « oui » de 16 h 12) : `ECART_MIN = 0.15` : une règle ne compte (active et « Vends ») que si elle bat le hasard
+  d'au moins 15 points (avant : la borne prudente au-dessus du hasard suffisait : 53 % contre 45 % donnait un « Vends »). Banc du 26 nov :
+  8 « Vends » (Bouchard 83 % contre 40 %, Levi 67 % contre 45 %, Fowler et Brunet 63 %…), les règles à +10 % au-dessus de la normale
+  sont parties. Test : `tests/test_ventes_cartes.py` (section 4).
+- Sa question (16 h 12) « c'est pour notre algo de prédiction ? » : non, c'est le marché des joueurs (Tendances, À acheter / À vendre).
+  Le modèle de prix (`modele_prix.py`) est à part, admin, pas encore sur le serveur ; même idée (une règle doit se prouver avant
+  d'être montrée), et il utilisera la même base carte par carte (`ventes_cartes`).
+
+## p126 — 27 nov 2026, 17 h : le modèle de prix, la série d'essais (son « fais le meilleur possible »)
+- Nouvelles variables tirées des ventes seules (`VARIABLES2`) : `flambee` (14 j contre 90), `age_produit` (jours depuis la 1re vente
+  de la sorte, même saison), `prime` (PSA 10 contre raw de la même carte), `rel_joueur` (la carte contre les autres du joueur),
+  `j_pente2`, `s_pente2`. Pas de matchs : l'API de la LNH n'est pas joignable d'ici (à ajouter sur le serveur plus tard).
+- Protocole : 96 versions (30 et 60 j) sur la période de DÉVELOPPEMENT (janv. 2025 → mars 2026), chaque mois appris sans la suite ;
+  la meilleure jugée UNE fois sur les mois GARDÉS DE CÔTÉ (avril → sept. 2026). Scripts : /tmp/modele/iter/ (cherche.py, garde.py).
+- Retenue (`PARAMS`, `ARBRES`, `CIBLE_BORNE`, `RETRECIR`) : erreur au carré, 15 feuilles, 500 ventes par feuille, 100 arbres, λ2 10,
+  cible bornée à ±0,7, prédictions × 0,75. Mois gardés de côté, contre « ne bouge pas », prouvé à 95 % :
+  30 j : +5,6 % (raw +5,9 %, gradées +3,5 %, liquides +5,4 %) ; annonces ≥ 10 % : bon sens 72 %, hausse annoncée → +15 % obtenu
+  (médiane), baisse annoncée → −25 %. 60 j : +3,6 % (raw +4,2 % ; gradées +0,1 %, pas prouvé) ; bon sens 68 %.
+  Première version (mêmes mois) : 30 j +3,7 %, 60 j −0,2 %. Poids des variables (30 j) : ancienneté 13 %, pente 12 %, prix 11 %,
+  dernière vente 10 %, pente du joueur 9 %.
+- Toujours admin seulement ; pas encore sur le serveur (figer chaque semaine, maturation, tour champion / aspirant, carte admin).
+
+## p127 — 27 nov 2026, 17 h 30 : modèle de prix mis de côté ; la pastille « À grader » rejouée dans le passé
+- Mathieu (17 h 11) : « on fait juste gaspiller du temps à essayer de prédire l'avenir [...] on va se concentrer sur notre modèle
+  pour l'analyse des cartes bonnes à grader ». `modele_prix.py` reste dans le code, branché nulle part (rien à défaire).
+- Test d'historique (/tmp/ag_passe/rejouer.py, lire.py) : au 1er de chaque mois, mars 2025 → juillet 2026, la règle d'aujourd'hui
+  (a_grader._meme_periode, vaut_grader) avec SEULEMENT les ventes d'avant ; la vérité : les ventes PSA 10 / PSA 9 de la même carte
+  entre t+60 et t+120 j ; le prix payé : la médiane raw vue à t. 1 195 pastilles, 575 jugeables (130 cartes ; les autres : moins de
+  3 ventes PSA 10 au retour).
+  - Si elle sort 10 : encore ≥ 40 $ 98 % du temps, jamais de perte ; prévu +191 $ (médiane), obtenu +220 $.
+  - Sans pastille : 21 % perdent même avec un 10 ; « 1 dix sur 4 suffit » encore vrai : pastille 88 %, sans pastille 32 %.
+  - Le point faible : cartes de moins de 6 mois (54 cas, 26 cartes) : PSA 10 au retour à 0,76 de son prix (médiane), 56 % plus bas
+    de 20 % et + ; « 1 sur 4 suffit » encore vrai 70 % (91 % pour les cartes plus vieilles).
+  - Pas mesurable avec les ventes : la vraie chance d'un 10, et les cartes qui reviennent 8 ou moins (le décodeur ne lit pas PSA 8).
+
+## p128 — 27 nov 2026, 18 h 30 : « À grader » v6 (vrais frais, PSA 8, cartes neuves, confiance par carte) — son « on doit être parfait »
+- Rapport de confiance (doc) : https://claude.ai/artifact/J6EfZ3uHd8TXDgaPSYLShM . Recherche : /tmp/ag_passe/ (rejouer2.py, banc.py,
+  conf.py, entrainer.py, filtre.py, auj.py, psa8.py).
+- Frais réels : PSA Value Canada 56,99 $ CA (rouvert 29 oct 2026, 90-100 jours ouvrables, max 500 $ US) ; Standard/Priority/Express en
+  $ US × 1,425 ; taxe 14,975 % sur PSA ; 8 $ d'envoi ; raw achetée + 6 $ de port + TPS/TVQ ; revente deals.net_revente.
+- PSA 8 et 7 lues dans les titres (titre lu comme une PSA 9 pour trouver la carte) ; PSA 8 ≈ raw (médiane 0,98). Pas 10 = 9 ou 8 selon
+  la proportion vendue (≥ 5 ventes, sinon moitié-moitié). Carte de moins de 180 jours : PSA 10 et 9 × 0,80.
+- Pastille = +40 $ si 10 ET confiance ≥ 85 % ET part de 10 qu'il faut ≤ 0,7 × part des 10 parmi les gradées vendues. La confiance =
+  P(au retour 150-240 j : le 10 rapporte ET il faut au plus 1 dix sur 2), logistique + 3 LightGBM (modeles/a_grader_confiance.json,
+  texte), versions « achat » et « proprio » (inventaire : coût = vendre la raw). Variables : a_grader.variables (identiques à la recherche).
+- Mesuré (modèle appris juin 2024 → sept 2025, jugé oct 2025 → avr 2026) : achat 97 % tenue (borne basse 89 %, 14 cartes), proprio 99 %
+  (98 %, 41 cartes) ; modèle final jugé sur mai-juin 2026 : 96 % (86 %, 17 cartes) et 99 % (96 %, 51 cartes). Ancienne règle avec les vrais
+  frais : « 1 dix sur 4 » tenue 28-42 %. Aujourd'hui (données de recherche) : 619 mesurées, ancienne 256 pastilles, v6 achat 84, proprio 158.
+- Toujours ADMIN. Pro : attend son go. À faire : contrôle mensuel automatique, réapprentissage trimestriel (champion/aspirant), notes réelles.
+
+## p129 — 27 nov 2026, 18 h 15 : « À grader » ouvert à Pro, Platine et admin ; le gratuit limité (son « go pousse tout »)
+- Son choix (question) : « Pastille visible, détail Pro ». `Api._niveau_ag()` : « comps » (comps_permis : admin, Platine) = tout avec
+  montants ; « pro » = pastille, confiance, 1 dix sur N, rendement (×), annonces raw en vente, onglet Trends SANS AUCUN PRIX
+  (a_grader.pour_niveau retire PRIX_LISTE) ; « gratuit » = pastille seule (pour_client verrou) : la toucher ouvre feuillePro('a_grader') ;
+  onglet Trends : le nombre de cartes + « Passer à Pro » ; a_grader_annonces refusé (« pro »).
+- Fiche « Grader ? » : le Pro reçoit la réponse de la liste sans prix ; un « non » dit pourquoi (a_grader.pourquoi_non : gain,
+  confiance, chance). Inventaire : la version « déjà à soi » (cp, sp, rp ; g10p pour comps seulement).
+- Journal de surveillance : a_grader.journal() écrit chaque pastille calculée dans DONNEES/a_grader_journal.jsonl (date, carte, prix,
+  seuil, confiance) : à juger 6-8 mois plus tard (règle : sous 85 % pendant 3 mois -> retour en admin). Le juge reste à écrire (~juin 2027).

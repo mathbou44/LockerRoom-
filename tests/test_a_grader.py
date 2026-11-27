@@ -10,6 +10,7 @@ os.environ["LOCKERROOM_DONNEES"] = tempfile.mkdtemp()
 import comptes
 comptes.DONNEES = os.environ["LOCKERROOM_DONNEES"]
 import a_grader, grader
+a_grader.confiance = lambda x, proprio=False, auj=None: 0.9          # v6 : le modele de confiance a son propre test (test_a_grader_confiance)
 AUJ = datetime.now(timezone.utc).date()
 jr = lambda k: (AUJ - timedelta(days=k)).isoformat()
 cl = a_grader.classer
@@ -27,7 +28,7 @@ for t, pq in ((YG + " PSA 10?", "une raw qui espere"), (YG + " Possible PSA 10",
               (YG + " creased corner", "abimee"), (YG + " LOT of 3", "un lot"), (YG + " + Dazzlers", "un lot ecrit avec +"),
               ("Cutter Gauthier PSA 10 rookie card Ducks", "aucune carte nommee"), ("2026-27 Upper Deck Jack Hughes Gold PSA 10", "une couleur seule n'est pas une carte")):
     assert cl(t) is None, (t, pq, cl(t))
-assert a_grader.P10_MIN == 5 and a_grader.RAW_MIN == 5 and a_grader.P9_MIN == 3 and a_grader.frais_psa() == grader.FRAIS_PSA + grader.ENVOI_PSA == 41.0
+assert a_grader.P10_MIN == 5 and a_grader.RAW_MIN == 5 and a_grader.P9_MIN == 3 and a_grader.frais_psa() == round(56.99 * 1.14975 + 8, 2)   # v6 : PSA Value au Canada, taxe, envoi
 print("TITRES OK")
 
 # ---- 2. la liste : la meme periode, des medianes, ce qui reste apres les frais
@@ -54,12 +55,18 @@ g = par["Cutter Gauthier"]
 assert g["raw"] == 38 and g["n_raw"] == 6 and g["psa10"] == 406 and g["n10"] == 6 and g["psa9"] == 90 and g["n9"] == 3, g      # la vente triplee compte une fois ;
 assert g["jours"] == 45, "la raw d'il y a 60 jours est hors de la periode commune (la PSA 10 n'est connue que depuis 45 jours)"
 assert g["annee"] == 2024 and g["num"] == "212" and g["nom"] == "Young Guns" and g["q"] == "cutter gauthier young guns"
-net10, net9 = 406 * (1 - 0.1325) - 0.40, 90 * (1 - 0.1325) - 0.40
-assert g["reste10"] == round(net10 - 38 - 41, 2) and g["reste9"] == round(net9 - 38 - 41, 2) and g["reste9"] < 0 < g["reste10"]
-assert g["seuil"] == round(-(net9 - 79) / (net10 - net9), 3) and 0 < g["seuil"] < 0.02, g["seuil"]                              # la part de 10 qu'il faut pour ne pas perdre
-assert g["rapport"] == round(406 / 38, 2) and g["rendement"] == round(net10 / 79, 2)
+# v6 : les vrais frais (la raw : port + taxes ; PSA Value 56,99 $ + taxe + envoi ; la revente : deals.net_revente) ; la carte a 200
+# jours (sa vieille PSA 10 a 9 999 $) : pas « neuve » (sinon PSA 10 et 9 x 0,80) ; ce qui n'est pas 10 = moitie 9, moitie 8 (trop peu de 9 et de 8 vendues pour le melange ;
+# pas de PSA 8 vendue : 85 % de la raw)
+import deals
+net, T = deals.net_revente, deals.TAXE_ACHAT
+c = (38 + 6) * (1 + T) + 56.99 * (1 + T) + 8
+v10, vn = 406, 0.5 * 90 + 0.5 * 38 * 0.85
+assert g["cout"] == round(c, 2) and g["reste10"] == round(net(v10) - c, 2) and g["reste9"] == round(net(90) - c, 2) and g["reste9"] < 0 < g["reste10"], g
+assert g["seuil"] == round(-(net(vn) - c) / (net(v10) - net(vn)), 3) and 0.2 < g["seuil"] < 0.3, g["seuil"]        # la part de 10 qu'il faut pour ne pas perdre
+assert g["rapport"] == round(406 / 38, 2) and g["rendement"] == round(net(v10) / c, 2) and g["age_j"] == 200 and g["c9"] == 3 and g["c8"] == 0
 b = par["Connor Bedard"]
-assert b["psa10"] == 1000 and b["n10"] == 6 and b["jours"] == 14 and b["psa9"] is None and b["reste9"] is None and b["seuil"] is None, b   # LA MEME PERIODE
+assert b["psa10"] == 1000 and b["n10"] == 6 and b["jours"] == 14 and b["psa9"] is None and b["reste9"] is None and b["seuil"] is not None, b   # v6 : sans 9, une 8   # LA MEME PERIODE
 z = par["Zayne Parekh"]
 assert z["reste10"] < 0 and z["reste9"] < 0 and z["seuil"] is None, "elle perd meme en 10 : pas de seuil"
 assert [x["joueur"] for x in R["cartes"]] == sorted(par, key=lambda j: -par[j]["rendement"]), "classee par ce qui revient pour 1 $ mis si elle revient 10"
@@ -90,7 +97,8 @@ def misa(raw_r, raw_v, p10_r, p10_v, p9_r=(), p9_v=()):
 m = misa([41] * 6, [41] * 6, [309] * 5, [520] * 6, [100] * 3, [150] * 4)
 assert (m["fenetre"], m["raw"], m["psa10"], m["psa9"], m["n10"], m["n9"]) == (60, 41, 309, 100, 5, 3), m
 assert m["n_raw"] == 5 and m["jours"] == 30, "toujours la meme periode : la raw d'il y a 40 jours precede la premiere PSA 10 recente (30 jours)"
-assert m["rendement"] == round((309 * (1 - 0.1325) - 0.40) / (41 + 41), 2) == 3.26
+r = a_grader.regle(m)                                                              # v6 : le rendement suit la regle (vrais frais)
+assert m["rendement"] == round(a_grader._net(r["v10"]) / r["cout"], 2) and r["v10"] == 309 * (0.8 if m["age_j"] < 180 else 1)
 # pas assez de PSA 10 dans les 60 derniers jours (4) : les 120 jours, comme avant
 m = misa([41] * 6, [41] * 6, [309] * 4, [520] * 6, [100] * 3, [150] * 4)
 assert (m["fenetre"], m["n10"], m["psa10"], m["n_raw"]) == (120, 10, 520, 12), m
@@ -196,7 +204,7 @@ banque_psa._run_maj(statut="erreur", battement=time.time() - 3600)
 os.utime(a_grader._chemin(), (time.time() - 115 * 60,) * 2)
 assert a_grader.refaire_si_besoin() is None, "collecte arretee : retour au rythme de la semaine"
 # 26 nov, 16 h 36 : une regle de calcul change (les 60 derniers jours) : la liste faite avec l'ancienne regle est refaite seule, une fois
-assert a_grader.VERSION == 5 and a_grader.lire()["version"] == 5          # 5 : la pastille « A grader » (27 nov)
+assert a_grader.VERSION == 6 and a_grader.lire()["version"] == 6          # 5 : la pastille « A grader » (27 nov) ; 6 : vrais frais, PSA 8, confiance
 with open(a_grader._chemin(), encoding="utf-8") as f_:
     anc = json.load(f_)
 anc.pop("version")
@@ -290,7 +298,7 @@ assert R5["cartes"] == [] and R5["ecartees"]["peu de raw"] == 1
 # sans joueur cherche (nos archives : une recherche par carte), rien n'est mis a part
 assert a_grader.analyser([(c, t, p, d, None) for c, t, p, d, _ in smith])["couverture"]["10"]["autre_joueur"] == 0
 T = a_grader.top_tendances()
-assert len(T["cartes"]) == 1 and T["n"] == 1 and T["semaine"] == 7 and T["frais_psa"] == 41.0 and T["le"]
+assert len(T["cartes"]) == 1 and T["n"] == 1 and T["semaine"] == 7 and T["frais_psa"] == a_grader.frais_psa() and T["le"]
 # 26 nov, 14 h 58 (journal : la collecte PSA morte sur « database is locked » 22 s apres le depart du calcul) : pendant que la liste
 # se calcule, la base de la collecte n'est JAMAIS tenue ouverte : une ecriture passe tout de suite
 import sqlite3
@@ -328,20 +336,24 @@ api._tendances_iq0 = lambda: {"ok": True, "cats": {"bas": [], "haut": []}, "comp
 tendance_sortes.page = lambda: None
 vrai_pro = forfaits.est_pro
 try:
-    api._est_admin = lambda reel=False: True
+    # 27 nov 2026 (Mathieu : « go pousse tout dans Pro, Platine et admin ; pour le free on doit limiter ») : selon le forfait
+    api._niveau_ag = lambda: "comps"                         # admin, Platine : tout, avec les montants
     ra = api.tendances_iq()
     assert ra["a_grader"]["cartes"][0]["joueur"] == "Cutter Gauthier" and ra["a_grader"]["cartes"][0]["raw"] == 38.0
-    api._est_admin = lambda reel=False: False                # un Pro (ou l'admin qui regarde l'app comme un client)
-    forfaits.est_pro = lambda: True
-    assert "a_grader" not in api.tendances_iq() and "psa10" not in json.dumps(api.tendances_iq())
-    forfaits.est_pro = lambda: False                         # un Gratuit
-    assert "a_grader" not in api.tendances_iq() and "psa10" not in json.dumps(api.tendances_iq())
+    api._niveau_ag = lambda: "pro"                           # un Pro : la liste, SANS AUCUN PRIX
+    rp = api.tendances_iq()["a_grader"]
+    assert rp["cartes"][0]["joueur"] == "Cutter Gauthier" and rp["cartes"][0]["conf"] is not None
+    assert not any(k in json.dumps(rp) for k in ('"raw"', '"psa10"', '"psa9"', '"psa8"', '"reste10"', '"reste9"', '"cout"', '"frais_psa"')), rp
+    api._niveau_ag = lambda: "gratuit"                       # un Gratuit : le nombre de cartes seulement
+    rg = api.tendances_iq()["a_grader"]
+    assert rg["verrou"] is True and rg["cartes"] == [] and rg["n_grader"] >= 1 and "psa10" not in json.dumps(rg)
 finally:
     forfaits.est_pro = vrai_pro
-assert "if isinstance(r, dict) and r.get(\"ok\") and self._est_admin():\n                import a_grader" in open(os.path.join(RACINE, "lockerroom.py"), encoding="utf-8").read()
+    api.__dict__.pop("_niveau_ag", None)
+assert "a_grader.pour_niveau(ag, self._niveau_ag())" in open(os.path.join(RACINE, "lockerroom.py"), encoding="utf-8").read()
 # l'ecran : un 3e onglet seulement quand le serveur envoie la liste ; une ligne sans prix ; les prix au toucher
-assert "const AG = SO && r.a_grader && (r.a_grader.cartes || []).length ? r.a_grader : null;" in src and "...(AG ? [['grader', tt('À grader', 'To grade')]] : [])" in src
+assert "const AG = SO && r.a_grader && ((r.a_grader.cartes || []).length || r.a_grader.verrou) ? r.a_grader : null;" in src and "...(AG ? [['grader', tt('À grader', 'To grade')]] : [])" in src
 lg = src[src.index("        const ligneG = (x, i) =>"):src.index("        const ouvrirG = (x) =>")]
 assert "argent(" not in lg and "x.raw" not in lg and "x.psa10" not in lg, "la ligne de Trending ne montre aucun prix"
-assert "function agCarte(x, rg){" in src and "const ligne = (x, i) => agCarte(x, i + 1);" in src and "Admin seulement pour l’instant" in src
+assert "function agCarte(x, rg){" in src and "const ligne = (x, i) => agCarte(x, i + 1);" in src and "Réservé à Pro" in src and "Admin seulement pour l’instant" not in src
 print("ADMIN OK")

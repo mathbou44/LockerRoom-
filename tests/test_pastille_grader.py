@@ -14,11 +14,15 @@ import a_grader as ag
 
 # ---- 1. la regle (une seule)
 v = ag.vaut_grader
-assert v({"reste10": 500, "seuil": 0.0}) and v({"reste10": 40, "seuil": 0.25})
-assert not v({"reste10": 39.9, "seuil": 0.0}), "moins de 40 $ si elle revient 10 : pas la peine"
-assert not v({"reste10": 900, "seuil": 0.26}), "il faut plus de 1 dix sur 4 : trop risque"
-assert v({"reste10": 100, "seuil": None, "psa9": None, "rendement": 3.0}) and not v({"reste10": 100, "seuil": None, "psa9": None, "rendement": 2.99})
-assert not v({"reste10": 100, "seuil": None, "psa9": 80.0, "rendement": 9}), "PSA 9 connue mais pas de seuil (perd meme en 10) : non"
+# v6 : au moins 40 $ si elle revient 10 ET une confiance d'au moins 85 % que la promesse tienne au retour de PSA
+B = {"seuil": 0.10, "seuil_p": 0.05, "c10": 10, "c9": 8, "c8": 2, "c7": 0}            # 50 % des gradees vendues sont des 10 : x 0,7 = 35 %
+assert v(dict(B, reste10=500, conf=0.9)) and v(dict(B, reste10=40, conf=0.85))
+assert not v(dict(B, reste10=39.9, conf=0.99)), "moins de 40 $ si elle revient 10 : pas la peine"
+assert not v(dict(B, reste10=900, conf=0.84)) and not v(dict(B, reste10=900, conf=None)), "pas assez sur"
+assert v(dict(B, reste10_p=60, conf_p=0.9), proprio=True) and not v(dict(B, reste10=60, conf=0.9), proprio=True), "la carte deja a soi : ses propres chiffres"
+assert v(dict(B, reste10=500, conf=0.99, seuil=0.35)) and not v(dict(B, reste10=500, conf=0.99, seuil=0.36)), "garde-fou : 0,7 x 50 % des 10 vendues"
+assert not v(dict(B, reste10=1800, conf=0.98, seuil=0.14, c10=5, c9=14, c8=34, c7=9)), "la Gretzky 1987 : 8 % de 10 parmi les gradees vendues"
+assert not v(dict(B, reste10=500, conf=0.99, seuil=None)), "elle perd meme en 10"
 assert not v({}) and not v({"reste10": "x"})
 
 # ---- 2. la liste dit quelles cartes portent la pastille, et l'index les garde toutes (pas seulement les 200 premieres)
@@ -31,11 +35,13 @@ def ventes(titre, prix, nb):
     for i in range(nb):
         n += 1; L.append((f"v{n}", titre, prix * (1 + (i % 3 - 1) * 0.03), jr(3 + 5 * i), None))
 YG = "2024-25 Upper Deck Cutter Gauthier Young Guns #212"
-ventes(YG + " RC", 20, 8); ventes(YG + " PSA 10 GEM MINT", 200, 6); ventes(YG + " PSA 9 MINT", 60, 4)        # bonne : seuil 0
+ventes(YG + " RC", 20, 8); ventes(YG + " PSA 10 GEM MINT", 400, 6); ventes(YG + " PSA 9 MINT", 60, 4); ventes(YG + " PSA 8 NM-MT", 22, 3)        # bonne : seuil 0
 Z = "2024-25 Upper Deck Logan Stankoven Young Guns #244"
 ventes(Z + " RC", 30, 8); ventes(Z + " PSA 10", 70, 6); ventes(Z + " PSA 9", 25, 4)                            # 10 : +19 $ : non
+ag.confiance = lambda x, proprio=False, auj=None: 0.9           # le modele de confiance : son propre test (section 8)
 R = ag.analyser(L)
 par = {x["joueur"]: x for x in R["cartes"]}
+assert par["Cutter Gauthier"]["psa8"] == 22 and par["Cutter Gauthier"]["c8"] == 3, "v6 : les PSA 8 sont lues"
 assert par["Cutter Gauthier"]["grader"] is True and par["Logan Stankoven"]["grader"] is False, {k: (x["reste10"], x["seuil"]) for k, x in par.items()}
 assert R["n_grader"] == 1 and len(R["index"]) == 2 and {e["ok"] for e in R["index"]} == {True, False}
 with open(ag._chemin(), "w", encoding="utf-8") as f:
@@ -57,7 +63,7 @@ for t in (YG + " PSA 10", YG + " BGS 9.5", YG + " SGC 10 graded",               
 assert ag.mesure(Z + " RC") and ag.mesure(Z + " RC")["ok"] is False and p(Z + " RC") is None, "mesuree sans pastille"
 # ce que l'app recoit : les prix seulement pour l'admin
 c = ag.pour_client(e)
-assert set(c) == {"r", "s", "jours", "nom", "joueur", "an"} and ag.pour_client(e, prix=True)["g10"] == e["g10"] and ag.pour_client(None) is None
+assert set(c) == {"r", "s", "c", "jours", "nom", "joueur", "an"} and ag.pour_client(e, prix=True)["g10"] == e["g10"] and ag.pour_client(None) is None
 # une liste d'avant la pastille (sans index) : la regle est appliquee a la lecture
 anc = {k: v_ for k, v_ in R.items() if k not in ("index", "n_grader")}
 for x in anc["cartes"]:
@@ -72,10 +78,10 @@ assert [x["joueur"] for x in T["cartes"]] == ["Cutter Gauthier"] and T["n_grader
 # ---- 4. le serveur : admin seulement, a cote des annonces, jamais sur une carte gradee / sur eBay / vendue / en envoi
 src = open(os.path.join(RACINE, "lockerroom.py"), encoding="utf-8").read()
 i = src.index("    def _a_grader_de(self"); f_ = src[i:src.index("    def deals_liste(self", i)]
-assert "if not self._est_admin():\n                return {}" in f_ and "a_grader.pour_client(e, prix=True)" in f_
+assert "niv = self._niveau_ag()" in f_ and 'a_grader.pour_client(e, prix=niv == "comps", verrou=niv == "gratuit")' in f_     # 27 nov : selon le forfait
 assert '"a_grader": self._a_grader_de([*lst[:240], *suivis, *pres])' in src
 i = src.index("# 27 nov 2026 (Mathieu : « on peut meme mettre cette pastille-la dans les cartes en inventaire"); f_ = src[i:i + 1600]
-for bout in ("if self._est_admin():", 'r.get("statut") in ("Vendue", "Listée")', 'r.get("item_number")', 'str(r.get("grade") or "").strip()', 'r.get("envoi_json")', 'r.get("soumission_id")'):
+for bout in ("niv = self._niveau_ag()", 'r.get("statut") in ("Vendue", "Listée")', 'r.get("item_number")', 'str(r.get("grade") or "").strip()', 'r.get("envoi_json")', 'r.get("soumission_id")'):
     assert bout in f_, bout
 i = src.index("    def carte_grader(self"); f_ = src[i:i + 2600]
 assert f_.index("if not comps_permis(self):") < f_.index("a_grader.mesure(titre)") < f_.index("vendues.par_gradation"), "la fiche dit la meme chose que la pastille"
@@ -93,7 +99,7 @@ for bout in ("[data-sc], [data-cu], [data-se], [data-td], [data-np], [data-agp],
              "S.agParId = d.a_grader || {};", "ag = agBadge(agDe(x));", "${c.ag && !vendue ? `<span class=\"isl-ag\">${agBadge(c.ag)}</span>` : ''}", "${c.ag && !env ? `<span class=\"sl-ag\">${agBadge(c.ag)}</span>` : ''}",
              "e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); vibrer();", ".sd-b.b-ag{color:#06210F; background:#30D158"):
     assert bout in app, bout
-assert "r.source === 'liste'" in app and "agTexte({r: r.rendement, s: r.seuil_10, g10: r.gain})" in app
+assert "r.source === 'liste'" in app and "agTexte({r: r.rendement, s: r.seuil_10, g10: r.gain, c: r.confiance})" in app
 print("PASTILLE A GRADER OK")
 
 # ---- 6. 27 nov, 12 h 06 (son « oui go ») : une carte PAS mesuree ne dit plus « Oui » dans la fiche : « Pas sur »
@@ -107,6 +113,7 @@ import lockerroom, ebay_compte
 class Faux:
     admin = True
     def _est_admin(self): return Faux.admin
+    def _niveau_ag(self): return "comps" if Faux.admin else "gratuit"
     def _pays_radar(self): return "CA"
 appels = []
 def rechercher(q, **k):
@@ -130,7 +137,7 @@ try:
     r2 = lockerroom.Api.a_grader_annonces(Faux(), "cutter gauthier young guns", 2024, "212", None)
     assert r2["annonces"] == r["annonces"] and len(appels) == 2, "30 minutes de cache : pas d'autre appel a eBay"
     Faux.admin = False
-    assert lockerroom.Api.a_grader_annonces(Faux(), "cutter gauthier young guns", 2024, "212", None) == {"ok": False, "raison": "admin"}
+    assert lockerroom.Api.a_grader_annonces(Faux(), "cutter gauthier young guns", 2024, "212", None) == {"ok": False, "raison": "pro"}   # un gratuit
     Faux.admin = True
     assert lockerroom.Api.a_grader_annonces(Faux(), "x y", 2024)["ok"] is False and lockerroom.Api.a_grader_annonces(Faux(), "a b c", "abc")["ok"] is False
 finally:

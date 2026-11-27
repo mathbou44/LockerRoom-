@@ -51,6 +51,14 @@ BORNE = 1.2                                   # une prediction ne depasse jamais
 
 VARIABLES = ["p0", "n30", "n90", "pente", "pente2", "etale", "derniere", "age", "note", "yg", "tirage", "anciennete", "mois",
              "j_pente", "j_n30", "s_pente", "m_pente"]
+# 27 nov 2026 (Mathieu, 16 h 32 : « fais le meilleur possible, aide-toi d'etudes et de methodes de prediction et de stats ») :
+# les variables que la recherche du 22 nov a montrees utiles (docs/RECHERCHE_MODELE_22NOV.md) et qu'on tire des ventes seules :
+#   flambee     : 14 jours contre 90 (une flambee retombe : le signal de vente le plus solide mesure) ;
+#   age_produit : jours depuis la premiere vente de la sorte (meme saison), tous joueurs (une sortie perd 37 % en 6 mois) ;
+#   prime       : la PSA 10 de la MEME carte contre sa raw, au meme jour (ce que le marche paie pour la note) ;
+#   rel_joueur  : la carte contre les autres cartes du joueur (une carte chere ou bon marche pour lui) ;
+#   j_pente2, s_pente2 : les pentes de 60 jours du joueur et de la sorte.
+VARIABLES2 = VARIABLES + ["flambee", "age_produit", "prime", "rel_joueur", "j_pente2", "s_pente2"]
 NOTES = {"raw": 0, "9": 1, "10": 2}
 
 
@@ -117,6 +125,7 @@ def _ligne(cle, note, j, p, t):
             "pente": (_med(w30) - _med(av)) if len(w30) >= 2 and len(av) >= 2 else math.nan,
             "pente2": (_med(w60) - _med(av2)) if len(w60) >= 3 and len(av2) >= 3 else math.nan,
             "etale": float(np.std(w60)) if len(w60) >= 3 else math.nan,
+            "flambee": (_med(_fen(j, p, t - 14, t)) - _med(w90)) if len(_fen(j, p, t - 14, t)) >= 2 and len(w90) >= 4 else math.nan,
             "derniere": float(p[i - 1] - p0) if i else math.nan,
             "age": _saison(t) - int(an), "note": NOTES[note], "yg": 1.0 if "young guns" in q else 0.0,
             "tirage": math.log(int(se)) if se else 0.0, "anciennete": min(720, t - int(j[0])), "mois": date.fromordinal(t).month}
@@ -132,6 +141,11 @@ def panneau(C, dates, cibles=True):
     """C = cartes(ventes) ; dates = des lundis (AAAA-MM-JJ). -> (lignes : liste de dict avec « cle », « note », « t », les
     VARIABLES et y30 / y60 (nan si la suite n'est pas connue))."""
     lignes = []
+    premiere = {}                                     # la premiere vente de chaque sorte (meme saison), tous joueurs
+    for (cle, note), (j, p) in C.items():
+        if len(j):
+            k = (" ".join(w for w in cle[1].split() if w not in set(cle[0].split())), cle[2])
+            premiere[k] = min(premiere.get(k, 10 ** 9), int(j[0]))
     for t_ in dates:
         t = _o(t_)
         du_jour = []
@@ -154,6 +168,13 @@ def panneau(C, dates, cibles=True):
                 ps.setdefault(x["_s"], []).append(x["pente"])
             nj[x["_j"]] = nj.get(x["_j"], 0) + math.expm1(x["n30"])
         m = _med([x["pente"] for x in du_jour if not math.isnan(x["pente"])])
+        pj2, ps2, pjp, par_carte = {}, {}, {}, {}
+        for x in du_jour:
+            if not math.isnan(x["pente2"]):
+                pj2.setdefault(x["_j"], []).append(x["pente2"])
+                ps2.setdefault(x["_s"], []).append(x["pente2"])
+            pjp.setdefault((x["_j"], x["note_"]), []).append(x["p0"])
+            par_carte[(tuple(x["cle"]), x["note_"])] = x["p0"]
         def autres(L, v):                                 # sans la carte elle-meme
             if math.isnan(v):
                 return L
@@ -166,6 +187,14 @@ def panneau(C, dates, cibles=True):
             x["s_pente"] = _med(b) if b else math.nan
             x["j_n30"] = math.log1p(nj.get(x["_j"], 0) - math.expm1(x["n30"]))
             x["m_pente"] = m
+            a2, b2 = autres(pj2.get(x["_j"], []), x["pente2"]), autres(ps2.get(x["_s"], []), x["pente2"])
+            x["j_pente2"] = _med(a2) if a2 else math.nan
+            x["s_pente2"] = _med(b2) if b2 else math.nan
+            r_ = autres(pjp.get((x["_j"], x["note_"]), []), x["p0"])
+            x["rel_joueur"] = (x["p0"] - _med(r_)) if r_ else math.nan
+            p10, pr = par_carte.get((tuple(x["cle"]), "10")), par_carte.get((tuple(x["cle"]), "raw"))
+            x["prime"] = (p10 - pr) if p10 is not None and pr is not None else math.nan
+            x["age_produit"] = min(720, t - premiere.get((x["_s"], x["cle"][2]), t))
         lignes += du_jour
     return lignes
 
@@ -176,20 +205,31 @@ def matrice(lignes, h=None):
     return X, y
 
 
-PARAMS = {"objective": "huber", "alpha": 0.3, "learning_rate": 0.04, "num_leaves": 31, "min_data_in_leaf": 200, "feature_fraction": 0.8,
-          "bagging_fraction": 0.8, "bagging_freq": 1, "lambda_l2": 5.0, "verbose": -1, "seed": 7, "num_threads": 2}
-ARBRES = 400
+# 27 nov 2026, 17 h (serie d'essais demandee par Mathieu : « fais le meilleur possible ») : 96 versions essayees sur la periode de
+# DEVELOPPEMENT (janv. 2025 -> mars 2026 ; 30 et 60 jours), puis la meilleure jugee UNE fois sur les mois GARDES DE COTE (avril ->
+# septembre 2026), jamais regardes pendant la recherche. Ce qui a fait la difference : les nouvelles variables (VARIABLES2), des
+# arbres plus simples (15 feuilles, 500 ventes par feuille, 100 arbres), l'erreur au carre, la cible bornee a +/- 0,7 (un prix
+# double ou coupe de moitie : au-dela, c'est presque toujours une autre carte) et des predictions RETRECIES de 25 % (le modele
+# exagerait). Mois gardes de cote, contre « le prix ne bouge pas » (prouve a 95 %) :
+#   30 jours : +5,6 % (raw +5,9 %, gradees +3,5 %, cartes liquides +5,4 %) ; quand il annonce 10 % et plus : le bon sens 72 % du temps,
+#              hausse annoncee -> +15 % obtenu (mediane), baisse annoncee -> -25 % ; la premiere version faisait +3,7 %.
+#   60 jours : +3,6 % (raw +4,2 % ; gradees +0,1 %, pas prouve) ; bon sens 68 % ; la premiere version : -0,2 %.
+PARAMS = {"objective": "l2", "learning_rate": 0.06, "num_leaves": 15, "min_data_in_leaf": 500, "feature_fraction": 0.8,
+          "bagging_fraction": 0.8, "bagging_freq": 1, "lambda_l2": 10.0, "verbose": -1, "seed": 7, "num_threads": 2}
+ARBRES = 100
+CIBLE_BORNE = 0.7                             # la cible d'apprentissage bornee a +/- 0,7 (log)
+RETRECIR = 0.75                               # les predictions retrecies de 25 %
 
 
 def apprendre(lignes, h, params=None, arbres=ARBRES, variables=None):
     """-> un modele (dict, en texte) appris sur les lignes qui ont leur cible a l'horizon h."""
     import lightgbm as lgb
-    var = list(variables or VARIABLES)
+    var = list(variables or VARIABLES2)
     X = np.array([[x[v] for v in var] for x in lignes], dtype=float)
     y = np.array([x.get("y%d" % h, math.nan) for x in lignes], dtype=float)
     ok = ~np.isnan(y)
-    b = lgb.train({**PARAMS, **(params or {})}, lgb.Dataset(X[ok], np.clip(y[ok], -BORNE, BORNE)), num_boost_round=arbres)
-    return {"h": h, "variables": var, "texte": b.model_to_string(), "n": int(ok.sum())}
+    b = lgb.train({**PARAMS, **(params or {})}, lgb.Dataset(X[ok], np.clip(y[ok], -CIBLE_BORNE, CIBLE_BORNE)), num_boost_round=arbres)
+    return {"h": h, "variables": var, "texte": b.model_to_string(), "n": int(ok.sum()), "retrecir": RETRECIR}
 
 
 _BOOST = {}
@@ -209,7 +249,7 @@ def predire(modele, lignes):
     if k not in _BOOST or _BOOST[k][0] is not modele:
         _BOOST[k] = (modele, lgb.Booster(model_str=modele["texte"]))
     X = np.array([[x[v] for v in modele["variables"]] for x in lignes], dtype=float)
-    return np.clip(_BOOST[k][1].predict(X), -BORNE, BORNE)
+    return np.clip(_BOOST[k][1].predict(X) * float(modele.get("retrecir", 1.0)), -BORNE, BORNE)
 
 
 def erreurs(pred, y):

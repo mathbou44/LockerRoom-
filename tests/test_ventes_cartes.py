@@ -46,7 +46,18 @@ assert set(S) == {"Sergei Bobrovsky"} and len(S["Sergei Bobrovsky"]) == 2, S
 ks = sorted(S["Sergei Bobrovsky"], key=lambda k: k[-1])
 assert [len(S["Sergei Bobrovsky"][k]) for k in ks] == [1, 1] and ks[0][-1] == "10" and ks[1][-1] == "raw", S   # 40 $ une fois ; 3 $ : sous le minimum
 assert S["Sergei Bobrovsky"][ks[1]] == [(date(2026, 11, 20).toordinal(), 40.0)]
-assert mj.VERSION == 8 and mj.N_SORTES == 2 and mj.N_T_MIN == 6, "2 cartes exactes et 6 ventes dans le mois (banc du 27 nov)"
+assert mj.VERSION == 9 and mj.N_SORTES == 2 and mj.N_T_MIN == 6, "2 cartes exactes et 6 ventes dans le mois (banc du 27 nov)"
 src = open(os.path.join(RACINE, "marche_joueurs.py"), encoding="utf-8").read()
 assert "S = series_cartes(ventes, noms, respirer=lambda i: time.sleep(0.01))" in src and "marche_cles.series(" not in src.split("def calculer(")[1]
 print("VENTES CARTES OK")
+
+# ---- 4. 27 nov, 16 h 12 (son « oui ») : un « Vends » seulement si la regle bat le hasard d'au moins 15 points
+assert mj.ECART_MIN == 0.15
+assert 't["taux"] - v["base"] >= ECART_MIN' in src and 'e["taux"] - base >= ECART_MIN' in src
+P = [{"j": "a%d" % i, "niveau": 1.0, "sommet": 0.8, "mediane": 0.8, "prec": 1.0, "apres": 0.9 if i < 30 else 1.0, "jour": 739000} for i in range(60)]
+V_ = mj.verifier(P, set())
+assert V_["vente"]["base"] == 0.5 and not V_["vente"]["actif"], "tout le monde est au-dessus de sa normale : la regle egale le hasard"
+P2 = [dict(x, niveau=1.5, apres=1.3) for x in P[:40]] + [dict(x, niveau=0.9, mediane=1.0, sommet=1.0, apres=1.0) for x in P[:40]]
+V2 = mj.verifier(P2, set())
+assert V2["vente"]["actif"] and V2["vente"]["taux"] - V2["vente"]["base"] >= 0.15, V2["vente"]
+print("VENTES CARTES OK (signaux de vente)")
