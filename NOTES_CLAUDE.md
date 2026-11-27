@@ -1731,3 +1731,23 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   manquant est gardé (le ramassage en dépend).
 - La fiche dit pourquoi : « une seule vente : pas assez pour une mise max » / « pas assez de ventes sûres pour une mise max ».
 - Test : `tests/test_watchlist_ramassage.py`. Pas vu ses vraies données (le vendeur exact de l'annonce) : à confirmer sur son cell.
+
+## p124 — 27 nov 2026, 14 h 10 : le marché des joueurs, carte exacte contre elle-même (son « Go » de 13 h 50)
+- `ventes_cartes.py` (nouveau) : chaque titre (+ joueur) rangé UNE fois par `a_grader.classer` (carte exacte + note : raw, PSA 9,
+  PSA 10 ; le reste : rien), gardé dans `DONNEES/ventes_cartes.sqlite` (clé : md5 du titre et du joueur ; `REGLE` qui change =
+  tout relu). Mesuré à froid sur les archives du 26 nov : 698 joueurs en 284 s (avec les pauses), +156 Mo ; ensuite 8 s par jour
+  (l'ancienne méthode : 143 s chaque jour).
+- `marche_joueurs.series_cartes` remplace `marche_cles.series` dans `calculer` (un joueur à la fois ; la carte doit être celle du
+  joueur ; même vente vue deux fois = une). VERSION 8. Seuils gardés à 2 cartes / 6 ventes : banc 3 / 8 → 148 joueurs et plus
+  aucune règle d'achat prouvée ; 2 / 6 → 187 joueurs (l'ancienne méthode : 311), achat 49,5 % contre 20,3 % au hasard (23 paris),
+  vente 66,7 % contre 44,7 % (54). L'ancien état reste affiché pendant que le nouveau se calcule (`lire` ne jette plus une
+  version d'avant).
+- Ce qui change à l'écran : Bobrovsky (−59 %) et Cam Ward (−64 %) sortent (pas assez de ventes de la même carte) ; Evangelista
+  −34 % → −4 % ; Nemec −35 % → −50 % (vérifié carte par carte : sa Future Watch Auto 28 $ contre 56 $ sur l'année, sa Retro Auto
+  11 $ contre 21 $, sa Young Guns stable) ; Bouchard +81 % (sa Young Guns 2018 : raw 64 $ contre 28 $, PSA 10 429 $ contre 275 $,
+  PSA 9 102 $ contre 70 $ : les trois notes montent ensemble). Celebrini −13 → −10, Bedard −18 → −13, Fowler +51 → +53.
+- Limite : la preuve reste mince pour certains joueurs (2 cartes de 2 ventes suffisent) ; la couverture baisse (187 joueurs contre
+  311) parce que le décodeur ne reconnaît pas toutes les cartes. Tests : `tests/test_ventes_cartes.py` ; `test_marche_joueurs.py`
+  ajusté (3 cartes, `series_cartes`). Scripts : /tmp/vj/run.py, run2.py, det.py, mem.py.
+- La fiche de la Heiskanen (14 h 01, « pas réglé même après le push ? ») : c'est voulu (une seule vente → pas de mise max), la fiche
+  le dit maintenant ; à lui de dire s'il veut une règle pour une seule vente.

@@ -44,14 +44,16 @@ import threading
 import time
 from datetime import date, datetime
 
-VERSION = 7
+VERSION = 8                      # 8 (27 nov 2026) : carte exacte contre elle-meme (ventes_cartes)
 PAS = 30                 # jours d'une tranche
 N_TRANCHES = 11          # tranches d'avant (l'annee)
 H0, H1 = 46, 74          # « deux mois apres »
 N_SORTE_AN = 6           # ventes d'une sorte dans l'annee pour avoir sa mediane
 N_SORTE_T = 2            # ventes d'une sorte dans une tranche
-N_SORTES = 2             # sortes dans une tranche
+N_SORTES = 2             # cartes exactes dans une tranche
 N_T_MIN = 6              # ventes dans la tranche du jour
+# 27 nov 2026 (banc sur les archives du 26 nov, carte exacte) : 3 cartes / 8 ventes -> 148 joueurs et plus aucune regle d'achat
+# prouvee ; 2 / 6 -> 187 joueurs, achat 49,5 % contre 20,3 % au hasard (23 paris), vente 66,7 % contre 44,7 % (54) : garde 2 / 6.
 N_HIST = 3               # tranches connues avant
 MATCHS_ETABLI = 120      # matchs LNH en carriere
 BOUGE = 0.05             # « remonte » / « rebaisse » : 5 %
@@ -316,6 +318,48 @@ def _titre(n):
     return marche_cles._titre(n)
 
 
+def series_cartes(ventes, noms, respirer=None):
+    """27 nov 2026 (Mathieu : « des pommes avec des pommes et des poires avec des poires ») : [(joueur, titre, prix, le)] ->
+    {joueur: {carte exacte + note: [(jour ordinal, prix)] tries}}. Avant : par SORTE (marche_cles.series) : des cartes
+    differentes dans la meme case (Bobrovsky -59 % affiche, -28 % carte par carte). La carte doit etre celle du joueur (le nom
+    lu dans le titre) ; la meme vente vue deux fois (meme titre, meme jour) ne compte qu'une fois."""
+    import marche_cles
+    import ventes_cartes
+    garde = set(noms)
+    V, vus = {}, set()
+    for j, titre, p, le in ventes:
+        j = marche_cles._titre(j)
+        if j not in garde:
+            continue
+        cle = (j, str(titre or "").strip().lower(), str(le)[:10])
+        if cle in vus:
+            continue
+        vus.add(cle)
+        try:
+            p = float(p)
+        except (TypeError, ValueError):
+            continue
+        d = marche_cles._ord(le)
+        if p < marche_cles.PRIX_MIN or not d:
+            continue
+        V.setdefault(j, []).append((str(titre or ""), p, d))
+    del vus
+    # un joueur a la fois (la memoire du serveur : jamais 1,5 million de titres ranges en meme temps)
+    S = {}
+    for j in list(V):
+        L = V.pop(j)
+        K = ventes_cartes.cartes(((t, j) for t, _, _ in L), respirer=respirer)
+        for t, p, d in L:
+            k = K.get((t, j))
+            if k and str(k[0]).lower() == j.lower():
+                S.setdefault(j, {}).setdefault(k[1:], []).append((d, p))
+        del K, L
+    for j in S:
+        for k in S[j]:
+            S[j][k].sort()
+    return S
+
+
 def calculer(ventes=None, base=None, aujourd=None):
     import marche_cles
     aujourd = aujourd or date.today()
@@ -327,7 +371,7 @@ def calculer(ventes=None, base=None, aujourd=None):
         ventes = base_ventes.ventes_titres(365 + PAS + H1 + 7 * SEMAINES)
     noms = {_titre(n) for n in base}                     # seulement les joueurs connus (jamais « Wild Card », « Complete Your »)
     etab = _etablis(base)
-    S = marche_cles.series(ventes, noms)
+    S = series_cartes(ventes, noms, respirer=lambda i: time.sleep(0.01))     # le serveur respire (1re fois : ~1,5 M titres)
     fin = aujourd.toordinal()
     V = verifier(points_passes(S, fin), etab)
     # les achats : des paris, apres les frais, a 2, 3 et 4 mois ; chaque essai dit son delai et SON hasard
@@ -398,7 +442,7 @@ def lire():
         try:
             with open(p, encoding="utf-8") as f:
                 d_ = json.load(f)
-            _ETAT["d"] = d_ if d_.get("v") == VERSION else {}
+            _ETAT["d"] = d_                     # 27 nov : une version d'avant reste affichee le temps que la nouvelle se calcule
             _ETAT["mt"] = mt
         except (OSError, ValueError):
             return {}

@@ -13,8 +13,9 @@ FIN = date(2026, 11, 19).toordinal()
 
 
 def serie(prix_du_jour):
-    """Deux sortes de cartes, une vente aux 3 jours pendant 15 mois ; prix_du_jour(age en jours) -> le niveau (1.0 = normal)."""
-    return {s: [(FIN - a, base * prix_du_jour(a) * (1 + 0.01 * ((a // 3) % 3 - 1))) for a in range(450, -1, -3)] for s, base in (("yg", 100.0), ("auto", 400.0))}
+    """Trois cartes (27 nov 2026 : il en faut au moins 3 dans la tranche), une vente aux 3 jours pendant 15 mois ; prix_du_jour(age
+    en jours) -> le niveau (1.0 = normal)."""
+    return {s: [(FIN - a, base * prix_du_jour(a) * (1 + 0.01 * ((a // 3) % 3 - 1))) for a in range(450, -1, -3)] for s, base in (("yg", 100.0), ("auto", 400.0), ("canvas", 25.0))}
 
 
 plat = lambda a: 1.0
@@ -50,12 +51,12 @@ for i in range(45):
     joueur("Kid Sommet %02d" % i, sommet_passe, 20)                 # les sommets temporaires sont retombes
     joueur("Vet Plat %02d" % i, plat, 400)
 joueur("Vet Dip", creux_now, 600); joueur("Kid Dip", creux_now, 30); joueur("Vet High", sommet_now, 600); joueur("Vet Flat", plat, 600)
-vrai = marche_cles.series
-marche_cles.series = lambda ventes, noms: {k: v for k, v in S.items() if marche_cles._titre(k) in noms or k in noms}
+vrai = mj.series_cartes
+mj.series_cartes = lambda ventes, noms, respirer=None: {k: v for k, v in S.items() if marche_cles._titre(k) in noms or k in noms}
 try:
     D = mj.calculer([], base, date.fromordinal(FIN))
 finally:
-    marche_cles.series = vrai
+    mj.series_cartes = vrai
 V, E = D["verif"], D["etats"]
 a, v = V["achat"], V["vente"]
 assert a["actif"] and a["taux"] > a["base"] + 0.2 and a["n"] >= mj.N_PARIS_MIN and a["borne"] > a["base"], a
@@ -77,12 +78,12 @@ assert all(t["n"] <= 45 * 2 + 4 for t in a["essais"]), "un pari par joueur et pa
 _pp = [{"j": "A", "jour": 100}, {"j": "A", "jour": 107}, {"j": "A", "jour": 163}, {"j": "A", "jour": 171}, {"j": "B", "jour": 107}]
 assert [(x["j"], x["jour"]) for x in mj.paris(_pp)] == [("A", 100), ("B", 107), ("A", 171)], mj.paris(_pp)
 _v0 = mj.FRAIS; mj.FRAIS = 0.9                                   # des frais absurdes : plus aucun pari gagnant, donc personne a acheter
-marche_cles.series = lambda ventes, noms: {k: v for k, v in S.items() if marche_cles._titre(k) in noms or k in noms}
+mj.series_cartes = lambda ventes, noms, respirer=None: {k: v for k, v in S.items() if marche_cles._titre(k) in noms or k in noms}
 try:
     _d = mj.calculer([], base, date.fromordinal(FIN))
     assert "signal" not in _d["etats"]["Vet Dip"] and not _d["verif"]["achat"]["actif"], "rien ne couvre les frais : personne a acheter"
 finally:
-    marche_cles.series = vrai; mj.FRAIS = _v0
+    mj.series_cartes = vrai; mj.FRAIS = _v0
 assert E["Vet Dip"]["mois"] in (2, 3, 4) and mj.point(serie(creux_passe), FIN - 150, suite=(106, 134))["apres"] is not None
 assert E["Vet Dip"]["taux"] in ok, (E["Vet Dip"]["taux"], ok)
 
