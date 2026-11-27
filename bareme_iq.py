@@ -92,7 +92,11 @@ YG_VAR = _R(r"\bexclusives?\b|\bhigh gloss\b|\bcanvas\b|\bclear ?cut\b|\boutburs
 SSP = _R(r"\bssp\b|\bsuper short print\b|\bcase hit\b|\b16[ -]?bit\b"
          r"|\bdazzlers (?:blue )?gold\b|\bcelebration variations?\b|\bbootleg\b|\bholotypes?\b|\bwhite house visit\b|\bincarnations?\b"
          r"|\brookie debut game jersey\b|\bstar view\b|\bkiller keepers\b|\btile variations?\b|\bsign of the times rookies\b"
-         r"|\bauthentic moments\b|\bsheer dominance\b|\bpro visions\b|\b3-?d marquee rookies\b|\bplatinum portraits?\b|\bbrush off\b|\bdark matter\b")
+         r"|\bauthentic moments\b|\bsheer dominance\b|\bpro visions\b|\b3-?d marquee rookies\b|\bplatinum portraits?\b|\bbrush off\b|\bdark matter\b"
+         # 26 nov 2026 (Mathieu, McDavid Electric Soul #ES-8 notee C : « c'est une SSP, c'est ecrit dans les comps mais on devrait le
+         # savoir, c'est pas une note de C ») : l'insert de la Serie 1 2026-27 (1:2 880 paquets). MESURE comme les autres sur nos
+         # ventes : 14 ventes, x6,4 le prix median du meme joueur (McDavid 349 a 448 $), 9 titres sur 14 disent SSP ou case hit.
+         r"|\belectric soul\b")
 SP_PRODUIT = _R(r"\b(?:\d{4}(?:-\d{2,4})?|upper deck|ud)\s+sp\b(?!\s*(?:short|ssp))|\bsp\s+hockey\b")
 SP_ = _R(r"\bsp\b(?! ?(?:authentic|game|signature|legendary|premier|x\b))|\bshort print\b|\bvariations?\b|\bphoto var\b|\bimage var")
 CANVAS = _R(r"\bcanvas\b")

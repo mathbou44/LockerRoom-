@@ -70,6 +70,43 @@ R2 = a_grader.analyser(V("r", YG, [38] * 5, [1, 2, 3, 4, 5]) + V("s", "Upper Dec
 assert R2["cartes"][0]["n_raw"] == 8
 R3 = a_grader.analyser(V("r", YG, [38] * 5, [1, 2, 3, 4, 5]) + V("u", "2023-24 Upper Deck Cutter Gauthier Young Guns #999", [5] * 5, [1, 2, 3, 4, 5]) + V("s", "Upper Deck Cutter Gauthier Young Guns rookie", [1] * 3, [1, 2, 3]) + V("t", YG + " PSA 10", [406] * 5, [1, 2, 3, 4, 5]))
 assert R3["cartes"][0]["n_raw"] == 5 and R3["cartes"][0]["raw"] == 38, "deux saisons existent : la vente sans annee n'est a personne"
+# ---- 2b. 26 nov, 16 h 36 (Mathieu : « le temps est important la-dedans » ; son « Oui ») : les 60 derniers jours quand la carte s'y vend
+# assez (raw, PSA 10, et PSA 9 si elle a un prix PSA 9), sinon les 120 jours. Les memes cartes dans la liste : seule la mesure change.
+assert a_grader.JOURS_RECENT == 60 and a_grader.JOURS == 120
+for x in R["cartes"]:
+    assert x["fenetre"] == 60, "tout se vend dans les 60 derniers jours : mesure sur 60 jours (%r)" % x["joueur"]
+assert R["jours_recent"] == 60 and R["n_recent"] == 3 and R["jours"] == 120
+MI = "2025-26 Upper Deck Michael Misa Young Guns #201"
+def misa(raw_r, raw_v, p10_r, p10_v, p9_r=(), p9_v=()):
+    recents, vieux = [2, 6, 10, 20, 30, 40, 50, 55], [70, 80, 90, 100, 105, 110, 112, 115]
+    L = []
+    for pre, titre, prix, jours in (("ar", MI, raw_r, recents), ("av", MI, raw_v, vieux), ("br", MI + " PSA 10", p10_r, recents), ("bv", MI + " PSA 10", p10_v, vieux),
+                                    ("cr", MI + " PSA 9", p9_r, recents), ("cv", MI + " PSA 9", p9_v, vieux)):
+        L += V(pre, titre, list(prix), jours[:len(prix)])
+    return a_grader.analyser(L)["cartes"][0]
+# la PSA 10 a baisse depuis 3 mois : on lit le prix d'aujourd'hui (les 60 derniers jours), pas la moyenne des 4 mois
+m = misa([41] * 6, [41] * 6, [309] * 5, [520] * 6, [100] * 3, [150] * 4)
+assert (m["fenetre"], m["raw"], m["psa10"], m["psa9"], m["n10"], m["n9"]) == (60, 41, 309, 100, 5, 3), m
+assert m["n_raw"] == 5 and m["jours"] == 30, "toujours la meme periode : la raw d'il y a 40 jours precede la premiere PSA 10 recente (30 jours)"
+assert m["rendement"] == round((309 * (1 - 0.1325) - 0.40) / (41 + 41), 2) == 3.26
+# pas assez de PSA 10 dans les 60 derniers jours (4) : les 120 jours, comme avant
+m = misa([41] * 6, [41] * 6, [309] * 4, [520] * 6, [100] * 3, [150] * 4)
+assert (m["fenetre"], m["n10"], m["psa10"], m["n_raw"]) == (120, 10, 520, 12), m
+# pas assez de raw dans les 60 derniers jours (4) : les 120 jours
+m = misa([41] * 4, [50] * 6, [309] * 5, [520] * 6)
+assert (m["fenetre"], m["n_raw"], m["n10"]) == (120, 10, 11), m
+# assez de raw et de PSA 10 dans 60 jours, mais la PSA 9 y perdrait son prix (2 ventes) alors que 120 jours le donnent : 120 jours
+m = misa([41] * 6, [41] * 6, [309] * 5, [520] * 6, [100] * 2, [150] * 4)
+assert m["fenetre"] == 120 and m["psa9"] is not None and m["n9"] == 6 and m["seuil"] is not None, m
+# ... et sans prix PSA 9 nulle part, rien a perdre : 60 jours
+m = misa([41] * 6, [41] * 6, [309] * 5, [520] * 6, [100] * 2, [150] * 0)
+assert m["fenetre"] == 60 and m["psa9"] is None and m["psa10"] == 309, m
+# des prix trop etales dans les 60 derniers jours (deux cartes melangees ?) : on garde la mesure des 120 jours
+m = misa([10, 12, 60, 70, 80, 11], [41] * 8, [309] * 5, [309] * 6)
+assert m["fenetre"] == 120 and m["n_raw"] == 12 and m["raw"] == 41, m
+# une fenetre demandee de 60 jours ou moins : pas de deuxieme lecture
+R45 = a_grader.analyser(ventes, jours=45)
+assert R45["jours_recent"] is None and R45["n_recent"] == 0 and all(x["fenetre"] == 45 for x in R45["cartes"]) and R45["cartes"]
 print("LISTE OK")
 
 # ---- 3. sur le serveur : la collecte PSA + nos archives pour les memes joueurs ; une vente vue des deux cotes compte une fois
@@ -128,6 +165,17 @@ attendre_calcul()
 banque_psa._run_maj(statut="erreur", battement=time.time() - 3600)
 os.utime(a_grader._chemin(), (time.time() - 55 * 60,) * 2)
 assert a_grader.refaire_si_besoin() is None, "collecte arretee : retour au rythme de la semaine"
+# 26 nov, 16 h 36 : une regle de calcul change (les 60 derniers jours) : la liste faite avec l'ancienne regle est refaite seule, une fois
+assert a_grader.VERSION == 3 and a_grader.lire()["version"] == 3
+with open(a_grader._chemin(), encoding="utf-8") as f_:
+    anc = json.load(f_)
+anc.pop("version")
+with open(a_grader._chemin(), "w", encoding="utf-8") as f_:
+    json.dump(anc, f_)
+os.utime(a_grader._chemin(), (time.time() - 20 * 60,) * 2)
+assert a_grader.refaire_si_besoin() is not None, "une liste sans version (faite avant la regle) est refaite"
+attendre_calcul()
+assert a_grader.lire()["version"] == 3 and a_grader.refaire_si_besoin() is None, "une seule fois"
 banque_psa._run_maj(statut="terminee", battement=time.time() - 3600)
 
 # ---- 3b. la couverture est MESUREE : parmi les ventes dont le titre dit PSA 10 (ou PSA 9), combien sont rangees, et pourquoi pas
@@ -152,8 +200,65 @@ lot += [("e1", "2023-24 UD Young Guns Connor Bedard #451 PSA 10?", 300.0, jr_(5)
 cv = a_grader.analyser(lot)["couverture"]
 assert cv["10"]["lues"] == 11 and cv["10"]["rangees"] == 6, cv["10"]
 assert cv["10"]["raisons"] == {"sorte pas reconnue": 4, "pas encore gradee": 1}, cv["10"]
-assert cv["9"] == {"lues": 1, "rangees": 1, "raisons": {}}, cv["9"]
+assert cv["9"] == {"lues": 1, "rangees": 1, "autre_joueur": 0, "raisons": {}, "par_numero": 0}, cv["9"]
 assert ["fancy hologram", 4] in cv["sortes_inconnues"], cv["sortes_inconnues"]
+assert cv["exemples"]["fancy hologram"] == ["Connor Bedard PSA 10 Fancy Hologram gem mint"] * 2, "deux vrais titres par paire de mots, pour ecrire la regle"
+assert set(cv["exemples"]) == {d for d, _ in cv["sortes_inconnues"]} and cv["exemples_lot"] == []
+# 26 nov, 16 h 18 (le serveur : « ozzie cardinals », « emmitt cowboys » dans les mots sans sorte) : la recherche « will smith psa 10 »
+# ramene aussi d'autres Smith. Une vente qui ne nomme pas le joueur cherche est comptee a part, hors de la mesure
+nm = a_grader._nomme
+assert nm("2024-25 Upper Deck Will Smith Young Guns #701 PSA 10", "Will Smith") and not nm("1987 Topps Ozzie Smith Cardinals HOF PSA 10", "Will Smith")
+assert nm("2005-06 UD Alexander Ovechkin Young Guns PSA 10", "Alex Ovechkin") and nm("2020-21 UD Alexis Lafreniere YG PSA 10", "Alexis Lafrenière")
+assert not nm("2023-24 Upper Deck Connor Bedard Young Guns #451 PSA 10", "Connor McDavid")
+smith = [("s%d" % k, "2024-25 Upper Deck Will Smith Young Guns #701 PSA 10 GEM MINT", 300.0, jr_(3 + k), "Will Smith") for k in range(3)]
+smith += [("o%d" % k, "1987 Topps Ozzie Smith Cardinals HOF #749 PSA 10", 80.0, jr_(3 + k), "Will Smith") for k in range(4)]
+smith += [("w1", "Will Smith PSA 10 rookie gem mint", 90.0, jr_(5), "Will Smith")]
+cs = a_grader.analyser(smith)["couverture"]
+assert cs["10"]["autre_joueur"] == 4 and cs["10"]["lues"] == 4 and cs["10"]["rangees"] == 3 and cs["10"]["raisons"] == {"sorte pas reconnue": 1}, cs["10"]
+assert not any("ozzie" in d or "cardinals" in d for d, _ in cs["sortes_inconnues"]), cs["sortes_inconnues"]
+# ---- 3c. 26 nov, 17 h 02 (le fichier de la collecte PSA) : 877 ventes PSA 10 ecrites comme l'etiquette PSA, sans le nom de la sorte
+# (« 2024 UD #451 MACKLIN CELEBRINI PSA 10 ») : ce sont surtout des Young Guns. Rangees par leur NUMERO dans la Young Guns du meme
+# joueur et de la meme saison, si elle existe deja par ses ventes normales et si le prix leur ressemble. Jamais une fausse.
+et = a_grader._etiquette
+assert et("2024 UD #451 MACKLIN CELEBRINI PSA 10", "Macklin Celebrini") == ("macklin celebrini", 2024, "451", "10", frozenset())
+assert et("2025 UD UD CANVAS #C-231 IVAN DEMIDOV ROOKIE RC PSA 9", "Ivan Demidov") == ("ivan demidov", 2025, "c231", "9", frozenset({"canvas"}))
+assert et("2023-24 Upper Deck Connor Bedard Rookie Card #451 PSA 10 Gem Mint Blackhawks", "Connor Bedard")[:4] == ("connor bedard", 2023, "451", "10")
+assert et("2005 UPPER DECK ROOKIE CLASS #2 ALEXANDER OVECHKIN RC PSA 10", "Alex Ovechkin") is None, "un mot distinctif (une autre sorte) : pas une etiquette"
+assert et("2024 UD FLEER ULTRA MEDALLIONS #M-12 MACKLIN CELEBRINI ROOKIE RC PSA 10", "Macklin Celebrini") is None
+assert et("2024 UD #451 MACKLIN CELEBRINI /100 PSA 10", "Macklin Celebrini") is None, "une carte numerotee : jamais"
+assert et("2024 UD #451 MACKLIN CELEBRINI", "Macklin Celebrini") is None and et("2024 UD #451 MACKLIN CELEBRINI PSA 8", "Macklin Celebrini") is None
+assert et("2024 UD MACKLIN CELEBRINI PSA 10", "Macklin Celebrini") is None and et("UD #451 MACKLIN CELEBRINI PSA 10", "Macklin Celebrini") is None, "il faut le numero ET l'annee"
+MC = "2024-25 Upper Deck Macklin Celebrini Young Guns #451"
+def celebrini(n10_normales, etiquettes, raw=6, autres=()):
+    L = V("zr", MC, [520] * raw, [1, 2, 3, 4, 5, 8][:raw]) + V("zn", MC + " PSA 10", [3000] * n10_normales, [3, 5, 7, 9, 11][:n10_normales])
+    L += [("ze%d" % k, t, p, jr(4 + k), "Macklin Celebrini") for k, (t, p) in enumerate(etiquettes)] + list(autres)
+    return a_grader.analyser(L)
+lab = "2024 UD #451 MACKLIN CELEBRINI PSA 10"
+R0 = celebrini(3, [])
+assert R0["cartes"] == [] and R0["ecartees"]["peu de PSA 10"] == 1, "3 ventes PSA 10 normales : pas assez"
+R1 = celebrini(3, [(lab, 3100), (lab + " GEM MT", 2900), ("2024 UPPER DECK #451 MACKLIN CELEBRINI ROOKIE RC PSA 10", 3050)])
+c1 = R1["cartes"][0]
+assert (c1["nom"], c1["num"], c1["n10"], c1["psa10"], c1["n_raw"]) == ("Young Guns", "451", 6, 3000, 5), c1
+cv1 = R1["couverture"]
+assert cv1["10"]["par_numero"] == 3 and cv1["10"]["rangees"] == 6 and cv1["10"]["lues"] == 6 and not cv1["10"]["raisons"].get("sorte pas reconnue"), cv1["10"]
+assert cv1["etiquettes"] == {"vues": 3, "rangees": 3, "pas de Young Guns a ce numero": 0, "carte trop peu vendue": 0, "prix trop different": 0}, cv1["etiquettes"]
+# un prix qui ne ressemble pas (une parallele vendue sans son nom ?) : dehors ; un autre numero (une autre serie, une carte de base) : dehors
+R2 = celebrini(3, [(lab, 3100), (lab, 9000), (lab, 900), ("2024 UD #743 MACKLIN CELEBRINI ROOKIE RC PSA 10", 3000), ("2025 UPPER DECK #136 MACKLIN CELEBRINI PSA 10", 3000)])
+assert R2["cartes"] == [] and R2["couverture"]["etiquettes"] == {"vues": 5, "rangees": 1, "pas de Young Guns a ce numero": 2, "carte trop peu vendue": 0, "prix trop different": 2}
+# la carte n'a pas encore 3 ventes PSA 10 normales : on ne construit pas un prix sur des etiquettes seules
+R3 = celebrini(2, [(lab, 3000)] * 4)
+assert R3["cartes"] == [] and R3["couverture"]["etiquettes"]["carte trop peu vendue"] == 4 and R3["couverture"]["10"]["par_numero"] == 0
+# une etiquette « UD CANVAS #C-211 » ne va QUE dans la Young Guns Canvas de ce numero, jamais dans la Young Guns
+CA = "2024-25 Upper Deck Macklin Celebrini Young Guns Canvas #C211"
+R4 = celebrini(3, [("2024 UD UD CANVAS #C-211 MACKLIN CELEBRINI ROOKIE RC PSA 10", 900)] * 2,
+               autres=V("yr", CA, [150] * 6, [1, 2, 3, 4, 5, 8]) + V("yn", CA + " PSA 10", [900] * 3, [3, 5, 7]))
+par4 = {x["nom"]: x for x in R4["cartes"]}
+assert set(par4) == {"Young Guns Canvas"} and par4["Young Guns Canvas"]["n10"] == 5 and R4["couverture"]["10"]["par_numero"] == 2, par4
+# jamais pour une raw : « 2024 UD #451 MACKLIN CELEBRINI » sans note reste dehors
+R5 = celebrini(5, [], raw=4, autres=[("zz%d" % k, "2024 UD #451 MACKLIN CELEBRINI", 500, jr(3 + k), "Macklin Celebrini") for k in range(3)])
+assert R5["cartes"] == [] and R5["ecartees"]["peu de raw"] == 1
+# sans joueur cherche (nos archives : une recherche par carte), rien n'est mis a part
+assert a_grader.analyser([(c, t, p, d, None) for c, t, p, d, _ in smith])["couverture"]["10"]["autre_joueur"] == 0
 T = a_grader.top_tendances()
 assert len(T["cartes"]) == 1 and T["n"] == 1 and T["semaine"] == 7 and T["frais_psa"] == 41.0 and T["le"]
 # 26 nov, 14 h 58 (journal : la collecte PSA morte sur « database is locked » 22 s apres le depart du calcul) : pendant que la liste

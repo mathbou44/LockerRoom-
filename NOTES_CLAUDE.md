@@ -1347,6 +1347,124 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   15 cartes sur 70 (Misa YG ×4,39 → ×3,26 : sa PSA 10 est passée de 417 $ à 309 $ ; Gauthier YG ×4,47 → ×5,30) ; à 60 jours il
   reste 71 cartes sur 101, à 45 jours 53. PROPOSÉ À MATHIEU, PAS FAIT (règle de calcul : son OK d'abord) : les 60 derniers
   jours quand la carte a assez de ventes des deux côtés dans ces 60 jours, sinon 120 jours.
+- **26 nov, 16 h 09 : p109 poussé par lui (commit baa4427)** ; démarrage 16 h 11 propre (aucun « reentrant call », lignes d'accès
+  normales). Collecte PSA TERMINÉE à 15 h 41 : **1 901 crédits** au total (phase 1 ≈ 1 500, phase 2 ≈ 400).
+  PREMIÈRE MESURE DE COUVERTURE SUR LE SERVEUR (16 h 18, journal) : « A grader : 173 cartes (184 019 ventes lues, 103 915
+  rangées, 284 s) » ; PSA 10 : 6 920 rangées sur 15 243 (45 %) ; le reste : sorte pas reconnue 4 219, lot ou autre carte 3 826,
+  plusieurs joueurs 262 ; PSA 9 : 5 346 sur 10 402 (51 %) ; hors liste : peu de PSA 10 2 616, peu de raw 20, période trop courte
+  16, prix trop étalés 4. Mots des PSA 10 sans sorte : topps now 315, ozzie cardinals 205, now stickers 156, emmitt cowboys 94,
+  fleer ultra 76, extended series 67, metal universe 67, heroes prospects 62, game heroes 54, series canvas 50, now olympics 49,
+  dated moments 46, skybox metal 45, golden goal 43… LECTURE : ce 45 % est TROP BAS : la recherche « will smith psa 10 » ramène
+  aussi Ozzie Smith, Emmitt Smith, Jaxon Smith-Njigba (d'autres sports), comptés à tort comme des ventes ratées. Vrais sets de
+  hockey que le décodeur ne nomme pas encore : Topps Now (et ses Stickers, Olympics), Metal Universe (Skybox), Heroes &
+  Prospects, Game Dated Moments, Extended Series, Fleer Ultra, Canvas de série, Golden Goal. À FAIRE : les ajouter au décodeur
+  (`cartes_match`), avec de vrais titres (l'export admin `/admin/psa_export.tsv.gz` : je ne suis pas connecté en admin, le
+  navigateur intégré de son PC non plus) ; le décodeur sert aussi aux comps et aux tendances : tests avant / après obligatoires.
+- **26 nov, 16 h 36 : « Oui » à la règle des 60 jours ; « Pousse-le si pas poussé » (p109 l'était déjà)** → FAIT (p110) :
+  `a_grader.JOURS_RECENT = 60`, `_meme_periode(g, depuis)` ; dans `analyser` : la mesure des 120 jours d'abord (les MÊMES cartes
+  qu'avant dans la liste), puis celle des 60 derniers jours si elle est « ok » ET qu'elle ne fait pas perdre le prix PSA 9
+  (moins de `P9_MIN` ventes dans 60 jours alors que 120 jours le donnent → on reste à 120 : le seuil en dépend) ; des prix trop
+  étalés dans 60 jours → 120. Chaque carte porte `fenetre` (60 ou 120) ; le résultat `jours_recent`, `n_recent`, `version`.
+  `VERSION = 2` : une liste d'une autre version est refaite au premier tour de la boucle (sinon l'ancienne mesure restait une
+  semaine). Journal : « A grader : N cartes mesurees sur les 60 derniers jours, M sur 120 ». Écran (admin) : chaque fiche dit sa
+  vraie période (« Ventes des N derniers jours », classe `ag-j`), le haut de la fenêtre dit la règle.
+  MESURÉ (copie locale, 60 joueurs) : les mêmes 101 cartes ; 61 mesurées sur 60 jours, 40 sur 120 ; le rendement bouge de plus
+  de 10 % pour 12 cartes, de plus de 20 % pour 1 ; Misa YG ×4,39 → ×3,26 (rang 8 → 26), Gauthier YG ×4,47 → ×5,30 (rang 7 → 1).
+  La mesure de couverture met maintenant À PART les ventes d'un AUTRE joueur (`_nomme(titre, joueur)` : le nom de famille et
+  un mot qui commence comme le prénom) : `couverture[note]["autre_joueur"]`, hors du pourcentage ; journal : « ; hors mesure,
+  K ventes d'un autre joueur ». Le prochain calcul donnera le vrai pourcentage et une liste propre des sets à ajouter.
+  Aussi (p110) : le journal garde 2 vrais titres par paire de mots sans sorte (« A grader : ex. « metal universe » : … ») et
+  8 titres « lot ou autre carte » : c'est avec eux que j'écrirai les règles du décodeur, sans export à la main.
+  Batterie complète avant p110 : 157 + 147 OK ; `test_radar_suivi_plein` a échoué UNE fois sous charge (« database is locked »
+  sur `PRAGMA journal_mode=WAL` dans `liquidite._cx`, base neuve ouverte par deux fils en même temps), repassé seul 4 fois sur 4 ;
+  sans lien avec p110 ; en production la base est déjà en WAL (le PRAGMA ne demande alors aucun verrou).
+  IL N'A PAS DIT « pousse » pour p110 ni p111 (17 h 21 : « Continue ») : lui demander (un push = un mot de lui à chaque fois).
+- **26 nov, 17 h 02 : il a envoyé le fichier de la collecte PSA (`psa_ventes.tsv.gz`, 31 485 ventes, 462 recherches, 181 joueurs)**
+  (copie de travail sur la VM : `/tmp/psa_fichier/`, scripts `/tmp/psa_scripts/` — `liste.py` refait la liste du serveur avec
+  ce fichier + la copie de nos archives : 171 cartes contre 173 sur le serveur ; rien de tout ça n'est gardé d'une session à
+  l'autre). CE QUE LE FICHIER DIT :
+  - phase 1 : 336 recherches, 20 795 ventes ; phase 2 : 126 recherches raw, 10 690 ventes.
+  - DEUX recherches ramènent surtout d'AUTRES sports : « cam york psa 10 / 9 » (Cam Schlittler, Yankees de New York ; Cam
+    Skattebo, Giants de New York) et « will smith psa 10 / 9 » (Ozzie Smith, Emmitt Smith…) : 4 581 ventes sur 20 795,
+    environ 115 crédits perdus. À FAIRE avant la prochaine collecte : ces noms-là cherchés avec « hockey » ou « upper deck ».
+  - parmi les PSA 10 qui nomment bien le joueur (7 206) : 66 % rangées dans une carte exacte ; 29 % « sorte pas reconnue ».
+  - LE PLUS GROS TROU n'était pas une parallèle manquante : 877 ventes PSA 10 écrites comme l'ÉTIQUETTE PSA, sans le nom de la
+    sorte (« 2024 UD #451 MACKLIN CELEBRINI PSA 10 », « 2025 UD #451 MATTHEW SCHAEFER ROOKIE RC PSA 10 », « 2025 UD UD CANVAS
+    #C-231 IVAN DEMIDOV ROOKIE RC PSA 10 ») : surtout des Young Guns (Schaefer #451 : 36 ventes à 1 130 $).
+  - les vraies sortes de hockey pas encore nommées par le décodeur, par ventes PSA 10 (et cartes exactes de 5 ventes ou plus) :
+    Topps Now NHL Stickers 228 (13), Canvas hors Young Guns 198 (4), ITG Heroes & Prospects / CHL 105 (6), UD Portraits 89 (6),
+    Metal Universe 69 (0), McDavid Collection 67 (2), Extended « 1st Round » 63 (3), Fleer Ultra 62 (2), Parkhurst 46 (2),
+    Population Count 32 (2), Game Dated Moments 26 (1), Rookie Class 17 (2). En tout 74 cartes exactes de 5 ventes PSA 10 ou
+    plus qu'on ne range pas, dont 59 à 60 $ et plus. PAS FAIT : c'est le décodeur (`cartes_match`), partagé avec les comps et
+    les tendances → à faire avec des tests avant / après sur nos archives, et il faudra leurs recherches raw (crédits).
+  FAIT (p111) : `a_grader._etiquette(titre, joueur)` + dans `analyser` : un titre PSA 10 / 9 avec une année, un numéro, un seul
+  joueur, pas de /N et AUCUN mot distinctif est rangé dans la Young Guns (ou sa parallèle nommée : Canvas, Outburst) du même
+  joueur, de la même saison et du même numéro — seulement si cette carte a déjà `NUM_MIN` (5) ventes qui disent ce numéro,
+  `NUM_NOTE_MIN` (3) ventes normales de la même note, et si le prix est de 0,4 à 2,5 fois leur médiane. Jamais pour une raw.
+  `VERSION = 3`. CONTRÔLÉ sur le fichier : 1 055 titres « étiquette » vus, 434 rangés (232 PSA 10, 202 PSA 9), 512 sans Young
+  Guns à ce numéro (cartes de base, #743, Star Rookies : laissées dehors), 104 « carte trop peu vendue », 5 « prix trop
+  différent » ; prix / médiane de la carte visée : médiane 1,00, de 0,82 à 1,29 pour 80 % d'entre eux. Couverture PSA 10
+  (avec nos archives) : 70 % → 72 % ; liste : 171 → 173 cartes (87 Young Guns, 43 variantes de Young Guns, 43 autres sortes).
+  Journal : « A grader : titres « etiquette PSA » (sans le nom de la sorte) : vues N, rangees M, … ».
+- **26 nov, 17 h 12 (capture du Radar, après « Save » dans les Filtres) : « ça enlève la première slab pour mettre la loading bar,
+  c'est pas très beau ; aucune slab, avec un petit SlabCoach qui load ; quand il a fini de loader, tout apparaît »** → CAUSE : la
+  grille était vidée pour la barre, mais `suiteDeals` (les 30 cartes suivantes de l'ANCIENNE liste, quand on approche du bas)
+  les reposait aussitôt à côté. FAIT (p111) : `S.dealsReste = []` + `S.obsDeals.disconnect()` avant de vider ; `attenteSC(texte)`
+  (classe `sc-att`, `grid-column:1 / -1`) : le logo SlabCoach animé au centre, la barre mince et son pourcentage dessous, aucune
+  carte. Aperçu : `/home/claude/vue/attente.py`. Test : `tests/test_attente_radar.py`.
+- **26 nov, 17 h 26 (McDavid « Electric Soul » #ES-8 notée C) : « c'est une SSP, c'est écrit dans les comps mais on devrait le
+  savoir, c'est pas une note de C »** → la note vient du barème (`bareme_iq.sorte`) ; sa liste `SSP` (inserts MESURÉS le 18 nov)
+  ne connaissait pas l'insert de la Série 1 2026-27. MESURÉ sur la copie de nos archives : 14 ventes, ×6,4 le prix médian du même
+  joueur (McDavid 349 à 448 $), 9 titres sur 14 disent SSP / case hit / 1:2 880. FAIT (p111) : `|\belectric soul\b` dans `SSP` →
+  A- brute (85 pour McDavid), A+ en PSA 10 ; test dans `tests/test_bareme_iq.py`. PAS FAIT (proposé) : le savoir TOUT SEUL pour le
+  prochain insert — quand la plupart des comps d'une annonce disent SSP, la traiter en SSP (il faut passer les titres des comps
+  jusqu'à la note : `deals` → `score_slab`). Le Radar « Mes cibles » garde ses notes jusqu'à 6 h (clé « score-v9 » pas changée).
+- **26 nov, 17 h 28 (Filtres) : « incapable de réduire ou augmenter le petit point à 20 $ […] il est comme jammé là »** → CAUSE
+  REJOUÉE (`/home/claude/vue/curseur.py`, vrais gestes tactiles) : le verrou de défilement des feuilles (`touchmove` +
+  `preventDefault` quand rien ne défile sous le doigt) ; depuis que la feuille des Filtres tient dans l'écran, plus rien n'y
+  défile, donc le geste du curseur était annulé aussi. FAIT (p111) : `if (t.closest('input[type=range]')) return;` avant
+  l'annulation. Avant : 20 → 20 ; après : 20 → 250 en glissant au milieu.
+- **26 nov, 17 h 31 (capture : « Deals 80 », « 80 » rouge sur l'onglet, une quarantaine de cartes) : « ça dit 80 deals […] la
+  pastille disparaît quand on clique sur l'onglet, c'est supposé être une notification […] que ce soit cohérent »** → CAUSE : le
+  nombre était le compte du SERVEUR (`d.n`), pris AVANT la note SlabIQ minimum des Filtres (les cartes sans note ou sous la note
+  sont cachées par l'app). FAIT (p111), `source/src_app.html` :
+  - `dealsMontres(d, F, pf)` (la grille), `nAff` = deals + encans suivis montrés → l'onglet « Deals N », `d.n = nAff`
+    (« N cachées » = total − montrées), `nbDealsGarde(n)` (`lr_radar_n` : le dernier nombre VU, pour l'accueil) ;
+  - `RADAR_VUS` (`lr_radar_vus`, 2 000 à 3 000 numéros d'annonce), `radarListe(ids[, accueil])`, `pastilleRadar()` : la pastille
+    rouge = les cartes du Radar de la personne PAS encore vues ; sur le Radar (Watchlist comprise) elle est cachée et tout ce
+    qu'on connaît est marqué vu ; `route()` l'appelle : elle part au toucher de l'onglet ;
+  - `verifierRadar()` (admin / Platine seulement, à l'accueil, au plus aux 10 minutes) relit `deals_liste(F)` en fond avec les
+    MÊMES filtres : la pastille et la tuile de l'accueil disent le nombre que le Radar montrera. JAMAIS pour le Radar « Mes
+    cibles » (`mes_deals` refait des dizaines de recherches eBay) : pour Pro / Gratuit la pastille compte les cartes pas encore
+    vues parmi celles que l'accueil montre déjà (`a.deals`, 24 au plus) et celles du dernier Radar chargé.
+  LIMITE DITE À MATHIEU : en Pro / Gratuit la pastille ne peut pas annoncer plus que les 24 cartes de l'accueil sans relancer
+  le Radar en fond (coût eBay) ; à décider après avoir mesuré ce coût.
+  Aperçus : `/home/claude/vue/pastille.py` (deals : accueil 6 → Radar « 6 », 6 cartes, pastille partie → 2 nouvelles : « 2 » →
+  un toucher : partie) et `pastille_pub.py` (Mes cibles). Test : `tests/test_pastille_radar.py` (la logique exécutée par node).
+  ELECTRIC SOUL ET LE GARDE-FOU DU SITE : changer `bareme_iq` change l'empreinte de SlabIQ → `tests/test_site_a_jour.py` échoue
+  tant que les tests publiés ne sont pas refaits. REFAITS (18 h 05, `outils/tests_site.py /mnt/user-data/uploads/
+  ventes_hockey__6__tsv.gz --ecrire`, 9 min, 691 901 ventes) : SEULE l'empreinte change (2fdb41790cb59bca → a7da798a8f682c3c) ;
+  aucun chiffre publié ne bouge, `site_slabiq.html` et `site_accueil.html` identiques octet pour octet.
+- **26 nov, 17 h 48 (Watchlist, « Ma mise max ») : « on voit plus la zone de texte quand on clique pour changer le prix »** → le
+  clavier de l'iPhone se pose par-dessus le bas de l'écran, où la fenêtre est collée ; l'app ne lisait jamais la hauteur du
+  clavier. FAIT (p111) : `hautClavier(hEcran, hVisible, haut)` + `visualViewport` (`resize`, `scroll`) → `--clavier` et la classe
+  `clavier` sur `<html>` ; `.fond-feuille{padding-bottom:var(--clavier)}`, la feuille tient dans ce qui reste. SIMULÉ seulement
+  (clavier de 336 px : champ et bouton au-dessus, `/home/claude/vue/clavier.py`) : À CONFIRMER SUR SON iPHONE.
+  Test : `tests/test_clavier_feuille.py`.
+- **26 nov, 17 h 54 : « pour le Radar, ajoute une section pour sélectionner les vendeurs avec lesquels l'utilisateur peut aller en
+  cueillette […] notre app doit absolument lui proposer le vendeur (il commence à taper, la proposition sort en dessous) »** →
+  PAS COMMENCÉ. Question posée (18 h 06) parce que ça touche le calcul : A) l'envoi sort du calcul (mise max et profit),
+  B) une pastille « Cueillette » seulement, C) les deux. Déjà là : la liste des vendeurs suivis (`deals.vendeurs_suivis()`,
+  `Api.deals_vendeurs_liste`), le champ `vendeur` de chaque annonce. Attendre sa réponse.
+- **26 nov, 18 h 42 : « ton test, pour voir si ça fait du sens […] est-ce que ça passe bien ? »** → PREMIER TEST SUR LE PASSÉ de
+  « À grader » (`/tmp/psa_scripts/passe.py`, fichier PSA + copie des archives, pas gardé) : la liste faite le 27 septembre avec
+  les ventes du 29 juillet au 27 septembre (60 jours), comparée aux ventes des 60 jours SUIVANTS (carte achetée raw au prix
+  d'avant, revendue PSA 10 au prix d'après). 66 cartes dans la liste, 59 retrouvées avec assez de ventes. Rendement annoncé
+  ×2,30 (médiane), obtenu ×2,40 ; écart médian −2 % ; 43 sur 59 à moins de 20 % (8 plus bas, 8 plus haut) ; 55 des 57 annoncées
+  rentables le sont encore ; les 20 premières : ×3,94 annoncé, ×3,45 obtenu, 20 sur 20 encore à ×2 et plus ; corrélation des
+  rangs 0,83 ; prix d'après / d'avant : PSA 10 0,98, PSA 9 0,97, raw 0,98. LIMITES : une seule période (automne 2026), 59
+  cartes, et toujours « SI elle revient 10 » : la part de 10 n'est pas connue (pas de population PSA). À refaire sur le serveur,
+  automatiquement, avant d'ouvrir la liste au Pro.
 - **Demandé pour demain (21 h 02)** : « améliore SlabIQ et refais nos tests avec les nouvelles data une fois obtenues ; tu devrais
   aller chercher tout automatiquement » → refaire les tests sur les ventes de la collecte de 3 ans ; SlabIQ ne change que si le test
   le prouve ; le test publié sur le site doit tourner seul sur le serveur (tâche `g_c_auto`), sans export à la main.

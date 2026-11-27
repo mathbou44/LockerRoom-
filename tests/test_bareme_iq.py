@@ -109,3 +109,14 @@ assert _bq.sorte("2025-26 Upper Deck Series 2 Matthew Schaefer Young Guns #451 R
 assert _bq.sorte("2023-24 Upper Deck Young Guns Connor Bedard #451 PSA 10") == ("A+", "yg10")
 assert _bq.sorte("2024-25 Upper Deck Young Guns lot of 12 rookies") == ("D", "lot_checklist")
 print("BAREME IQ : YOUNG GUNS DUO OK")
+
+# 26 nov 2026 (Mathieu, McDavid Electric Soul #ES-8 notee C : « c'est une SSP, c'est ecrit dans les comps mais on devrait le savoir,
+# c'est pas une note de C ») : l'insert de la Serie 1 2026-27 (1:2 880 paquets) est une SSP MEME quand le vendeur ne l'ecrit pas.
+# Mesure sur nos ventes comme les autres inserts de la liste : x6,4 le prix median du meme joueur (14 ventes).
+assert _bq.sorte("2026-27 Upper Deck Electric Soul Connor McDavid #ES-8 Edmonton Oilers") == ("A-", "ssp")
+assert _bq.sorte("2026-27 Upper Deck Series 1 ELECTRIC SOUL COLE CAUFIELD #ES-19") == ("A-", "ssp")
+assert _bq.sorte("2026-27 Upper Deck Electric Soul Connor McDavid #ES-8 PSA 10") == ("A+", "ssp10")
+assert _bq.sorte("2026-27 Upper Deck Electric Soul Connor McDavid #ES-8 SSP") == ("A-", "ssp"), "le mot SSP ne change rien de plus"
+assert _bq.sorte("2026-27 Upper Deck Series 1 Connor McDavid #75")[1] == "base", "une carte de base reste une carte de base"
+assert _bq.sorte("2026-27 Upper Deck Electric Ice Connor McDavid")[1] != "ssp" and _bq.sorte("2026-27 Upper Deck Soul Connor McDavid")[1] != "ssp"
+print("BAREME IQ : ELECTRIC SOUL OK")

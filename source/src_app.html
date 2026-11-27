@@ -416,6 +416,11 @@ details.reglage summary::-webkit-details-marker{display:none}
 .prog-v .pv-b{height:6px; border-radius:99px; background:var(--carte2); overflow:hidden}
 .prog-v .pv-b i{display:block; height:100%; width:94%; border-radius:99px; transform-origin:left; transform:scaleX(.03);
   background:linear-gradient(90deg, var(--h1,#9FE6D2), var(--h2,#B9BEFF), var(--h3,#F2B3D6)); animation:pv-av 25s cubic-bezier(.15,.7,.25,1) forwards}
+.sc-att{grid-column:1 / -1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; min-height:min(46vh, 380px); padding:28px 16px}
+.sc-att .logo-holo{width:60px; height:60px; animation:sc-att-p 1.6s ease-in-out infinite}
+.sc-att .prog-v{width:100%; max-width:250px; margin:0}
+@keyframes sc-att-p{0%, 100%{transform:scale(1); opacity:1} 50%{transform:scale(1.08); opacity:.82}}
+@media (prefers-reduced-motion:reduce){ .sc-att .logo-holo{animation:none} }
 .prog-v.mince{margin:4px 0 8px} .prog-v.mince .pv-t{font-size:12px; margin-bottom:5px} .prog-v.mince .pv-b{height:3px}
 @keyframes pv-av{from{transform:scaleX(.03)} to{transform:scaleX(1)}}
 button.lien{background:none; border:0; color:var(--acc); font:inherit; padding:0; cursor:pointer; text-decoration:underline}
@@ -1545,6 +1550,8 @@ body.avec-barre .ecran{padding-top:14px}
 /* feuille + toast */
 body.fen-ouverte .fond-feuille{z-index:95}  /* 11 nov 2026 : les petites fenetres de la fiche s'ouvrent par-dessus */
 .fond-feuille{position:fixed; inset:0; z-index:40; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center}
+.fond-feuille{padding-bottom:var(--clavier, 0px)} html.clavier .fond-feuille .feuille{max-height:calc(100vh - var(--clavier, 0px) - 20px); padding-bottom:16px}
+html.clavier .fond-feuille.centre{padding-bottom:calc(16px + var(--clavier, 0px))}
 .feuille{width:100%; max-width:640px; max-height:90vh; overflow-y:auto; background:#131317; border-radius:22px 22px 0 0; padding:10px 18px calc(18px + var(--bas)); display:flex; flex-direction:column; gap:14px;
   will-change:transform; overscroll-behavior:contain; -webkit-overflow-scrolling:touch}
 .feuille.entre{animation:monte .38s cubic-bezier(.16,1,.3,1)}
@@ -6829,7 +6836,7 @@ html body .ecran .md-rech.tiq-rech, html:not(.tel-large) body .tete-fixe:has(.d-
 .ag-h{display:flex; align-items:center; gap:10px} .ag-n{flex:1; min-width:0; display:flex; flex-direction:column; gap:1px} .ag-n b{font:700 18px/1.1 var(--f-cond); white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .ag-n small{font-size:12.5px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .ag-x{flex:none; font:800 20px/1 var(--f-cond); font-style:normal; color:var(--acc)}
 .ag-p{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px} .ag-p span{display:flex; flex-direction:column; align-items:flex-start; text-align:left; gap:1px; min-width:0} .ag-p small{font-size:11.5px; color:var(--doux); letter-spacing:.04em} .ag-p b{font:700 19px/1.1 var(--f-cond)} .ag-p i{font-style:normal; font-size:11.5px; color:var(--doux)}
-.ag-r{display:flex; flex-wrap:wrap; gap:4px 14px; font-size:13.5px} .ag-r span{white-space:nowrap} .ag-r .vert b{color:var(--vert)} .ag-r .rouge b{color:var(--rouge)}
+.ag-r{display:flex; flex-wrap:wrap; gap:4px 14px; font-size:13.5px} .ag-r span{white-space:nowrap} .ag-r .vert b{color:var(--vert)} .ag-r .rouge b{color:var(--rouge)} .ag-r .ag-j{color:var(--doux)}
 .tiq-mg .tiq-mn{gap:2px} .tiq-gs{font-size:12.5px; color:var(--doux)} .tiq-gs.ok{color:var(--vert)}
 .tiq-nj{flex:none; width:26px; text-align:right; font:700 20px/1 var(--f-cond); color:var(--acc)}
 @media (max-width:1099px){ .tiq-m:has(.tiq-nj){gap:8px} .tiq-m:has(.tiq-nj) .tiq-rg{width:18px} .tiq-m:has(.tiq-nj) .tiq-pc{min-width:64px} .tiq-m:has(.tiq-nj) .tiq-sp{width:50px} }
@@ -7651,6 +7658,12 @@ function htmlPiece(){ return `<img src="${LOGO_SC}" alt="">`; }
 const LOGO_HOLO = (cls = '', anime = false) => typeof fetesActives === 'function' && fetesActives()
   ? `<span class="logo-holo fete ${cls}" aria-hidden="true"><span class="lh-c"><i></i><i></i></span><b></b></span>`
   : `<span class="logo-holo ${cls}" aria-hidden="true"><img src="${anime ? LOGO_SC_ANIME : LOGO_SC}" alt=""></span>`;
+// 26 nov 2026 (Mathieu, capture du Radar apres « Save » dans les Filtres : « ca enleve la premiere slab pour mettre la loading bar,
+// c'est pas tres beau ; il faudrait aucune slab, avec un petit SlabCoach qui load ; quand il a fini de loader, tout apparait ») :
+// l'attente d'une grille entiere : le logo SlabCoach au centre, la barre dessous, AUCUNE carte tant que la reponse n'est pas la
+function attenteSC(texte, duree){
+  return `<div class="sc-att" role="status">${LOGO_HOLO('sc-att-l', true)}${barreProg(Date.now(), duree || 8, texte, 'mince')}</div>`;
+}
 function piecesNiveau(){ document.querySelectorAll('.piece-sc').forEach(el => el.style.setProperty('--masque', 'url(/logo_sc_gold_poli.png)')); }
 const C_ANNEAU = 97.39;
 function anneau(taille, p, cls=''){
@@ -7679,6 +7692,16 @@ const APRES_PTR = {f: null};
   const go = () => { const e = b(); if (!e) return setTimeout(go, 300); m(); if (typeof ResizeObserver === 'function') new ResizeObserver(m).observe(e); addEventListener('resize', m); }; go(); })();
 // 3 nov 2026 : pas de zoom a deux doigts (iPhone : l'app et Safari ignorent parfois user-scalable)
 ['gesturestart', 'gesturechange'].forEach(t => document.addEventListener(t, (e) => e.preventDefault(), {passive:false}));
+// 26 nov 2026 (Mathieu, capture de la Watchlist : « on voit plus la zone de texte quand on clique pour changer le prix ») : le
+// clavier de l'iPhone se pose PAR-DESSUS le bas de l'ecran, la ou la fenetre est collee : le champ « Ma mise max » etait dessous.
+// On lit la hauteur du clavier (la partie de l'ecran qu'il cache : visualViewport) et la fenetre monte d'autant (--clavier).
+const hautClavier = (hEcran, hVisible, haut) => { const k = Math.round((hEcran || 0) - (hVisible || 0) - (haut || 0)); return k > 80 ? k : 0; };
+(() => {
+  const vv = window.visualViewport; if (!vv) return;
+  const maj = () => { const k = hautClavier(window.innerHeight, vv.height, vv.offsetTop);
+    document.documentElement.style.setProperty('--clavier', k + 'px'); document.documentElement.classList.toggle('clavier', k > 0); };
+  vv.addEventListener('resize', maj); vv.addEventListener('scroll', maj);
+})();
 function ouvrirFeuille(html, o_){
   if (S.feuilleRetour) { const f = S.feuilleRetour; S.feuilleRetour = null; try { f(); } catch (e) {} }   // un bloc emprunte a la page y retourne
   const fe = $('#feuille'), deja = !$('#fond-feuille').hidden;
@@ -7946,14 +7969,64 @@ const comps = () => !S.forfait || S.forfait.comps !== false;
 // (tout_le, nb_deals_le) : le plus recent gagne ; une vieille copie gardee sur le telephone ne l'ecrase jamais. Le vrai
 // nombre s'ecrit en entier (214, pas « 99+ ») : il tient dans la pastille.
 const nbTxt = n => n > 999 ? '999+' : String(n || '');
+// 26 nov 2026 (Mathieu, capture : « Deals 80 » et « 80 » en rouge sur l'onglet, alors qu'il voit une quarantaine de cartes : « ca dit
+// 80 deals, je suis loin d'en avoir 80 [...] le chiffre dans la pastille disparait quand on clique sur l'onglet, c'est suppose etre
+// une notification [...] si la personne arrive, hey j'ai 80 nouvelles cartes, il scroll et il y en a juste 30, ca marche pas ») :
+// 1) LE NOMBRE du Radar (la page, l'accueil) = les cartes que la personne VOIT avec ses filtres (la note SlabIQ minimum comprise :
+//    c'est elle qui cachait la moitie des 80) ; 2) LA PASTILLE ROUGE de l'onglet est une notification : les cartes de son Radar
+//    qu'elle n'a PAS encore vues. Ouvrir le Radar les marque vues : la pastille part, et ne revient que pour de nouvelles cartes.
+const RADAR_VUS = (() => {
+  let s = null;
+  const lire = () => { if (!s) { try { s = new Set((JSON.parse(localStorage.getItem('lr_radar_vus') || '[]') || []).map(String)); } catch (e) { s = new Set(); } } return s; };
+  return {a: (id) => lire().has(String(id)),
+    marquer: (ids) => { const v = lire(); let neuf = false; for (const i of ids || []) { const k = String(i); if (!v.has(k)) { v.add(k); neuf = true; } }
+      if (neuf) { if (v.size > 3000) s = new Set([...v].slice(-2000)); try { localStorage.setItem('lr_radar_vus', JSON.stringify([...s])); } catch (e) {} } }};
+})();
+const surRadar = () => ((location.hash || '#accueil').slice(1).split('/')[0] || 'accueil') === 'deals';
+const idsRadar = () => [...new Set([...(S.radarIds || []), ...(S.radarIdsAcc || [])])];
+function pastilleRadar(){
+  if (surRadar()) RADAR_VUS.marquer(idsRadar());                      // la personne est sur son Radar : tout ce qu'on en connait est vu
+  const n = surRadar() ? 0 : idsRadar().filter(i => !RADAR_VUS.a(i)).length, pD = $('#pastille-deals');
+  if (pD) { pD.hidden = !n; pD.textContent = n ? nbTxt(n) : ''; }
+  return n;
+}
+function radarListe(ids, accueil){                                    // les cartes du Radar de la personne, telles qu'elle les voit
+  S[accueil ? 'radarIdsAcc' : 'radarIds'] = (ids || []).filter(i => i != null).map(String);
+  return pastilleRadar();
+}
 function radarNb(n, le){
   if (typeof n === 'number' && (le || 0) >= ((S.nbRadar || {}).le || 0)) S.nbRadar = {n, le: le || 0};
-  const v = S.nbRadar ? S.nbRadar.n : 0, pD = $('#pastille-deals');
-  if (pD) { pD.hidden = !v; pD.textContent = v ? nbTxt(v) : ''; }
-  return v;
+  pastilleRadar();
+  return S.nbRadar ? S.nbRadar.n : 0;
+}
+// le Radar des deals (admin, Platine) : ce que la grille montre = les deals et les encans suivis qui passent la note SlabIQ minimum
+function dealsMontres(d, F, pf){
+  const iqm = F && F.iq_min != null ? +F.iq_min : (pf && pf.iq_min != null ? +pf.iq_min : 65);
+  const ok = (x) => !iqm || (x.score != null && x.score >= iqm);
+  return {deals: (d.deals || []).filter(ok), suivis: (d.suivis || []).filter(ok)};
+}
+function nbDealsGarde(n){                                             // le dernier nombre VU dans le Radar, garde sur l'appareil
+  if (typeof n === 'number') { S.nbDeals = n; try { localStorage.setItem('lr_radar_n', String(n)); } catch (e) {} return n; }
+  if (S.nbDeals == null) { try { const v = localStorage.getItem('lr_radar_n'); S.nbDeals = v == null || v === '' ? null : +v; } catch (e) { S.nbDeals = null; } }
+  return S.nbDeals;
+}
+// hors du Radar (l'accueil) : la meme liste que le Radar montrerait, lue en fond (10 minutes au plus tot entre deux lectures ; la
+// reponse reste en memoire : le Radar s'ouvre ensuite tout de suite). Seulement pour le Radar des deals : celui de « Mes cibles »
+// refait des recherches eBay, on ne le relance pas dans le dos de la personne.
+async function verifierRadar(){
+  if (!comps() || surRadar() || Date.now() - (S.radarVerifLe || 0) < 600000 || typeof API === 'undefined') return;
+  S.radarVerifLe = Date.now();
+  try {
+    const [d, pf] = await Promise.all([API.deals_liste(S.dealsF), S.dealsProfil ? S.dealsProfil : API.deals_profil_lire().catch(() => ({}))]);
+    if (!d || !d.ok || d.coupe || !comps()) return;
+    const m = dealsMontres(d, S.dealsF, pf), avant = nbDealsGarde();
+    radarListe([...m.deals, ...m.suivis].map(x => x.item_id));
+    if (nbDealsGarde(m.deals.length + m.suivis.length) !== avant && S.ecranCourant === 'accueil' && $('#fond-feuille').hidden && !document.body.classList.contains('fen-ouverte')) route();
+  } catch (e) {}
 }
 function nbRadarAccueil(a){
-  if (comps()) { const n = (a && a.nb_deals) || 0, pD = $('#pastille-deals'); if (pD && a) { pD.hidden = !n; pD.textContent = n ? nbTxt(n) : ''; } return n; }
+  if (comps()) { verifierRadar(); pastilleRadar(); const n = nbDealsGarde(); return n != null ? n : ((a && a.nb_deals) || 0); }
+  if (a && Array.isArray(a.deals)) radarListe(a.deals.map(x => x && x.item_id), true);   // les cartes du Radar que l'accueil montre deja
   return a ? radarNb(typeof a.nb_deals === 'number' ? a.nb_deals : null, a.nb_deals_le) : ((S.nbRadar || {}).n || 0);
 }
 function route(){
@@ -7965,6 +8038,7 @@ function route(){
   if (ecran && ecran !== S.pageVue && typeof API !== 'undefined') { S.pageVue = ecran; API.activite_page(ecran).catch(() => {}); }
   // 22 oct 2026 - deux volets : la 1re ouverture demande le volet ; « Accueil » d'un acheteur = ses deals
   // 1er nov 2026 : une seule app ; plus de redirection selon un volet
+  pastilleRadar();                                                              // 26 nov 2026 : sur le Radar, la pastille rouge part
   $$('.onglets a').forEach(a => {
     const o = a.dataset.onglet;
     a.classList.toggle('on', o === ecran || (o === 'breaks' && ['break', 'analyse'].includes(ecran)) || (o === 'analyse' && ecran === 'analyse') || (o === 'accueil' && ecran === 'sante') || (o === 'vendre' && ecran === 'valeur'));
@@ -11521,7 +11595,10 @@ async function feuilleFiltresDeals(){
     const r = await API.deals_profil_regler(d).catch(e => ({ok:false, erreur:e.message}));
     if (r && r.ok === false) { toast(r.erreur || 'Erreur', 4000); return; }
     S.dealsProfil = r || null; sauverDealsF(); MEMO.clear(); fermerFeuille();
-    const zg = $('#d-grille') || $('#d-z'); if (zg) zg.innerHTML = `<div class="lecture"><span class="roue"></span>${tt('On applique tes filtres…', 'Applying your filters…')}</div>`;
+    // 26 nov 2026 : la suite de l'ANCIENNE liste (30 cartes de plus quand on approche du bas : suiteDeals) revenait se poser a cote
+    // de la barre des que la grille etait videe. On l'arrete, et l'attente prend toute la grille (voir attenteSC).
+    S.dealsReste = []; if (S.obsDeals) S.obsDeals.disconnect();
+    const zg = $('#d-grille') || $('#d-z'); if (zg) zg.innerHTML = attenteSC(tt('On applique tes filtres…', 'Applying your filters…'));
     await chargerDeals(true);
     const n_ = (S.dealsParId ? Object.keys(S.dealsParId).length : null);
     toast(raz ? tt('Filtres effacés : tous les deals', 'Filters cleared: all deals') : (n_ != null ? tt(`Filtres appliqués : ${n_} deals`, `Filters applied: ${n_} deals`) : tt('Filtres appliqués', 'Filters applied')), 2200);
@@ -13623,6 +13700,10 @@ function visionneuse(photos, i){
   document.addEventListener('touchmove', (e) => {
     if (!ouverte() || e.touches.length !== 1) return;
     const t = e.target, f = t && t.closest && t.closest(SEL);
+    // 26 nov 2026 (Mathieu, iPhone : « incapable de reduire ou augmenter le petit point a 20 $ [...] il est comme jamme la ») :
+    // depuis que la feuille des Filtres tient dans l'ecran, plus rien n'y defile : ce verrou annulait donc AUSSI le geste du
+    // curseur « Profit minimum ». Un curseur se glisse du doigt : on ne l'annule jamais.
+    if (t && t.closest && t.closest('input[type=range]')) return;
     if (!f || !defile(t, f)) { if (e.cancelable) e.preventDefault(); }
   }, {passive: false});
 })();
@@ -13984,19 +14065,21 @@ function agCarte(x, rg){
   const nb = (v) => (v || 0).toLocaleString(LOC()), sg = (v) => (v >= 0 ? '+' : '−') + argent(Math.abs(v), 0);
   return `<div class="ag-c"><div class="ag-h">${rg ? `<i class="tiq-rg">${rg}</i>` : ''}<span class="ag-n"><b>${esc(x.joueur)}</b><small>${esc(agNom(x))}${x.num ? ' · #' + esc(String(x.num).toUpperCase()) : ''}</small></span><em class="ag-x" title="${esc(tt('Ce qui revient pour 1 $ mis, si elle revient 10', 'What comes back per $1 spent, if it grades 10'))}">${agRend(x)}</em></div>
       <div class="ag-p"><span><small>Raw</small><b>${argent(x.raw, 0)}</b><i>${nb(x.n_raw)} ${tt('ventes', 'sales')}</i></span><span><small>PSA 10</small><b>${argent(x.psa10, 0)}</b><i>${nb(x.n10)} ${tt('ventes', 'sales')}</i></span><span><small>PSA 9</small><b>${x.psa9 != null ? argent(x.psa9, 0) : '—'}</b><i>${nb(x.n9)} ${tt('ventes', 'sales')}</i></span></div>
-      <div class="ag-r"><span class="${x.reste10 >= 0 ? 'vert' : 'rouge'}">${tt('Si 10', 'If 10')} : <b>${sg(x.reste10)}</b></span><span class="${x.reste9 == null ? '' : x.reste9 >= 0 ? 'vert' : 'rouge'}">${tt('Si 9', 'If 9')} : <b>${x.reste9 != null ? sg(x.reste9) : '—'}</b></span><span>${agSeuil(x)}</span></div></div>`;
+      <div class="ag-r"><span class="${x.reste10 >= 0 ? 'vert' : 'rouge'}">${tt('Si 10', 'If 10')} : <b>${sg(x.reste10)}</b></span><span class="${x.reste9 == null ? '' : x.reste9 >= 0 ? 'vert' : 'rouge'}">${tt('Si 9', 'If 9')} : <b>${x.reste9 != null ? sg(x.reste9) : '—'}</b></span><span>${agSeuil(x)}</span>${x.jours != null ? `<span class="ag-j">${tt(`Ventes des ${Math.max(2, x.jours)} derniers jours`, `Sales of the last ${Math.max(2, x.jours)} days`)}</span>` : ''}</div></div>`;
 }
 // 26 nov 2026 (Mathieu : « savoir les cartes qui valent le plus la peine d'etre gradees [...] ceux avec le meilleur rapport achat
 // versus vente [...] dans Admin, le temps qu'elle soit parfaite ») : la liste « A grader » (a_grader.py). Pour chaque carte exacte :
 // le prix raw, PSA 10 et PSA 9 (medianes de ventes reelles, la meme periode), ce qui reste si elle revient 10 ou 9 apres les frais,
 // et la part de 10 qu'il faut pour ne pas perdre. Jamais une chance de 10 ni un profit espere. Des prix : ADMIN seulement.
+// 26 nov, 16 h 36 (Mathieu : « le temps est important la-dedans ») : la mesure se fait sur les 60 derniers jours quand la carte s'y
+// vend assez, sinon sur 120 ; chaque fiche dit sa vraie periode (« Ventes des N derniers jours »).
 async function feuilleAGrader(){
   const r = await API.admin_a_grader().catch(e => ({ok: false, erreur: e.message}));
   if (!r || !r.ok) { toast((r && r.erreur) || 'Erreur'); return; }
   const nb = (v) => (v || 0).toLocaleString(LOC()), C = r.cartes || [], sg = (v) => (v >= 0 ? '+' : '−') + argent(Math.abs(v), 0);
   const ligne = (x, i) => agCarte(x, i + 1);
   ouvrirFeuille(`<h3>${tt('À grader', 'Worth grading')}<em class="tiq-pn">${nb(r.n_cartes)}</em></h3>
-    <p class="sous" style="margin:-4px 0 10px">${tt(`Des ventes réelles, la même carte, la même période (${r.jours} jours au plus). « Si 10 » et « Si 9 » : ce qui reste après la carte, ${argent(r.frais_psa, 0)} de PSA et d’envoi, et les frais eBay de la revente. Classé par ce qui revient pour 1 $ mis si elle revient 10. Aucune chance de 10 n’est supposée.`, `Real sales, the same card, the same period (${r.jours} days at most). “If 10” and “If 9”: what is left after the card, ${argent(r.frais_psa, 0)} of PSA and shipping, and eBay resale fees. Ranked by what comes back per $1 spent if it grades 10. No odds of a 10 are assumed.`)}</p>
+    <p class="sous" style="margin:-4px 0 10px">${tt(`Des ventes réelles, la même carte, la même période : ${r.jours_recent ? `les ${r.jours_recent} derniers jours quand la carte s’y vend assez, sinon ${r.jours}` : `${r.jours} jours au plus`}. « Si 10 » et « Si 9 » : ce qui reste après la carte, ${argent(r.frais_psa, 0)} de PSA et d’envoi, et les frais eBay de la revente. Classé par ce qui revient pour 1 $ mis si elle revient 10. Aucune chance de 10 n’est supposée.`, `Real sales, the same card, the same period: ${r.jours_recent ? `the last ${r.jours_recent} days when the card sells enough in them, otherwise ${r.jours}` : `${r.jours} days at most`}. “If 10” and “If 9”: what is left after the card, ${argent(r.frais_psa, 0)} of PSA and shipping, and eBay resale fees. Ranked by what comes back per $1 spent if it grades 10. No odds of a 10 are assumed.`)}</p>
     <div class="by-l" style="margin-bottom:8px"><span>${r.en_cours ? tt('Calcul en cours…', 'Computing…') + (r.texte ? ' ' + esc(r.texte) : '') : r.le ? tt('Calculé ', 'Computed ') + esc(ilYa(r.le)) + ' · ' + nb(r.lues) + ' ' + tt('ventes lues', 'sales read') : tt('Pas encore calculée', 'Not computed yet')}</span><button class="lien-t" id="ag-go" ${r.en_cours ? 'disabled' : ''}>${tt('Recalculer', 'Recompute')}</button></div>
     <div class="ag-l">${C.length ? C.map(ligne).join('') : `<div class="sous tiq-vide">${r.en_cours ? tt('La liste arrive dans quelques minutes.', 'The list arrives in a few minutes.') : tt('Aucune carte encore : lance le calcul.', 'No card yet: start the computation.')}</div>`}</div>`);
   const go = $('#ag-go'); if (go) go.onclick = async () => { vibrer(); go.disabled = true; const x = await API.admin_a_grader_calculer().catch(e => ({ok: false, erreur: e.message}));
@@ -14212,8 +14295,6 @@ async function chargerDeals(frais){
     vueMesDeals(z, frais);
     return;
   }
-  const pD = $('#pastille-deals'); if (pD) { pD.hidden = !d.n; pD.textContent = d.n ? nbTxt(d.n) : ''; }
-  const dn = $('#d-nb'); if (dn) { dn.hidden = !d.n; dn.textContent = d.n || ''; }
   // 27 oct 2026 (Mathieu : « les users doivent TOUJOURS voir quelque chose ») : « a surveiller » (15 a 30 % sous la valeur)
   // 7 nov 2026 (Mathieu : « enlever la section to watch ») : plus de « a surveiller » a l'ecran
   const P = [];
@@ -14223,9 +14304,12 @@ async function chargerDeals(frais){
   // des vendeurs suivis sans valeur sure suivent les deals (« Valeur à vérifier »), tries par fin avec le filtre Encans
   let SU = d.suivis || [];
   // 16 nov 2026 : la note SlabIQ minimum des Filtres (par defaut B et plus ; « Toutes » = tout)
-  { const iqm = F.iq_min != null ? +F.iq_min : (S.dealsProfil && S.dealsProfil.iq_min != null ? +S.dealsProfil.iq_min : 65);
-    const okIQ = (x) => !iqm || (x.score != null && x.score >= iqm);
-    if (iqm) { d = Object.assign({}, d, {deals: (d.deals || []).filter(okIQ)}); SU = SU.filter(okIQ); } }
+  { const m_ = dealsMontres(d, F, S.dealsProfil); d = Object.assign({}, d, {deals: m_.deals}); SU = m_.suivis; }
+  // 26 nov 2026 : le nombre de l'onglet « Deals » = les cartes de la grille (avant : le compte du serveur, AVANT la note SlabIQ
+  // minimum : « 80 » pour une quarantaine de cartes) ; la pastille rouge : voir RADAR_VUS
+  { const nAff = (d.deals || []).length + SU.length, dn = $('#d-nb'); if (dn) { dn.hidden = !nAff; dn.textContent = nAff || ''; }
+    d.n = nAff;                                  // (d est deja une copie) : « N cachees » = le total moins ce qu'on voit
+    nbDealsGarde(nAff); radarListe([...(d.deals || []), ...SU].map(x => x.item_id)); }
   if (F.type === 'encan' || F.tri === 'fin') SU = [...SU].sort((a, b) => String(a.fin).localeCompare(String(b.fin)));
   S.dealsParId = Object.fromEntries([...(d.deals || []), ...P, ...SU].map(x => [String(x.item_id), x]));
   const L = d.deals || [], gain = L.filter(x => !x.encan).reduce((t, x) => t + Math.max(0, x.gain || 0), 0), encans = L.filter(x => x.encan).length;
@@ -22726,6 +22810,7 @@ async function vueMesDeals(z, frais){
   S.mdTous = tous;
   const nb_ = tous.size;
   radarNb(nb_, r.tout_le);                       // 24 nov 2026 : le meme nombre que l'accueil, ecrit en entier
+  radarListe([...tous.entries()].filter(([, x]) => !x.recherche).map(([id]) => id));   // 26 nov 2026 : la pastille = les cartes pas encore vues
   if (!groupes.some(([k]) => k === S.mdF)) S.mdF = '';
   S.mdTri = S.mdTri || 'score';
   const rien = !nb_;

@@ -49,6 +49,13 @@ JOURS = 120
 RAW_MIN = 5
 P10_MIN = 5                          # 4 -> 5 des le premier essai : a 4 ventes, une PSA 10 d'une autre parallele suffit a fausser la mediane
 P9_MIN = 3
+VERSION = 3                          # 2 = la regle des 60 derniers jours (26 nov) ; 3 = les titres ecrits comme l'etiquette PSA ;
+                                     # une liste d'une autre version est refaite seule
+NUM_MIN = 5                          # titre « etiquette » : la carte doit deja avoir 5 ventes qui disent ce numero...
+NUM_NOTE_MIN = 3                     # ... dont 3 de la meme note, et le prix doit etre de 0,4 a 2,5 fois leur mediane
+NUM_PRIX = (0.4, 2.5)
+JOURS_RECENT = 60                    # 26 nov, 16 h 36 (Mathieu : « le temps est important » ; son « Oui ») : les 60 derniers jours quand
+                                     # la carte s'y vend assez (raw, PSA 10, et PSA 9 si elle a un prix PSA 9), sinon toute la fenetre
 REFAIRE_J = 7                        # 26 nov, 15 h 06 (Mathieu : « le top 100 a grader qui se refresh chaque semaine ») : refaite chaque semaine,
                                      # une fois de plus quand la collecte PSA finit, et quand l'admin le demande
 REFAIRE_COLLECTE_MIN = 50            # pendant une collecte PSA : la liste est refaite a chaque tour de la boucle (1 h)
@@ -73,9 +80,45 @@ def frais_psa():
 # la mesure de la couverture (voir analyser) : le titre DIT-il PSA 10 ou PSA 9 ? et les mots d'un titre qui peuvent nommer une sorte
 _RE_NOTE_TITRE = re.compile(r"\bpsa[\s\-]*(10|9)(?![\d.])", re.I)
 N_INCONNUES = 25
+N_EXEMPLES = 2                       # vrais titres gardes par paire de mots (le journal : c'est par la que je les lis)
 _MOTS_VIDES = set("psa gem mint mt rc rookie rookies card cards hockey nhl the and of for with a an in on upper deck ud graded grade pop new "
                   "sp ssp rare hot invest low nm near pack fresh free shipping ship auto autograph signed jersey patch read see pics "
                   "year first 1st nice sharp centered clean beautiful stunning must have look wow tm inc co ltd lot edition hof".split())
+
+
+def _etiquette(titre, joueur):
+    """26 nov 2026 (le fichier de la collecte PSA : « 2024 UD #451 MACKLIN CELEBRINI PSA 10 », « 2025 UD UD CANVAS #C-231 IVAN
+    DEMIDOV ROOKIE RC PSA 10 » : 877 ventes PSA 10 sans le nom de la sorte, dont les Young Guns les plus vendues) : un titre
+    ecrit comme l'etiquette PSA. -> (joueur, annee, numero, note, mots de parallele) si le titre donne une annee, un numero,
+    une note PSA 10 ou 9, UN joueur, pas de /N et AUCUN mot distinctif ; sinon None. Le numero dira quelle carte (analyser)."""
+    import cartes_match as cm
+    t = str(titre or "")
+    try:
+        ct = cm.cible_titre(t, joueur)
+    except Exception:
+        return None
+    g = ct.get("grade") or {}
+    if g.get("cie") != "psa" or str(g.get("note") or "") not in ("10", "9") or cm.espere_note(t):
+        return None
+    if not ct.get("joueur") or ct.get("autres_joueurs") or ct.get("serie") or ct.get("ident"):
+        return None
+    num = re.sub(r"[^a-z0-9]", "", str(ct.get("num") or "").lower())
+    if not num or not ct.get("annee"):
+        return None
+    par = frozenset(w for x in (ct.get("paralleles") or ()) for w in str(x).split())
+    return ct["joueur"], ct["annee"], num, str(g["note"]), par
+
+
+def _nomme(titre, joueur):
+    """Le titre nomme-t-il ce joueur ? Son nom de famille, et un mot qui commence comme son prenom (« Alex » / « Alexander »)."""
+    import cartes_match as cm
+    mots = set(cm.norm(titre).split())
+    nom = cm.norm(joueur).split()
+    if not nom:
+        return True
+    if nom[-1] not in mots:
+        return False
+    return len(nom) < 2 or any(m.startswith(nom[0][:3]) for m in mots)
 
 
 def _duos(titre, joueur=None):
@@ -165,6 +208,23 @@ def _etale(prix):
     return (_q(prix, 0.75) / _q(prix, 0.25)) if len(prix) >= 4 and _q(prix, 0.25) > 0 else 1.0
 
 
+def _meme_periode(g, depuis):
+    """Les prix raw, PSA 10 et PSA 9 d'une carte depuis `depuis`, sur LA MEME periode (elle commence a la plus tardive des
+    premieres ventes raw et PSA 10). -> (« ok », debut, raw, psa 10, psa 9), ou (la raison,) si la carte ne peut pas etre mesuree."""
+    raw = [(d, p) for d, p in g["raw"] if d >= depuis]
+    p10 = [(d, p) for d, p in g["10"] if d >= depuis]
+    if len(raw) < RAW_MIN or len(p10) < P10_MIN:
+        return ("periode trop courte",)
+    d0 = max(min(d for d, _ in raw), min(d for d, _ in p10))
+    raw = [p for d, p in raw if d >= d0]
+    p10 = [p for d, p in p10 if d >= d0]
+    if len(raw) < RAW_MIN or len(p10) < P10_MIN:
+        return ("periode trop courte",)
+    if _etale(raw) > DISPERSION_MAX or _etale(p10) > DISPERSION_MAX:
+        return ("prix trop etales",)
+    return "ok", d0, raw, p10, [p for d, p in g["9"] if d >= d0]
+
+
 def analyser(ventes, aujourd=None, jours=JOURS, respirer=None):
     """ventes : des (cle de la vente, titre, prix $ CA, date AAAA-MM-JJ, joueur ou None). -> {« cartes »: [...], « lues », « rangees »,
     « ecartees » : pourquoi une carte vue en PSA 10 n'est pas dans la liste}. La liste : le meilleur rapport PSA 10 / raw d'abord."""
@@ -177,8 +237,13 @@ def analyser(ventes, aujourd=None, jours=JOURS, respirer=None):
     # on le MESURE au lieu de le supposer. Pour les ventes dont le titre dit PSA 10 (ou PSA 9) : combien sont rangees dans une
     # carte exacte, pourquoi les autres ne le sont pas, et les mots qui reviennent le plus dans celles dont on ne reconnait
     # pas la sorte (un set ou une parallele que le decodeur ne connait pas encore).
-    couv = {n: {"lues": 0, "rangees": 0, "raisons": {}} for n in ("10", "9")}
+    # 26 nov, 16 h 18 (premiere mesure sur le serveur : 45 % ; les mots sans sorte : « ozzie cardinals », « emmitt cowboys »...) :
+    # la recherche « will smith psa 10 » ramene aussi Ozzie Smith et Emmitt Smith. Une vente qui ne nomme PAS le joueur
+    # cherche n'est pas une vente qu'on rate : elle est comptee a part (« autre_joueur »), hors de la mesure.
+    couv = {n: {"lues": 0, "rangees": 0, "autre_joueur": 0, "raisons": {}} for n in ("10", "9")}
     mots_inconnus = {}
+    ex_duo, ex_lot = {}, []                                   # quelques vrais titres, pour ecrire la regle qui manque au decodeur
+    etiquettes = []                                           # les titres ecrits comme l'etiquette PSA (voir _etiquette)
     for i, (cle, titre, prix, le, joueur) in enumerate(ventes):
         if respirer and i % 200 == 199:
             respirer(i)
@@ -191,7 +256,13 @@ def analyser(ventes, aujourd=None, jours=JOURS, respirer=None):
         dit = m.group(1) if m else None
         pq = [] if dit else None
         r = classer(titre, joueur, pq)
-        if dit:
+        if dit and not r and pq and pq[0] == "sorte pas reconnue":
+            e = _etiquette(titre, joueur)
+            if e:
+                etiquettes.append(e + (le, float(prix)))
+        if dit and not r and joueur and not _nomme(titre, joueur):
+            couv[dit]["autre_joueur"] += 1
+        elif dit:
             cv = couv[dit]
             cv["lues"] += 1
             if r and r[1] == dit:
@@ -202,6 +273,12 @@ def analyser(ventes, aujourd=None, jours=JOURS, respirer=None):
                 if raison == "sorte pas reconnue" and dit == "10" and len(mots_inconnus) < 200000:
                     for duo in _duos(titre, joueur):
                         mots_inconnus[duo] = mots_inconnus.get(duo, 0) + 1
+                        if len(ex_duo) < 20000 or duo in ex_duo:
+                            e = ex_duo.setdefault(duo, [])
+                            if len(e) < N_EXEMPLES:
+                                e.append(str(titre)[:110])
+                elif raison == "lot ou autre carte" and dit == "10" and len(ex_lot) < 4 * N_EXEMPLES and i % 7 == 0:
+                    ex_lot.append(str(titre)[:110])
         if not r:
             continue
         rangees += 1
@@ -248,7 +325,49 @@ def analyser(ventes, aujourd=None, jours=JOURS, respirer=None):
                     continue                                  # plusieurs numeros existent : on ne sait pas laquelle
                 num = le_num
             verser(finales, (j, q, an, se, num), g)
+    # Les titres « etiquette » : rangees dans la Young Guns (ou sa parallele nommee : Canvas, Outburst...) du MEME joueur, de la
+    # MEME saison et du MEME numero, si cette carte existe deja par ses ventes normales (NUM_MIN ventes qui disent le numero,
+    # NUM_NOTE_MIN de la meme note) et si le prix leur ressemble. Une carte de base (« 2024 UD #411 ») ou une autre serie
+    # (« 2024 UD #743 ») n'a pas de Young Guns a ce numero : elle reste dehors. Jamais pour une raw.
+    par_num = {}
+    for (j, q, an, se, num), g in finales.items():
+        if se is None and num and an is not None:
+            par_num.setdefault((j, an, num), []).append(q)
+    n_etiq = {"10": 0, "9": 0}
+    pas_rangees = {"pas de Young Guns a ce numero": 0, "carte trop peu vendue": 0, "prix trop different": 0}
+    ajouts = {}
+    for j, an, num, note, par, le, prix in etiquettes:
+        veut = {"young", "guns"} | set(par)
+        qs = [q for q in par_num.get((j, an, num), ()) if set(q.split()) - set(j.split()) == veut]
+        if len(qs) != 1:
+            pas_rangees["pas de Young Guns a ce numero"] += 1
+            continue
+        cle = (j, qs[0], an, None, num)
+        normales = [p for _, p in finales[cle][note]]
+        if nb(cartes.get(cle) or vide()) < NUM_MIN or len(normales) < NUM_NOTE_MIN:
+            pas_rangees["carte trop peu vendue"] += 1
+            continue
+        med = statistics.median(normales)
+        if not (NUM_PRIX[0] * med <= prix <= NUM_PRIX[1] * med):
+            pas_rangees["prix trop different"] += 1
+            continue
+        ajouts.setdefault(cle, {"10": [], "9": []})[note].append((le, prix))
+        n_etiq[note] += 1
+    for cle, g in ajouts.items():
+        for note in ("10", "9"):
+            finales[cle][note] = finales[cle][note] + g[note]
+    couv["etiquettes"] = {"vues": len(etiquettes), "rangees": n_etiq["10"] + n_etiq["9"], **pas_rangees}
+    for note in ("10", "9"):
+        couv[note]["par_numero"] = n_etiq[note]
+        couv[note]["rangees"] += n_etiq[note]
+        if n_etiq[note]:
+            reste = couv[note]["raisons"].get("sorte pas reconnue", 0) - n_etiq[note]
+            if reste > 0:
+                couv[note]["raisons"]["sorte pas reconnue"] = reste
+            else:
+                couv[note]["raisons"].pop("sorte pas reconnue", None)
     out, ecartees = [], {"peu de PSA 10": 0, "peu de raw": 0, "periode trop courte": 0, "prix trop etales": 0}
+    recent = (auj - timedelta(days=JOURS_RECENT)).isoformat() if jours > JOURS_RECENT else None
     fp = frais_psa()
     net = lambda p: p * (1 - FRAIS_EBAY) - FRAIS_FIXE
     for (j, q, an, se, num), g in finales.items():
@@ -261,16 +380,20 @@ def analyser(ventes, aujourd=None, jours=JOURS, respirer=None):
         if len(g["raw"]) < RAW_MIN:
             ecartees["peu de raw"] += 1
             continue
-        d0 = max(min(d for d, _ in g["raw"]), min(d for d, _ in g["10"]))            # la meme periode pour les deux
-        raw = [p for d, p in g["raw"] if d >= d0]
-        p10 = [p for d, p in g["10"] if d >= d0]
-        p9 = [p for d, p in g["9"] if d >= d0]
-        if len(raw) < RAW_MIN or len(p10) < P10_MIN:
-            ecartees["periode trop courte"] += 1
+        longue = _meme_periode(g, d_min)                      # la meme periode pour les deux
+        if longue[0] != "ok":
+            ecartees[longue[0]] += 1
             continue
-        if _etale(raw) > DISPERSION_MAX or _etale(p10) > DISPERSION_MAX:
-            ecartees["prix trop etales"] += 1
-            continue
+        _, d0, raw, p10, p9 = longue
+        fenetre = jours
+        # 26 nov 2026 (Mathieu : « le temps est important la-dedans » ; mesure : en 120 jours la PSA 10 de Misa est passee de 417 $ a
+        # 309 $, x4,39 -> x3,26) : les JOURS_RECENT derniers jours quand la carte s'y vend assez des deux cotes, sinon toute la
+        # fenetre. On ne passe PAS au recent si la carte y perd son prix PSA 9 (moins de P9_MIN ventes) : il fait le seuil.
+        if recent:
+            courte = _meme_periode(g, recent)
+            if courte[0] == "ok" and (len(courte[4]) >= P9_MIN or len(p9) < P9_MIN):
+                _, d0, raw, p10, p9 = courte
+                fenetre = JOURS_RECENT
         m_raw, m10 = statistics.median(raw), statistics.median(p10)
         m9 = statistics.median(p9) if len(p9) >= P9_MIN else None
         if m_raw <= 0:
@@ -287,12 +410,15 @@ def analyser(ventes, aujourd=None, jours=JOURS, respirer=None):
                     "raw": round(m_raw, 2), "psa10": round(m10, 2), "psa9": round(m9, 2) if m9 is not None else None,
                     "n_raw": len(raw), "n10": len(p10), "n9": len(p9), "rapport": round(m10 / m_raw, 2),
                     "reste10": round(r10, 2), "reste9": round(r9, 2) if r9 is not None else None, "seuil": seuil,
-                    "du": d0, "jours": (auj - datetime.strptime(d0, "%Y-%m-%d").date()).days})
+                    "du": d0, "jours": (auj - datetime.strptime(d0, "%Y-%m-%d").date()).days, "fenetre": fenetre})
     out.sort(key=lambda x: (-x["rendement"], -x["reste10"]))
-    for cv in couv.values():
-        cv["raisons"] = dict(sorted(cv["raisons"].items(), key=lambda x: -x[1]))
+    for n in ("10", "9"):
+        couv[n]["raisons"] = dict(sorted(couv[n]["raisons"].items(), key=lambda x: -x[1]))
     couv["sortes_inconnues"] = [[d, n] for d, n in sorted(mots_inconnus.items(), key=lambda x: (-x[1], x[0]))[:N_INCONNUES] if n >= 3]
-    return {"cartes": out[:N_LISTE], "n_cartes": len(out), "lues": lues, "rangees": rangees, "ecartees": ecartees, "couverture": couv,
+    couv["exemples"] = {d: ex_duo.get(d) or [] for d, _ in couv["sortes_inconnues"]}
+    couv["exemples_lot"] = ex_lot
+    return {"version": VERSION, "cartes": out[:N_LISTE], "n_cartes": len(out), "lues": lues, "rangees": rangees, "ecartees": ecartees, "couverture": couv,
+            "jours_recent": JOURS_RECENT if recent else None, "n_recent": sum(1 for x in out if recent and x["fenetre"] == JOURS_RECENT),
             "frais_psa": fp, "frais_ebay": FRAIS_EBAY, "jours": jours, "le": datetime.now().isoformat(timespec="seconds"),
             "regles": {"raw_min": RAW_MIN, "p10_min": P10_MIN, "p9_min": P9_MIN}}
 
@@ -375,15 +501,26 @@ def calculer():
     os.replace(ch + ".tmp", ch)
     print(f"A grader : {r['n_cartes']} cartes ({r['lues']} ventes lues, {r['rangees']} rangees, {r['secondes']} s)", flush=True)
     try:
+        if r.get("jours_recent"):
+            print(f"A grader : {r.get('n_recent') or 0} cartes mesurees sur les {r['jours_recent']} derniers jours, {r['n_cartes'] - (r.get('n_recent') or 0)} sur {r['jours']}", flush=True)
         cv = r.get("couverture") or {}
         for n in ("10", "9"):
             x = cv.get(n) or {}
             if x.get("lues"):
                 pq = ", ".join(f"{k} {v}" for k, v in list((x.get("raisons") or {}).items())[:6])
-                print(f"A grader : PSA {n} : {x['rangees']} ventes rangees sur {x['lues']} ({100 * x['rangees'] // x['lues']} %)" + (" ; le reste : " + pq if pq else ""), flush=True)
+                print(f"A grader : PSA {n} : {x['rangees']} ventes rangees sur {x['lues']} ({100 * x['rangees'] // x['lues']} %)" + (" ; le reste : " + pq if pq else "")
+                      + (f" ; dont {x['par_numero']} rangees par leur numero (titre « etiquette PSA »)" if x.get("par_numero") else "")
+                      + (f" ; hors mesure, {x['autre_joueur']} ventes d'un autre joueur" if x.get("autre_joueur") else ""), flush=True)
         if cv.get("sortes_inconnues"):
             print("A grader : mots des PSA 10 sans sorte reconnue : " + ", ".join(f"{d} {n}" for d, n in cv["sortes_inconnues"]), flush=True)
         print("A grader : cartes vues en PSA 10 hors de la liste : " + ", ".join(f"{k} {v}" for k, v in (r.get("ecartees") or {}).items()), flush=True)
+        if (cv.get("etiquettes") or {}).get("vues"):
+            print("A grader : titres « etiquette PSA » (sans le nom de la sorte) : " + ", ".join(f"{k} {v}" for k, v in cv["etiquettes"].items()), flush=True)
+        for d, ex in list((cv.get("exemples") or {}).items())[:N_INCONNUES]:
+            if ex:
+                print(f"A grader : ex. « {d} » : " + " | ".join(ex), flush=True)
+        if cv.get("exemples_lot"):
+            print("A grader : ex. « lot ou autre carte » : " + " | ".join(cv["exemples_lot"]), flush=True)
     except Exception as e:
         print("A grader (couverture) : " + repr(e)[:120], flush=True)
     return r
@@ -446,7 +583,10 @@ def refaire_si_besoin():
     # seule sorte dont on avait deja les raw) et serait restee telle quelle jusqu'a la fin. Pendant une collecte, elle suit :
     # refaite a chaque tour de la boucle (une fois l'heure), sans que personne clique.
     suit = mt is not None and b.get("statut") == "en_cours" and time.time() - mt >= REFAIRE_COLLECTE_MIN * 60
-    if mt is not None and time.time() - mt < REFAIRE_J * 86400 and not finie_apres and not suit:
+    # 26 nov 2026 : une regle de calcul change (les 60 derniers jours) : sans ca, la liste gardait l'ancienne mesure jusqu'a la
+    # semaine suivante. Une liste faite par une autre VERSION est refaite au premier tour de la boucle, une seule fois.
+    vieille_regle = mt is not None and lire().get("version") != VERSION
+    if mt is not None and time.time() - mt < REFAIRE_J * 86400 and not finie_apres and not suit and not vieille_regle:
         return None
     return lancer()
 
@@ -455,7 +595,7 @@ def top_tendances():
     """Pour l'onglet « A grader » de Trending (ADMIN seulement pour l'instant : la liste porte des prix) : les N_TOP premieres."""
     v = lire()
     return {"cartes": (v.get("cartes") or [])[:N_TOP], "n": v.get("n_cartes") or 0, "le": v.get("le"), "jours": v.get("jours") or JOURS,
-            "frais_psa": v.get("frais_psa") or frais_psa(), "semaine": REFAIRE_J}
+            "jours_recent": v.get("jours_recent"), "frais_psa": v.get("frais_psa") or frais_psa(), "semaine": REFAIRE_J}
 
 
 def page():
@@ -464,4 +604,5 @@ def page():
     return {"ok": True, "en_cours": ETAT["en_cours"], "texte": ETAT["texte"], "cartes": v.get("cartes") or [], "n_cartes": v.get("n_cartes") or 0,
             "lues": v.get("lues"), "rangees": v.get("rangees"), "ecartees": v.get("ecartees") or {}, "le": v.get("le"),
             "frais_psa": v.get("frais_psa") or frais_psa(), "frais_ebay": FRAIS_EBAY, "jours": v.get("jours") or JOURS,
+            "jours_recent": v.get("jours_recent"), "n_recent": v.get("n_recent"),
             "regles": v.get("regles") or {"raw_min": RAW_MIN, "p10_min": P10_MIN, "p9_min": P9_MIN}}
