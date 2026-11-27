@@ -48,7 +48,11 @@ if brotli:
     with server.app.test_request_context("/", headers={"Accept-Encoding": "gzip, deflate, br", "Host": "localhost"}):
         r = server._page_app()
     assert r.headers["Content-Encoding"] == "br"
-    assert brotli.decompress(r.get_data()) == open(os.path.join(server.DOSSIER_UI, "app.html"), "rb").read()
+    # 27 nov 2026 : la page servie = le fichier, avec son empreinte ecrite dans la balise de version (nouvelle version en ligne)
+    fichier = open(os.path.join(server.DOSSIER_UI, "app.html"), "rb").read()
+    v = r.headers["ETag"].strip('"').encode()
+    assert fichier.count(server.BALISE_VERSION) == 1
+    assert brotli.decompress(r.get_data()) == fichier.replace(server.BALISE_VERSION, b'<meta name="sc-v" content="' + v + b'">')
 with server.app.test_request_context("/", headers={"Accept-Encoding": "gzip", "Host": "localhost"}):
     r = server._page_app()
 assert r.headers["Content-Encoding"] == "gzip"

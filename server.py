@@ -75,19 +75,45 @@ app = Flask(__name__, static_folder=None)
 
 
 _APP_CACHE = {}
+_APP_V = {"t": 0.0, "v": ""}
+BALISE_VERSION = b'<meta name="sc-v" content="">'
 
 
-def _page_app():
-    """app.html lue une fois (relue si le fichier change) ; compressee par _compresser. no-cache + ETag :
-    le navigateur revalide en une requete et recoit 304 si rien n'a change."""
-    from flask import Response
+def _charger_app():
+    """La page de l'app en memoire, relue si le fichier change.
+    27 nov 2026 (Mathieu cliquait sur un bouton deja repare : son onglet, ouvert avant la mise en ligne, roulait encore
+    l'ancienne page) : l'empreinte de la page (celle de son ETag) est aussi ecrite DANS la page (<meta name="sc-v">) et
+    envoyee avec chaque reponse (en-tete X-App-V). Une page ouverte sait ainsi qu'une nouvelle version est en ligne et se
+    recharge seule, au premier moment sur (voir « nouvelle version » dans l'app)."""
     chemin = os.path.join(DOSSIER_UI, "app.html")
     mt = os.path.getmtime(chemin)
     if _APP_CACHE.get("mt") != mt:
         with open(chemin, "rb") as f:
             brut = f.read()
         import hashlib
-        _APP_CACHE.update(mt=mt, brut=brut, etag='"' + hashlib.md5(brut).hexdigest()[:16] + '"')
+        v = hashlib.md5(brut).hexdigest()[:16]
+        brut = brut.replace(BALISE_VERSION, b'<meta name="sc-v" content="' + v.encode() + b'">', 1)
+        _APP_CACHE.update(mt=mt, brut=brut, etag='"' + v + '"', v=v)
+    return _APP_CACHE
+
+
+def _version_app():
+    """L'empreinte de la page de l'app en ligne. Le fichier n'est regarde qu'une fois aux 5 secondes (la verification de
+    sante de Render ne doit rien couter) ; jamais d'erreur : sans page, pas d'en-tete."""
+    maint = time.monotonic()
+    if not _APP_V["v"] or maint - _APP_V["t"] > 5:
+        try:
+            _APP_V.update(t=maint, v=_charger_app().get("v") or "")
+        except Exception:
+            _APP_V.update(t=maint, v="")
+    return _APP_V["v"]
+
+
+def _page_app():
+    """app.html lue une fois (relue si le fichier change) ; compressee par _compresser. no-cache + ETag :
+    le navigateur revalide en une requete et recoit 304 si rien n'a change."""
+    from flask import Response
+    _charger_app()
     if request.headers.get("If-None-Match") == _APP_CACHE["etag"]:
         return Response(status=304, headers={"ETag": _APP_CACHE["etag"]})
     ae = request.headers.get("Accept-Encoding") or ""
@@ -242,6 +268,9 @@ def _entetes_securite(rep):
     h.setdefault("X-Frame-Options", "SAMEORIGIN")
     h.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
     h.setdefault("Permissions-Policy", "geolocation=(), microphone=(), payment=()")
+    v = _version_app()
+    if v:
+        h.setdefault("X-App-V", v)
     # 18 nov 2026 (Aikido « HSTS header is missing ») : aussi derriere le proxy de Render (X-Forwarded-Proto), 2 ans + sous-domaines
     if HEBERGE or request.is_secure or request.headers.get("X-Forwarded-Proto", "").split(",")[0].strip() == "https":
         h["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"

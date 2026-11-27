@@ -196,7 +196,7 @@ banque_psa._run_maj(statut="erreur", battement=time.time() - 3600)
 os.utime(a_grader._chemin(), (time.time() - 115 * 60,) * 2)
 assert a_grader.refaire_si_besoin() is None, "collecte arretee : retour au rythme de la semaine"
 # 26 nov, 16 h 36 : une regle de calcul change (les 60 derniers jours) : la liste faite avec l'ancienne regle est refaite seule, une fois
-assert a_grader.VERSION == 4 and a_grader.lire()["version"] == 4
+assert a_grader.VERSION == 5 and a_grader.lire()["version"] == 5          # 5 : la pastille « A grader » (27 nov)
 with open(a_grader._chemin(), encoding="utf-8") as f_:
     anc = json.load(f_)
 anc.pop("version")
@@ -205,7 +205,7 @@ with open(a_grader._chemin(), "w", encoding="utf-8") as f_:
 os.utime(a_grader._chemin(), (time.time() - 20 * 60,) * 2)
 assert a_grader.refaire_si_besoin() is not None, "une liste sans version (faite avant la regle) est refaite"
 attendre_calcul()
-assert a_grader.lire()["version"] == 4 and a_grader.refaire_si_besoin() is None, "une seule fois"
+assert a_grader.lire()["version"] == a_grader.VERSION and a_grader.refaire_si_besoin() is None, "une seule fois"
 banque_psa._run_maj(statut="terminee", battement=time.time() - 3600)
 
 # ---- 3b. la couverture est MESUREE : parmi les ventes dont le titre dit PSA 10 (ou PSA 9), combien sont rangees, et pourquoi pas

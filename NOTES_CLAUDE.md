@@ -1603,3 +1603,75 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   prochain calcul (aux 3 jours ; `calculer_si_besoin`) et la mémoire du serveur à ce moment-là.
 - `tests/test_tendance_titres.py`, `tests/test_tendance_sortes.py` (seuil de 3). Suite : 316 fichiers, 0 échec.
 - `tendance_sortes.FORMAT` 2 → 3 : le fichier d'avant est refait au premier tour après le déploiement (pas dans 3 jours).
+- **p118 poussé par lui le 27 nov à 9 h 55 (commit 662846c), en ligne à 9 h 57.** Premier calcul en ligne (journal, 10 h 07) :
+  « 987 cartes lues dans les titres, en plus des 5880 recherches (278 s) » ; « 490 cartes mesurees (21 en hausse, 70 en baisse
+  dans les listes), 24 sortes mesurees » (avant : 262 cartes, 6 sortes). Aucune alerte de mémoire dans le journal.
+- **Nouveau fichier de la collecte PSA (27 nov, 9 h 56, `psa_ventes_1.tsv.gz`)** : 125 230 ventes (avant : 31 485), 1 388
+  recherches, 461 joueurs, du 27 nov 2025 au 27 nov 2026 ; phase 1 : 862 recherches / 59 363 ventes ; raw : 526 / 65 867.
+  Liste « À grader » refaite ici (fichier + 12 mois de la copie des archives du 26) : **495 cartes** (avant 176) : 119 sur 60
+  jours, 91 sur 120, 285 sur 12 mois ; 119 fausses « raw » jetées ; PSA 10 rangées : 75 % (6 567 ventes d'une sorte pas reconnue) ;
+  dans les 200 premières : 91 Young Guns, 34 variantes, 75 autres sortes, 97 joueurs.
+- **Test sur l'historique, 3 dates (27 mars, 27 juin, 27 sept ; la liste faite avec les ventes d'avant, vérifiée sur les 60 jours
+  d'après)** : 188 cartes suivies ; écart médian obtenu / annoncé : 0 % ; à 20 % près : 131 (69 %) ; annoncées rentables encore
+  rentables : 180 / 182 ; les 20 premières : encore ×2 et plus 60 fois sur 60 ; corrélation des rangs 0,90 / 0,95 / 0,77.
+  Limite : seules les cartes assez vendues dans les 60 jours suivants sont suivies ; des cartes mesurées sur 12 mois, 23 seulement.
+
+## p119 — 27 nov 2026, matin : fiche d'annonce à l'ordi sans défiler, nouvelle version qui se recharge seule, barre des Tendances fixe
+- **Fiche d'une annonce à l'ordi (sa capture de Yurov, 1377 × 841 : « devrait pas avoir de scroll bar »)**. Avant : photo de 600 px
+  avec du vide dessous et tout le reste empilé à droite (306 px de trop dans le cas plein). Maintenant (≥ 1000 px de large) :
+  à gauche la photo, [autres annonces], le bouton eBay, Joueur / Vendeur, les liens ; à droite l'info. Gabarit : `.fb-dr` (info)
+  + nouveau `.fb-ac` (actions) ; au téléphone les deux sont `display:contents` (même ordre, mêmes espaces : mesuré). Les photos
+  des ventes sont le seul bloc qui cède (118 → 44 px) ; « Pourquoi SlabIQ dit ça » enlevé comme au téléphone ; « Grader ? » et
+  « Tu l'as achetée » sur une rangée ; les autres annonces s'ouvrent par-dessus la photo ; plus aucune barre (dernier recours :
+  la colonne de droite défile à la roulette). **Fiche Pro (publique)** : gardait sa forme de téléphone (560 px) et défilait de
+  81 à 176 px : deux colonnes aussi, mêmes blocs, aucun prix de plus. Mesuré (vrai navigateur, vrais clics) : 8 tailles de
+  1024 × 640 à 1920 × 1080, FR et EN, cas plein et simple : 0 px de trop (scripts `/home/claude/vue/fiche_ordi.py`,
+  `fiche_pro_ordi.py`, `fiche_tel.py`). Test : `tests/test_fiche_ordi.py`.
+- **Nouvelle version en ligne : la page ouverte se recharge SEULE** (son « il bug encore » du 26 : onglet ouvert avant la mise en
+  ligne). Serveur (`server.py`) : `_charger_app` écrit l'empreinte de la page (celle de l'ETag) dans `<meta name="sc-v">` et
+  `_version_app` la renvoie dans l'en-tête `X-App-V` de chaque réponse (fichier regardé une fois aux 5 s). App : `VER`, `verVue`
+  (chaque réponse de l'API), `verConfirmer` (15 s plus tard, sur `/sante`), `verMaj` (relit `/sante` juste avant, puis
+  `location.reload()`). Moments sûrs : changement d'écran, retour sur l'onglet, 30 s sans toucher. Jamais pendant : saisie, champ
+  rempli, fiche / feuille / fenêtre ouverte, #vendre, photo, vidéo, envoi en cours. Jamais en boucle : 1 fois aux 10 min, 2 fois
+  au plus par version, rien si sessionStorage est refusé. Après : toast « Nouvelle version installée », même écran, même hauteur.
+  Testé dans un vrai navigateur (`/home/claude/vue/version.py`) : saisie 45 s → rien ; repos → rechargée en 33 s ; 2e version tout
+  de suite → rien ; 10 min plus tard au changement d'écran → rechargée. Test : `tests/test_nouvelle_version.py`
+  (`test_revue_12nov.py` ajusté : la page servie = le fichier + la balise remplie). **Limite : les onglets ouverts AVANT p119
+  n'ont pas ce code : un dernier Ctrl+F5 (ou fermer / rouvrir l'app), puis plus jamais.**
+- **Tendances : la barre Players | Cards | To grade changeait de taille (ses 2 captures de 10 h 40)**. Cause : `ajusterTiq`
+  posait `tiq-serre` / `tiq-court` quand la page Joueurs débordait, et ces classes serraient aussi la barre (6 px), les pastilles
+  et le titre, dans cet onglet-là seulement. Règle : l'en-tête est identique dans les 3 onglets ; seules les listes cèdent.
+  `tiq-serre` ne touche plus que les rangées ; `tiq-court` n'existe plus ; l'en-tête serré des petits écrans (≤ 700 px de haut) est
+  une règle CSS, donc pareil dans les 3 onglets ; à ces tailles les pastilles « en feu… » sont sur une rangée qui glisse.
+  Mesuré (vrais clics, 6 écrans, FR / EN, `/home/claude/vue/barre.py`) : la barre ne bouge plus d'un pixel ; 375 × 667 tient dans
+  les 3 onglets (avant : 31 px de trop dans Joueurs). 320 × 568 déborde encore (déjà le cas). Test : `tests/test_tendances_barre.py`.
+- À savoir : sur son iPhone la page Joueurs se croit trop haute de ~21 px à cause de la réserve du bas (24 + 96 px pour une
+  barre de 78) : c'est ce qui cache la note et serre les rangées alors qu'il reste de la place. Pas touché (à voir avec lui).
+
+## p120 — 27 nov 2026, 11 h 40 : la pastille « À grader » (Radar, inventaire, Tendances, fiche)
+- Sa demande (11 h 24) : « il faut vraiment, mais vraiment que ce soit très, très simple pour le end user de comprendre rapidement
+  qu'est-ce qui est à grader ou non » ; « on peut même mettre cette pastille-là dans les cartes en inventaire, pas encore sur eBay,
+  pour que la personne décide si elle l'affiche non gradée ou l'envoie grader si elle est assez belle ». Son « Go » à 11 h 36.
+- **UNE pastille verte pleine « À grader » / « Grade it »** : elle y est ou elle n'y est pas. Un toucher = la notification iOS
+  avec une phrase (`agTexte`) : « Si elle revient PSA 10 : +X $ de profit. Même un 9 ne te fait pas perdre / Il suffit de 1 dix
+  sur N pour ne pas perdre. Seulement si elle est belle. » Le toucher n'ouvre pas la fiche.
+- **La règle (une seule, `a_grader.vaut_grader`)** : profit si 10 (`reste10`) ≥ `PASTILLE_PROFIT` 40 $ ET seuil ≤ `PASTILLE_SEUIL`
+  0,25 (au plus 1 dix sur 4 pour ne pas perdre, calculé avec la vraie PSA 9) ; PSA 9 pas mesurée : rendement ≥ 3. Liste du 27 nov :
+  207 cartes sur 495 (dans les 200 premières : 166). Aucune chance de 10 supposée.
+- `a_grader.py` VERSION 5 : chaque carte a `grader` ; `index` (toutes les cartes mesurées, compactes, `ok` = pastille) ; `n_grader`.
+  `mesure(titre, joueur)` / `pastille(titre, joueur)` : `classer` (raw seulement), même joueur + sorte + tirage, la saison et le
+  numéro doivent concorder ; sans saison : seulement si une seule carte ; cache des titres ; 0,5 ms par titre (6 µs ensuite).
+  Sur 6 000 vrais titres du fichier PSA : 582 pastilles, 0 sur un titre gradé. `pour_client(e, prix)`.
+- **Où** (ADMIN seulement pour l'instant : la phrase a un montant) : Radar = `deals_liste` renvoie `a_grader` {item_id: pastille} À CÔTÉ
+  des annonces (`_a_grader_de` ; jamais écrit dans les annonces partagées) → `S.agParId` → `pastillesCS` (en haut à gauche de la
+  photo) ; inventaire = `inventaire_liste` met `ag` sur les cartes non gradées, pas vendues, pas sur eBay, pas en envoi ni en
+  soumission → tuile slab (`isl-ag`, bas gauche de la photo) et vue slab (`sl-ag`) ; Tendances › To grade = seulement les cartes à
+  pastille (`top_tendances`), la note dit « N cartes à grader sur M mesurées ».
+- **La fiche « Grader ? » dit la même chose** : `carte_grader` consulte d'abord `a_grader.mesure` ; une carte mesurée → verdict
+  « oui » (pastille) ou « non » avec la raison (moins de 40 $, trop risqué, PSA 9 pas mesurée). Les cartes PAS mesurées gardent
+  l'ancien calcul (`grader.py`, chance de 10 estimée) : elles n'ont jamais de pastille ; leur « Oui » éventuel reste (à voir avec lui).
+- Captures (390 × 844 FR / EN, 1377 × 841) : `/home/claude/vue/pastille_ag.py` ; fiche : `fiche_grd.py`. Test :
+  `tests/test_pastille_grader.py` ; `test_a_grader.py` ajusté (version 5).
+- Prochaine étape demandée (« Go ») : le modèle de prédiction (prix d'une carte dans 30 / 60 jours), avec champion et aspirant
+  (l'aspirant roule en arrière, fige ses prédictions chaque jour, ne remplace le champion que s'il gagne sur les mêmes cartes ;
+  piège : une mauvaise version doit être refusée ; l'ancien champion reprend si le nouveau faiblit).

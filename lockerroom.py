@@ -4580,6 +4580,22 @@ class Api:
         for r in out:                            # 9 nov 2026 : preparee pour la vente, pas encore sur eBay
             r["a_finir"] = bool(r.get("a_finir_le") and r.get("statut") == "En stock" and not r.get("item_number")
                                 and (r.get("emplacement") or "") not in ("Collection", "eBay") and not r.get("envoi_json"))
+        # 27 nov 2026 (Mathieu : « on peut meme mettre cette pastille-la dans les cartes en inventaire, pas encore sur eBay, pour
+        # que la personne decide si elle l'affiche non gradee ou l'envoie grader si elle est assez belle ») : la pastille
+        # « A grader » sur une carte NON gradee, pas vendue, pas sur eBay et pas deja en envoi. Admin seulement pour l'instant.
+        try:
+            if self._est_admin():
+                import a_grader
+                for r in out:
+                    if (r.get("statut") in ("Vendue", "Listée") or r.get("item_number") or str(r.get("grade") or "").strip() or r.get("envoi_json") or r.get("soumission_id")
+                            or (r.get("sport") or "hockey") != "hockey"):
+                        continue
+                    t = r.get("titre") or " ".join(str(r.get(k) or "") for k in ("annee", "marque", "set_nom", "joueur", "parallele", "numero")).strip()
+                    e = a_grader.pastille(t, r.get("joueur"))
+                    if e:
+                        r["ag"] = a_grader.pour_client(e, prix=True)
+        except Exception as e:
+            print("A grader (inventaire) : " + repr(e)[:160], flush=True)
         # 16 nov 2026 (le moment de VENDRE, mesure sur la banque YG : une Young Guns sortie depuis moins de 60 jours valait
         # 35 % de moins 2 mois plus tard, 97 % du temps, sur les deux periodes testees) : une carte d'un produit tout neuf,
         # pas vendue et pas en collection -> « Vends tot » (le reste du temps, rien : la flambee seule n'est pas un signal sur)
@@ -12541,6 +12557,28 @@ class Api:
             out.append(x)
         return out
 
+    def _a_grader_de(self, annonces, cle="item_id", titre=lambda x: x.get("titre")):
+        """27 nov 2026 (Mathieu : « une pastille dans Radar [...] tres, tres simple pour le end user de comprendre rapidement
+        qu'est-ce qui est a grader ou non ») : {identifiant: la pastille « A grader »} pour les cartes NON gradees de la liste
+        (a_grader.pastille : meme joueur, meme sorte, meme saison). ADMIN seulement pour l'instant (la pastille de l'admin porte
+        des prix) ; envoyee A COTE des annonces, jamais ecrite dedans (elles sont partagees entre les comptes)."""
+        try:
+            if not self._est_admin():
+                return {}
+            import a_grader
+            o = {}
+            for x in annonces or []:
+                k = x.get(cle)
+                if k is None or str(k) in o:
+                    continue
+                e = a_grader.pastille(titre(x), x.get("joueur"))
+                if e:
+                    o[str(k)] = a_grader.pour_client(e, prix=True)
+            return o
+        except Exception as e:
+            print("A grader (pastille) : " + repr(e)[:160], flush=True)
+            return {}
+
     def deals_liste(self, f=None):
         def _ts(v):
             try:
@@ -12825,7 +12863,7 @@ class Api:
         # 31 oct 2026 (Mathieu : « les deals n'apparaissent pas au fur et a mesure, ca reste a 35 ») : un encan d'un gros vendeur
         # qui vient de recevoir sa valeur et qui est a 70 % ou moins de celle-ci est un deal : il compte dans le nombre
         n_su = sum(1 for x in suivis if x.get("valeur") and (x.get("total") or 0) <= _dl.prix_max(x["valeur"], taxe=_dl.taxe_de(x, valeur=x["valeur"])))
-        return self._pastilles_radar({"ok": True, "deals": lst[:240], "n": n + n_su, "n_encans_valorises": n_su, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
+        return self._pastilles_radar({"ok": True, "deals": lst[:240], "a_grader": self._a_grader_de([*lst[:240], *suivis, *pres]), "n": n + n_su, "n_encans_valorises": n_su, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
                 "suivis": suivis,
                 "pres": pres, "secours": secours, "secours_le": (dd.get("secours") or {}).get("le") if secours else None,
                 "sports": par_sport, "pays_dispo": par_pays, "maj": dd.get("maj"), "ebay": ebay_compte.statut().get("cles_ok"),
@@ -13617,6 +13655,17 @@ class Api:
             return {"ok": False, "raison": "gradee"}
         if not comps_permis(self):
             return {"ok": False, "raison": "comps"}
+        # 27 nov 2026 (la pastille « A grader ») : une carte MESUREE par la liste (raw, PSA 10 et PSA 9 de la meme carte, ventes
+        # reelles) recoit la MEME reponse que sa pastille : jamais « A grader » sur la tuile et « Non » dans la fiche
+        try:
+            import a_grader
+            e = a_grader.mesure(titre)
+            if e:
+                return {"ok": True, "source": "liste", "verdict": "oui" if e.get("ok") else "non", "gain": e.get("g10"), "psa10": e.get("p10"),
+                        "psa9": e.get("p9"), "brute": e.get("raw"), "seuil_10": e.get("s"), "chance_10": None, "rendement": e.get("r"),
+                        "frais": a_grader.frais_psa(), "jours": e.get("jours"), "profit_min": a_grader.PASTILLE_PROFIT, "seuil_max": a_grader.PASTILLE_SEUIL}
+        except Exception as ex:
+            print("A grader (fiche) : " + repr(ex)[:160], flush=True)
         try:
             g = vendues.par_gradation(titre, requete=False, fond=False, force=True)
         except Exception as e:

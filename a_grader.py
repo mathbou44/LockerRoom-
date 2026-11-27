@@ -50,7 +50,7 @@ JOURS = 365                          # 26 nov, 18 h 50 (Mathieu : « besoin de p
 RAW_MIN = 5
 P10_MIN = 5                          # 4 -> 5 des le premier essai : a 4 ventes, une PSA 10 d'une autre parallele suffit a fausser la mediane
 P9_MIN = 3
-VERSION = 4                          # 2 = la regle des 60 derniers jours (26 nov) ; 3 = les titres ecrits comme l'etiquette PSA ; 4 = 12 mois, les fausses raw jetees ;
+VERSION = 5                          # 2 = la regle des 60 derniers jours (26 nov) ; 3 = les titres ecrits comme l'etiquette PSA ; 4 = 12 mois, les fausses raw jetees ; 5 = la pastille « A grader » (27 nov) ;
                                      # une liste d'une autre version est refaite seule
 NUM_MIN = 5                          # titre « etiquette » : la carte doit deja avoir 5 ventes qui disent ce numero...
 NUM_NOTE_MIN = 3                     # ... dont 3 de la meme note, et le prix doit etre de 0,4 a 2,5 fois leur mediane
@@ -69,6 +69,38 @@ DISPERSION_MAX = 3.0
 FRAIS_EBAY = 0.1325                  # la revente sur eBay (comme grader.calculer)
 FRAIS_FIXE = 0.40
 N_LISTE = 200
+
+# 27 nov 2026, 11 h 24 (Mathieu : « dans notre tableau trend ou si on a une pastille dans Radar, il faut vraiment, mais vraiment que ce
+# soit tres, tres simple pour le end user de comprendre rapidement qu'est-ce qui est a grader ou non. On peut meme mettre cette
+# pastille-la dans les cartes en inventaire, pas encore sur eBay, pour que la personne decide si elle l'affiche non gradee ou
+# l'envoie grader si elle est assez belle »). UNE pastille, « A grader » : elle y est ou elle n'y est pas.
+# La regle (une seule, la meme partout ; mesuree sur la liste du 27 nov : 207 cartes sur 495) :
+#   - si elle revient PSA 10, il reste au moins PASTILLE_PROFIT $ une fois tout paye (la carte, PSA, eBay) ;
+#   - ET le risque est petit : il suffit d'au plus 1 dix sur 4 pour ne pas perdre (le seuil, calcule avec le vrai prix de la PSA 9) ;
+#   - la PSA 9 pas mesuree (trop peu de ventes) : seulement si un 10 rapporte au moins PASTILLE_SANS9 fois la mise.
+# Toujours aucune chance de 10 supposee : le seuil dit ce qu'il FAUT, pas ce qui arrivera.
+PASTILLE_SEUIL = 0.25
+PASTILLE_PROFIT = 40.0
+PASTILLE_SANS9 = 3.0
+
+
+def vaut_grader(x):
+    """Une carte mesuree de la liste -> True si elle porte la pastille « A grader »."""
+    try:
+        if float(x.get("reste10") or 0) < PASTILLE_PROFIT:
+            return False
+        if x.get("seuil") is not None:
+            return float(x["seuil"]) <= PASTILLE_SEUIL
+        return x.get("psa9") is None and float(x.get("rendement") or 0) >= PASTILLE_SANS9
+    except (TypeError, ValueError):
+        return False
+
+
+def _compact(x):
+    """Ce que la pastille garde d'une carte (pour la retrouver par un titre, et l'expliquer en une ligne)."""
+    return {"j": x.get("cle_joueur"), "q": x.get("q"), "an": x.get("annee"), "se": x.get("serie"), "num": x.get("num"), "joueur": x.get("joueur"), "nom": x.get("nom"),
+            "r": x.get("rendement"), "s": x.get("seuil"), "raw": x.get("raw"), "p10": x.get("psa10"), "p9": x.get("psa9"), "g10": x.get("reste10"), "g9": x.get("reste9"),
+            "jours": x.get("jours"), "ok": bool(x.get("grader") if "grader" in x else vaut_grader(x))}
 
 # une carte gradee que le decodeur laisse sans note (PSA 8 et moins, une compagnie rare) : jamais comptee comme une raw
 _RE_GRADEE = re.compile(r"\b(psa|bgs|bvg|sgc|cgc|csg|tag|beckett|ksa|hga|gma|mnt|isa|aca|bccg|ags|rcg)\s*\d|\b(graded|slab|slabbed|gradee?)\b", re.I)
@@ -434,12 +466,14 @@ def analyser(ventes, aujourd=None, jours=JOURS, respirer=None):
                     "reste10": round(r10, 2), "reste9": round(r9, 2) if r9 is not None else None, "seuil": seuil,
                     "du": d0, "jours": (auj - datetime.strptime(d0, "%Y-%m-%d").date()).days, "fenetre": fenetre})
     out.sort(key=lambda x: (-x["rendement"], -x["reste10"]))
+    for x in out:
+        x["grader"] = vaut_grader(x)
     for n in ("10", "9"):
         couv[n]["raisons"] = dict(sorted(couv[n]["raisons"].items(), key=lambda x: -x[1]))
     couv["sortes_inconnues"] = [[d, n] for d, n in sorted(mots_inconnus.items(), key=lambda x: (-x[1], x[0]))[:N_INCONNUES] if n >= 3]
     couv["exemples"] = {d: ex_duo.get(d) or [] for d, _ in couv["sortes_inconnues"]}
     couv["exemples_lot"] = ex_lot
-    return {"version": VERSION, "cartes": out[:N_LISTE], "n_cartes": len(out), "lues": lues, "rangees": rangees, "ecartees": ecartees, "raw_gradees": raw_gradees, "couverture": couv,
+    return {"version": VERSION, "cartes": out[:N_LISTE], "n_cartes": len(out), "index": [_compact(x) for x in out[:5000]], "n_grader": sum(1 for x in out if x["grader"]), "lues": lues, "rangees": rangees, "ecartees": ecartees, "raw_gradees": raw_gradees, "couverture": couv,
             "jours_recent": JOURS_RECENT if jours > JOURS_RECENT else None,
             "n_recent": sum(1 for x in out if jours > JOURS_RECENT and x["fenetre"] == JOURS_RECENT),
             "fenetres": [f for f in FENETRES if f < jours] + [jours], "par_fenetre": {str(f): sum(1 for x in out if x["fenetre"] == f) for f in sorted({x["fenetre"] for x in out})},
@@ -621,8 +655,86 @@ def refaire_si_besoin():
 def top_tendances():
     """Pour l'onglet « A grader » de Trending (ADMIN seulement pour l'instant : la liste porte des prix) : les N_TOP premieres."""
     v = lire()
-    return {"cartes": (v.get("cartes") or [])[:N_TOP], "n": v.get("n_cartes") or 0, "le": v.get("le"), "jours": v.get("jours") or JOURS,
+    # 27 nov 2026 : l'onglet ne montre plus que les cartes qui portent la pastille (avant : les 100 meilleurs rendements, dont des
+    # cartes ou il faut beaucoup de 10 pour ne pas perdre). Une liste d'avant la pastille : la regle est appliquee a la lecture.
+    bonnes = [x for x in (v.get("cartes") or []) if (x.get("grader") if "grader" in x else vaut_grader(x))]
+    return {"cartes": bonnes[:N_TOP], "n": v.get("n_cartes") or 0, "n_grader": v.get("n_grader") if v.get("n_grader") is not None else len(bonnes), "le": v.get("le"), "jours": v.get("jours") or JOURS,
             "jours_recent": v.get("jours_recent"), "frais_psa": v.get("frais_psa") or frais_psa(), "semaine": REFAIRE_J}
+
+
+_IDX = {"mtime": None, "d": None, "joueurs": (), "titres": {}}
+
+
+def _index():
+    """Les cartes qui portent la pastille, rangees par (joueur, recherche, /N) ; refait quand la liste change."""
+    v = lire()
+    with _verrou:
+        mt = _MEM["mtime"]
+        if _IDX["d"] is not None and _IDX["mtime"] == mt:
+            return _IDX["d"]
+    L = v.get("index")
+    if L is None:                                             # une liste d'avant la pastille : ses 200 premieres cartes
+        L = [_compact(x) for x in (v.get("cartes") or [])]
+    d = {}
+    for e in L:
+        if e.get("j") and e.get("q"):
+            d.setdefault((e["j"], e["q"], e.get("se")), []).append(e)
+    with _verrou:
+        _IDX.update(mtime=mt, d=d, joueurs=tuple(sorted({k[0] for k in d})), titres={})
+    return d
+
+
+def pastille(titre, joueur=None):
+    """La carte de la liste qui porte la pastille « A grader » (voir mesure), ou None."""
+    e = mesure(titre, joueur)
+    return e if e and e.get("ok", True) else None
+
+
+def mesure(titre, joueur=None):
+    """Le titre d'une carte NON gradee (une annonce du Radar, une carte de l'inventaire) -> la carte MESUREE de la liste
+    (qu'elle porte la pastille ou non : e["ok"]), ou None. Jamais au hasard : il faut le meme joueur, la meme sorte, le meme tirage ; la saison et le
+    numero du titre doivent concorder ; un titre sans saison ne passe que si le joueur n'a qu'UNE carte de cette sorte."""
+    t = re.sub(r"\s+", " ", str(titre or "")).strip()
+    if len(t) < 8:
+        return None
+    d = _index()
+    if not d:
+        return None
+    cle = (t, str(joueur or ""))
+    with _verrou:
+        if cle in _IDX["titres"]:
+            return _IDX["titres"][cle]
+    r = None
+    bas = (t + " " + str(joueur or "")).lower()
+    if any(j.split()[-1] in bas for j in _IDX["joueurs"]):   # vite : le nom de famille d'un joueur de la liste est la
+        try:
+            c = classer(t, joueur)
+        except Exception:
+            c = None
+        if c and c[1] == "raw":
+            j, q, an, se, num = c[0]
+            L = d.get((j, q, se)) or []
+            if an is not None:
+                L = [e for e in L if e.get("an") == an]
+            if num is not None:
+                L = [e for e in L if e.get("num") in (None, num)]
+            if len(L) == 1:
+                r = L[0]
+    with _verrou:
+        if len(_IDX["titres"]) > 30000:
+            _IDX["titres"].clear()
+        _IDX["titres"][cle] = r
+    return r
+
+
+def pour_client(e, prix=False):
+    """Ce que l'app recoit pour une pastille : le rendement et le seuil ; les prix seulement pour l'admin (regle des comps)."""
+    if not e:
+        return None
+    o = {"r": e.get("r"), "s": e.get("s"), "jours": e.get("jours"), "nom": e.get("nom"), "joueur": e.get("joueur"), "an": e.get("an")}
+    if prix:
+        o.update(raw=e.get("raw"), p10=e.get("p10"), p9=e.get("p9"), g10=e.get("g10"))
+    return o
 
 
 def page():

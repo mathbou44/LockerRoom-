@@ -68,7 +68,7 @@ app = open(os.path.join(ICI, "source", "src_app.html"), encoding="utf-8").read()
 assert app.count("blesse: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], absent: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge']") >= 4
 assert "blesse: 'alerte', absent: 'alerte'" in app and "croix: '" in app
 assert "function notifPastille(" in app and "tt('Mauvaise nouvelle · Blessé', 'Bad news · Injured')" in app and "tt('Mauvaise nouvelle · Absent', 'Bad news · Out')" in app
-assert 'data-np="${esc(t1k)}"' in app and "[data-np], .w-go" in app and "backdrop-filter:blur(34px)" in app
+assert 'data-np="${esc(t1k)}"' in app and ("[data-np], .w-go" in app or "[data-np], [data-agp], .w-go" in app) and "backdrop-filter:blur(34px)" in app
 assert "ouvrirFeuille(`<div class=\"cs-f\">" not in app, "Cle, Culte et chance de series passent par la meme notification"
 # Meme jour (Mathieu : « pourquoi on n'a pas capte Bedard ? On doit TOUS les capter ») : les matchs. Un patineur de l'alignement
 # qui jouait regulierement et qui a rate ses 2 derniers matchs est « absent », sans aucune manchette

@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SlabCoach">
 <meta name="theme-color" content="#0B0B0E">
+<meta name="sc-v" content="">
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2">
 <link rel="icon" href="/favicon.ico?v=2" sizes="any">
@@ -5267,7 +5268,7 @@ html.tel-large .ecran.acc.acc-ft-mode > .acc-news2{order:9}
 /* 18 nov 2026 (Mathieu : « revoir le design/layout, c'est vraiment pas beau et on scroll encore ») : a l'ordi, DEUX colonnes
    seulement : la photo a gauche ; a droite le nom, puis la mise / mise max / profit en UNE rangee de 3 tuiles basses (plus
    de grande colonne vide au milieu), puis SlabIQ, les ventes en petites vignettes, le bouton. Tout tient dans la fenetre. */
-.fb-dr{display:contents}
+.fb-dr, .fb-ac{display:contents}
 .ex-haut, .ex-bas{display:contents}
 .ex-k-d{display:none}
 /* 20 nov 2026 (Mathieu : « revoir ce layout, aucun espace ne doit etre inutilise », « pense comme Apple ») : Entrainer SlabIQ
@@ -5694,22 +5695,91 @@ input[type=number]{-moz-appearance:textfield; appearance:textfield}
 .pro-plan .pp-n i{font-style:normal; font-size:12px; padding:2px 7px; border-radius:99px; background:var(--or); color:#14131A; letter-spacing:.04em}
 .pro-plan b{font:800 24px var(--f-cond, inherit)} .pro-plan small{font-size:13px; color:var(--doux)}
 @media (max-width:999px){ .fen.fa.fb .fb-k{white-space:nowrap; font-size:clamp(12px, 3.7vw, 18px); letter-spacing:.08em} }
+/* 27 nov 2026 (Mathieu, capture de la fiche de Yurov a l'ordi, 1377 x 841 : « devrait pas avoir de scroll bar » ; les tuiles
+   Joueur / Vendeur etaient coupees). Avant : la photo avait 600 px de haut avec du vide dessous, et TOUT le reste s'empilait a
+   droite (jusqu'a 300 px de trop). Maintenant : a gauche la photo, puis le bouton eBay, Joueur / Vendeur et les liens ; a
+   droite l'info. La colonne de droite ne depasse plus : quand la place manque, ce sont les photos des ventes qui rapetissent
+   (jamais le texte). « Pourquoi SlabIQ dit ca » est enleve comme au telephone (le verdict s'ouvre deja d'un clic) ; « Grader ? »
+   et « Tu l'as achetee » tiennent sur une rangee. Plus aucune barre de defilement ; en tout dernier recours (toute petite
+   fenetre et tous les blocs a la fois), la colonne de droite defile a la roulette, sans barre. */
 @media (min-width:1000px){
   .fen.fen.fen.fa.fb.fb-adm{width:min(1080px, 94vw) !important; display:grid !important; grid-template-columns:minmax(0,0.78fr) minmax(0,1.22fr);
-    grid-template-rows:auto auto 1fr; column-gap:22px !important; row-gap:12px !important; align-content:start; padding:22px !important;
-    max-height:calc(100dvh - 40px) !important; overflow-y:auto !important}
+    grid-template-rows:auto auto minmax(0,1fr) auto; column-gap:22px !important; row-gap:12px !important; align-content:start; padding:22px !important;
+    height:auto !important; max-height:calc(100dvh - 40px) !important; overflow:hidden auto !important; scrollbar-width:none}
+  .fen.fen.fen.fa.fb.fb-adm::-webkit-scrollbar, .fen.fen.fen.fa.fb.fb-adm > .fb-dr::-webkit-scrollbar{display:none}
   .fen.fen.fen.fa.fb.fb-adm > .fb-top{display:contents}
-  .fen.fen.fen.fa.fb.fb-adm .fb-ph{grid-column:1; grid-row:1 / span 3; align-self:start; height:min(600px, calc(100dvh - 84px)) !important; position:sticky; top:0}
+  .fen.fen.fen.fa.fb.fb-adm .fb-ph{grid-column:1; grid-row:1 / span 3; align-self:stretch; height:auto !important; min-height:min(520px, calc(100dvh - 340px)); contain:size; position:relative; top:auto}
   .fen.fen.fen.fa.fb.fb-adm > .fb-nom{grid-column:2; grid-row:1; min-width:0; padding-right:48px; margin:0}
   .fen.fen.fen.fa.fb.fb-adm .fb-col{grid-column:2; grid-row:2; grid-template-rows:none; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px; height:96px}
-  .fen.fen.fen.fa.fb.fb-adm > .fb-dr{grid-column:2; grid-row:3; min-width:0; display:flex; flex-direction:column; gap:10px}
-  .fen.fen.fen.fa.fb.fb-adm .fb-dr > *{margin-top:0; margin-bottom:0}
+  .fen.fen.fen.fa.fb.fb-adm > .fb-dr{grid-column:2; grid-row:3 / span 2; min-width:0; min-height:0; display:flex; flex-direction:column; gap:10px; overflow:hidden auto; scrollbar-width:none}
+  .fen.fen.fen.fa.fb.fb-adm > .fb-ac{grid-column:1; grid-row:4; min-width:0; display:flex; flex-direction:column; gap:10px}
+  .fen.fen.fen.fa.fb.fb-adm .fb-dr > *, .fen.fen.fen.fa.fb.fb-adm .fb-ac > *{margin-top:0; margin-bottom:0; flex-shrink:0}
   .fen.fen.fen.fa.fb.fb-adm .fb-t{padding:6px 8px; border-radius:16px}
   .fen.fen.fen.fa.fb.fb-adm .fb-k{font-size:13px; letter-spacing:.14em}
   .fen.fen.fen.fa.fb.fb-adm .fb-t b{font-size:36px}
   .fen.fen.fen.fa.fb.fb-adm .fb-t em{font-size:12.5px}
   .fen.fen.fen.fa.fb.fb-adm .fen-x{top:16px !important; right:16px !important}
-  .fen.fen.fen.fa.fb.fb-adm .fa-car .fv{width:92px} .fen.fen.fen.fa.fb.fb-adm .fa-car .fv-ph{height:118px}
+  .fen.fen.fen.fa.fb.fb-adm .fa-pq{display:none}
+  /* les ventes : le seul bloc qui cede de la place (ses photos : de 118 px a 44 px de haut) */
+  .fen.fen.fen.fa.fb.fb-adm .fb-dr > .fa-ventes{flex:0 1 auto; min-height:104px; display:flex; flex-direction:column}
+  .fen.fen.fen.fa.fb.fb-adm .fa-ventes > *{flex:none}
+  .fen.fen.fen.fa.fb.fb-adm .fa-ventes > .fa-car{flex:0 1 auto; min-height:0; align-items:stretch; overflow:auto hidden}
+  .fen.fen.fen.fa.fb.fb-adm .fa-car .fv{flex:0 0 92px; width:92px; min-height:0}
+  .fen.fen.fen.fa.fb.fb-adm .fa-car .fv > *{flex:none}
+  .fen.fen.fen.fa.fb.fb-adm .fa-car .fv-ph{flex:0 1 118px; height:auto; min-height:44px; aspect-ratio:auto}
+  /* « Grader ? » sur une rangee : le verdict, la phrase, le montant */
+  .fen.fen.fen.fa.fb.fb-adm .grd{display:flex; align-items:baseline; gap:10px; padding:10px 14px}
+  .fen.fen.fen.fa.fb.fb-adm .grd-h{display:contents}
+  .fen.fen.fen.fa.fb.fb-adm .grd p{order:2; flex:1; min-width:0; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--doux)}
+  .fen.fen.fen.fa.fb.fb-adm .grd-h em{order:3; margin-left:auto; flex:none}
+  /* « Tu l'as achetee » sur une rangee : le texte, puis le bouton a droite */
+  .fen.fen.fen.fa.fb.fb-adm .mien{flex-wrap:nowrap; align-items:center; padding:10px 12px}
+  .fen.fen.fen.fa.fb.fb-adm .mien-t{flex:1 1 auto}
+  .fen.fen.fen.fa.fb.fb-adm .mien .btn{flex:none; width:auto; margin:0; padding:0 16px}
+  /* les autres annonces de la carte : juste sous la photo, et la liste s'ouvre PAR-DESSUS la photo (la fiche ne grandit pas,
+     le bouton eBay reste visible) */
+  .fen.fen.fen.fa.fb.fb-adm .fb-ac .fb-aut{position:relative; order:-1}
+  .fen.fen.fen.fa.fb.fb-adm .fb-ac .fb-aut[open] .fb-aut-l{position:absolute; left:0; right:0; bottom:calc(100% + 6px); z-index:6; max-height:min(280px, 40vh); padding:8px;
+    border-radius:14px; background:var(--carte2); border:1px solid var(--ligne); box-shadow:0 12px 32px rgba(0,0,0,.5)}
+  .fen.fen.fen.fa.fb.fb-adm .fb-ac .fa-chips{margin:0; grid-template-columns:repeat(2, minmax(0,1fr))}
+  .fen.fen.fen.fa.fb.fb-adm .fb-ac .fa-chips > :only-child{grid-column:1 / -1}
+}
+/* la fiche Pro (publique) a l'ordi : elle gardait sa forme de telephone (560 px de large) et defilait des 841 px de haut
+   (81 px de trop, 176 sur un petit portable). Meme idee que la fiche admin : la photo a gauche sur toute la hauteur, tout le
+   reste a droite (le nom, les 3 tuiles sur une rangee, puis les blocs dans leur ordre). Aucun prix de plus : memes blocs. */
+@media (min-width:1000px){
+  html body .fen.fen.fen.fa.fa-pub.fb{width:min(980px, 94vw) !important; display:grid !important; grid-template-columns:minmax(0,0.8fr) minmax(0,1.2fr); grid-auto-rows:auto;
+    column-gap:22px !important; row-gap:0 !important; gap:0 22px !important; align-content:start; padding:22px !important; height:auto !important; max-height:calc(100dvh - 40px) !important;
+    overflow:hidden auto !important; scrollbar-width:none}
+  html body .fen.fen.fen.fa.fa-pub.fb::-webkit-scrollbar{display:none}
+  html body .fen.fen.fen.fa.fa-pub.fb > .fb-top{display:contents}
+  html body .fen.fen.fen.fa.fa-pub.fb .fb-ph{grid-column:1; grid-row:1 / span 30; align-self:stretch; height:auto !important; min-height:min(460px, calc(100dvh - 90px)); contain:size; flex:none !important}
+  html body .fen.fen.fen.fa.fa-pub.fb > *:not(.fb-top):not(.fen-x){grid-column:2; min-width:0; margin:10px 0 0 !important}
+  html body .fen.fen.fen.fa.fa-pub.fb > .fb-nom{grid-row:1; margin:0 !important; padding-right:48px}
+  html body .fen.fen.fen.fa.fa-pub.fb .fb-col{grid-column:2; grid-row:2; margin-top:12px; grid-template-rows:none; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px; height:104px}
+  html body .fen.fen.fen.fa.fa-pub.fb .fb-t{padding:6px 8px; border-radius:16px}
+  html body .fen.fen.fen.fa.fa-pub.fb .fb-k{font-size:13px; letter-spacing:.14em}
+  html body .fen.fen.fen.fa.fa-pub.fb .fb-t b{font-size:36px} html body .fen.fen.fen.fa.fa-pub.fb .fb-iq b{font-size:40px}
+  html body .fen.fen.fen.fa.fa-pub.fb .fb-t em{font-size:12.5px}
+  html body .fen.fen.fen.fen.fa.fa-pub.fb .fen-x{top:16px !important; right:16px !important}
+  html body .fen.fen.fen.fa.fa-pub.fb > .fa-sig-p{justify-self:start}
+  html body .fen.fen.fen.fa.fa-pub.fb > .fb-aut{position:relative}
+  html body .fen.fen.fen.fa.fa-pub.fb > .fb-aut[open] .fb-aut-l{position:absolute; left:0; right:0; bottom:calc(100% + 6px); z-index:6; max-height:min(280px, 40vh); padding:8px;
+    border-radius:14px; background:var(--carte2); border:1px solid var(--ligne); box-shadow:0 12px 32px rgba(0,0,0,.5)}
+}
+/* fenetre basse (portable 1366 x 768 et moins) : les memes blocs, plus serres */
+@media (min-width:1000px) and (max-height:800px){
+  .fen.fen.fen.fa.fb.fb-adm{row-gap:10px !important; padding:18px !important; max-height:calc(100dvh - 24px) !important}
+  .fen.fen.fen.fa.fb.fb-adm .fb-ph{min-height:min(520px, calc(100dvh - 310px))}
+  .fen.fen.fen.fa.fb.fb-adm > .fb-nom b{font-size:24px} .fen.fen.fen.fa.fb.fb-adm > .fb-nom span{-webkit-line-clamp:1; font-size:14px}
+  .fen.fen.fen.fa.fb.fb-adm .fb-col{height:80px} .fen.fen.fen.fa.fb.fb-adm .fb-t b{font-size:30px}
+  .fen.fen.fen.fa.fb.fb-adm > .fb-dr, .fen.fen.fen.fa.fb.fb-adm > .fb-ac{gap:8px}
+  .fen.fen.fen.fa.fb.fb-adm .fa-verdict{padding:8px 12px !important}
+  .fen.fen.fen.fa.fb.fb-adm .mien-t small{display:none}
+  html body .fen.fen.fen.fa.fa-pub.fb{padding:18px !important; max-height:calc(100dvh - 24px) !important}
+  html body .fen.fen.fen.fa.fa-pub.fb .fb-col{height:92px} html body .fen.fen.fen.fa.fa-pub.fb .fb-iq b{font-size:34px} html body .fen.fen.fen.fa.fa-pub.fb .fb-t b{font-size:32px}
+  .fen.fen.fen.fa.fb.fb-adm .fb-ac .fa-chip{padding:7px 10px}
+  .fen.fen.fen.fa.fb.fb-adm .fa-btns .btn{min-height:48px} .fen.fen.fen.fa.fb.fb-adm .fa-btns .sd-et{width:48px; height:48px}
 }
 .ceo-bz{display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:12px 16px; margin:0 0 10px; border-radius:16px; background:color-mix(in srgb, var(--acc) 12%, transparent); border:1px solid color-mix(in srgb, var(--acc) 40%, transparent)}
 .ceo-bz b{font-size:16px} .ceo-bz span{flex:1; min-width:200px; font-size:13.5px; color:var(--doux)} .ceo-bz .btn{width:auto; margin:0}
@@ -6954,6 +7024,8 @@ html body .sd-ph .sd-cs{position:absolute; left:6px; top:6px; z-index:3; display
 button.sd-b{cursor:pointer; margin:0; -webkit-appearance:none; appearance:none}
 .sd-b svg{flex:none; width:12px; height:12px; fill:none; stroke:currentColor; stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round}
 .sd-b > span{min-width:0; overflow:hidden; text-overflow:ellipsis}
+.sd-b.b-ag{color:#06210F; background:#30D158; border-color:transparent; -webkit-backdrop-filter:none; backdrop-filter:none; cursor:pointer; pointer-events:auto; box-shadow:0 1px 6px rgba(0,0,0,.45)}
+.sd-b.b-ag svg{stroke-width:2.4} .isl-ag{position:absolute; left:6px; bottom:6px; z-index:2; display:flex} .sl-ag{position:absolute; left:6px; top:6px; z-index:2; display:flex}
 .sd-b.b-vert{color:var(--vert)} .sd-b.b-rouge{color:var(--rouge)} .sd-b.b-or{color:#E8C26A} .sd-b.b-acc{color:var(--acc)} .sd-b.b-creux{color:#8EC9FF}
 .sd-b.b-cle, .sd-b.b-culte{border-color:transparent; background:linear-gradient(rgba(14,14,18,.9),rgba(14,14,18,.9)) padding-box, linear-gradient(120deg,#9FE6D2,#B79CF2,#F2B6D2,#E8C77A) border-box}
 .sd-b.b-cle{color:#E8C77A} .sd-b.b-cle svg{fill:currentColor; stroke-width:1.2} .sd-b.b-culte{color:#F4F2F8}
@@ -7019,11 +7091,24 @@ button.sd-b{cursor:pointer; margin:0; -webkit-appearance:none; appearance:none}
   .tiq-mixv .tiq-lm .tiq-m:nth-child(-n+3){border-top:0} .tiq-mixv .tiq-lm .tiq-m:nth-child(n+4){border-top:1px solid rgba(255,255,255,.06)}
   .tiq-s .tiq-mixv .tiq-pan .tiq-tous{display:inline-block} .tiq-mixv.tiq-peu .tiq-pf{display:none} }
 @media (max-width:1099px){ .tiq-mode3 button{padding-left:4px; padding-right:4px; font-size:14.5px} }
-.tiq-serre .tiq-ps{display:none} .tiq-serre .tiq-mode{margin-bottom:6px} .tiq-serre .tiq-mode button{padding-top:5px; padding-bottom:5px} .ecran.tiq.tiq-court .tiq-tf .tiq-t .sous{display:none} .ecran.tiq.tiq-court #tiq-z{margin-top:-16px} html body .tiq-serre .tiq-seg{margin-bottom:8px !important} .tiq-serre .tiq-lm .tiq-m{padding:8px 0}
+/* 27 nov 2026 (Mathieu, 2 captures au cell : « la barre change de grosseur quand tu passes de Players a Cards, ca shift ») :
+   quand la page Joueurs debordait, on serrait AUSSI la barre des onglets (6 px de moins) et les pastilles dessous, mais
+   seulement dans cet onglet-la : la barre changeait donc de taille d'un onglet a l'autre. Regle : tout ce qui est AU-DESSUS des
+   listes (titre, recherche, barre des onglets, pastilles) a la meme taille et la meme place dans les 3 onglets. Quand la
+   place manque, seules les listes cedent (des rangees en moins, plus serrees, la note). Les tout petits ecrans (700 px de
+   haut et moins : iPhone SE) ont l'en-tete serre, mais dans les 3 onglets pareil : c'est l'ecran qui decide, plus l'onglet. */
+.tiq-serre .tiq-ps{display:none} .tiq-serre .tiq-lm .tiq-m{padding:8px 0}
 .fso-2{color:var(--doux)}
 .tiq-vide{padding:14px 0} .tiq-ltt .tiq-m{padding:10px 0}
 @media (max-width:1099px){ .tiq-mode{display:flex; align-self:stretch; margin-bottom:10px} .tiq-mode button{flex:1; padding:8px 6px}
   html body .tiq-seg ~ .tiq-av[data-on="toutes"] > .tiq-pan.toutes{display:flex !important} }
+@media (max-width:1099px) and (max-height:700px){
+  .tiq-mode{margin-bottom:6px} .tiq-mode button{padding-top:5px; padding-bottom:5px} html body .tiq-seg{margin-bottom:8px !important}
+  .ecran.tiq .tiq-tf .tiq-t .sous{display:none} .ecran.tiq #tiq-z{margin-top:-16px}
+  /* les pastilles sous la liste (en feu, sortent du creux, recrues) : une seule rangee qui glisse, au lieu de 2 ou 3 rangees */
+  html body .tiq-s .tiq-kr2{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; margin-right:-16px; padding-right:16px} html body .tiq-s .tiq-kr2::-webkit-scrollbar{display:none}
+  html body .tiq-s .tiq-kr2 .tiq-kp{flex:none; white-space:nowrap}
+}
 .sd-b.big{height:30px; padding:0 14px 0 12px; font-size:14px; gap:6px} .sd-b.big svg{width:15px; height:15px}
 /* 21 nov 2026 (Mathieu : « le chiffre de notif est drolement place » ; « mettre identique a Apple ») : la pastille rouge
    d'Apple (rouge systeme, chiffre blanc, ronde), posee sur le coin en haut a droite de l'icone, jamais coupee */
@@ -7273,16 +7358,78 @@ function noterRecette(nom, corps){
   l.push([nom, corps]); if (l.length > 8) l.shift();
   try { localStorage.setItem('lr_recettes', JSON.stringify(RECETTES)); } catch (e) {}
 }
+// 27 nov 2026 (Mathieu, 21 h 24 : « il bug encore, je peux cliquer dessus 3095x et rien se passe » : le bouton etait repare et
+// en ligne depuis 30 minutes, mais son onglet, ouvert AVANT, roulait encore l'ancienne page). NOUVELLE VERSION EN LIGNE : la
+// page le sait et se recharge SEULE, sans rien demander (« je veux pas cliquer, tout doit se faire auto »).
+//  - le serveur ecrit l'empreinte de la page dans la page (<meta name="sc-v">) et la renvoie avec chaque reponse (X-App-V) ;
+//  - une empreinte differente est reverifiee 15 s plus tard (pendant une mise en ligne, l'ancien et le nouveau serveur
+//    repondent quelques secondes en meme temps), puis encore juste avant de recharger ;
+//  - le rechargement attend un moment SUR : en changeant d'ecran, au retour sur l'onglet, ou apres 30 s sans toucher a rien.
+//    Jamais pendant une saisie, une fiche ou une feuille ouverte, la prise de photo, une vente, une video, un envoi en cours ;
+//  - jamais en boucle : une fois aux 10 minutes au plus, 2 fois au plus pour la meme version, et rien si le telephone refuse
+//    de garder cette note (navigation privee).
+var VER = {moi: (document.querySelector('meta[name="sc-v"]') || {}).content || '', pret: '', t: 0, ecrit: 0, cache0: 0, part: false};
+function verVue(v){
+  if (!v) return; if (!VER.moi) { VER.moi = v; return; }
+  if (v === VER.moi) { VER.pret = ''; return; }
+  if (v !== VER.pret && !VER.t) VER.t = setTimeout(verConfirmer, 15000);
+}
+async function verLire(){ const r = await fetch('/sante', {cache: 'no-store'}); return r.ok ? (r.headers.get('X-App-V') || '') : ''; }
+async function verConfirmer(){
+  clearTimeout(VER.t); VER.t = 0;
+  try { const v = await verLire(); if (v) VER.pret = VER.moi && v !== VER.moi ? v : ''; } catch (e) {}
+  return VER.pret;
+}
+function verOccupe(){
+  const a = document.activeElement, ff = document.getElementById('fond-feuille');
+  if (VER.ecrit > 0 || document.body.classList.contains('fen-ouverte') || (ff && !ff.hidden) || /^#vendre/.test(location.hash)) return true;
+  if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true;
+  if (document.querySelector('#scan, .vd, video')) return true;
+  if ([...document.querySelectorAll('.fen')].some(e => e.offsetParent)) return true;
+  return [...document.querySelectorAll('input, textarea')].some(e => e.offsetParent && (e.type === 'file' ? e.files && e.files.length
+    : !/^(hidden|checkbox|radio|range|button|submit)$/.test(e.type) && e.value && e.value !== e.defaultValue));
+}
+async function verMaj(){
+  if (!VER.pret || VER.part || verOccupe()) return false;
+  let m = {}; try { m = JSON.parse(sessionStorage.getItem('sc-maj') || '{}') || {}; } catch (e) { return false; }
+  if (Date.now() - (m.t || 0) < 600000 || (m.v === VER.pret && (m.n || 0) >= 2)) return false;
+  VER.part = true;
+  try {
+    const v = await verLire();                                  // le serveur repond ET c'est toujours cette version : on y va
+    if (!v || v !== VER.pret || verOccupe()) { if (v === VER.moi) VER.pret = ''; return false; }
+    sessionStorage.setItem('sc-maj', JSON.stringify({t: Date.now(), v, n: (m.v === v ? m.n || 0 : 0) + 1, y: window.scrollY, h: location.hash}));
+    location.reload(); return true;
+  } catch (e) { return false; } finally { setTimeout(() => { VER.part = false; }, 4000); }
+}
+addEventListener('hashchange', () => { if (VER.pret) setTimeout(verMaj, 500); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { VER.cache0 = Date.now(); return; }
+  const parti = VER.cache0 && Date.now() - VER.cache0 > 60000; VER.cache0 = 0;
+  if (VER.pret) verMaj(); else if (parti && VER.moi) verConfirmer().then(() => verMaj());
+});
+setInterval(() => { if (VER.pret && !document.hidden && Date.now() - DERNIERE_ACTION > 30000) verMaj(); }, 10000);
+// juste apres un rechargement automatique : un mot, et la page revient ou on etait
+addEventListener('load', () => {
+  let m = null; try { m = JSON.parse(sessionStorage.getItem('sc-maj') || 'null'); } catch (e) {}
+  if (!m || m.dit || Date.now() - (m.t || 0) > 20000) return;
+  try { sessionStorage.setItem('sc-maj', JSON.stringify({...m, dit: 1})); } catch (e) {}
+  setTimeout(() => { try { toast(tt('Nouvelle version installée', 'New version installed')); } catch (e) {} }, 1200);
+  if (m.y > 0 && m.h === location.hash) [1200, 2600].forEach(d => setTimeout(() => { if (window.scrollY < 4 && document.documentElement.scrollHeight >= m.y + innerHeight) window.scrollTo(0, m.y); }, d));
+});
 async function appelServeur(nom, corps, essai2){
+  const ecrit_ = !(LECTURES.has(nom) || SANS_EFFET.has(nom)); if (ecrit_) VER.ecrit++;
+  try { return await appelServeur0(nom, corps, essai2); } finally { if (ecrit_) VER.ecrit--; }
+}
+async function appelServeur0(nom, corps, essai2){
   let r;
-  try { r = await fetch('/api/' + nom, {method:'POST', headers:{'Content-Type':'application/json'}, body:corps}); }
+  try { r = await fetch('/api/' + nom, {method:'POST', headers:{'Content-Type':'application/json'}, body:corps}); verVue(r.headers.get('X-App-V')); }
   catch (e) {
     // 28 oct 2026 (« Server unreachable » sur la valeur) : une lecture se refait seule une fois apres 2 s
-    if (!essai2 && (LECTURES.has(nom) || SANS_EFFET.has(nom))) { await new Promise(x => setTimeout(x, 2000)); return appelServeur(nom, corps, true); }
+    if (!essai2 && (LECTURES.has(nom) || SANS_EFFET.has(nom))) { await new Promise(x => setTimeout(x, 2000)); return appelServeur0(nom, corps, true); }
     throw Object.assign(new Error(tt('Serveur injoignable : vérifie ta connexion', 'Server unreachable: check your connection')), {reseau: true});
   }
   if (!essai2 && [502, 503, 504].includes(r.status) && (LECTURES.has(nom) || SANS_EFFET.has(nom))) {     // redemarrage (mise a jour)
-    await new Promise(x => setTimeout(x, 2500)); return appelServeur(nom, corps, true);
+    await new Promise(x => setTimeout(x, 2500)); return appelServeur0(nom, corps, true);
   }
   if (r.status === 401) { allerA('/connexion'); throw new Error(tt('Connexion requise', 'Sign-in required')); }
   if (!r.ok) { const e = await r.json().catch(() => ({erreur:r.statusText})); throw Object.assign(new Error(e.erreur || 'Erreur serveur'), {reseau: [502, 503, 504].includes(r.status)}); }
@@ -12384,7 +12531,7 @@ const IC_TROPH = '<svg viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H
 // celui ecrit Key, un par-dessus l'autre, comme des badges ») : UNE seule forme de badge sur la photo du slab (une icone au
 // trait + un mot, la meme hauteur, le meme fond), empiles en haut a gauche. La couleur dit le sens.
 // 25 nov 2026 (Mathieu, Bedard opere : « il devrait avoir le badge injured ») : croix = « Blessé » (l'etat dure tant qu'il est absent)
-const IC_BADGE = {croix: '<rect x="4.5" y="4.5" width="15" height="15" rx="4"/><path d="M12 8.5v7M8.5 12h7"/>', moins: '<circle cx="12" cy="12" r="8"/><path d="M8.5 12h7"/>', feu: '<path d="M12 3c.8 3.6 4.6 5.2 4.6 9.6a4.6 4.6 0 0 1-9.2 0c0-1.8.8-3.1 1.9-4.1.3 1.6 1.1 2.4 1.9 2.400C11.3 8.5 10.6 6 12 3z"/>',
+const IC_BADGE = {grade: '<rect x="6.5" y="3.5" width="11" height="17" rx="2.5"/><path d="M9.5 12.3l1.8 1.8 3.3-3.7"/>', croix: '<rect x="4.5" y="4.5" width="15" height="15" rx="4"/><path d="M12 8.5v7M8.5 12h7"/>', moins: '<circle cx="12" cy="12" r="8"/><path d="M8.5 12h7"/>', feu: '<path d="M12 3c.8 3.6 4.6 5.2 4.6 9.6a4.6 4.6 0 0 1-9.2 0c0-1.8.8-3.1 1.9-4.1.3 1.6 1.1 2.4 1.9 2.400C11.3 8.5 10.6 6 12 3z"/>',
   creux: '<path d="M3 7l6 6 4-4 8 8"/><path d="M21 12v5h-5"/>', hausse: '<path d="M3 17l6-6 4 4 8-8"/><path d="M21 12V7h-5"/>',
   buzz: '<path d="M13 3 5 13.5h6L10 21l8-10.500h-6z"/>', etoile: '<path d="M12 3.5l2.5 5.1 5.6.800-4 3.9 1 5.6-5.1-2.7-5 2.7.900-5.6-4-3.9 5.6-.800z"/>',
   echange: '<path d="M4 8h14l-3-3M20 16H6l3 3"/>', medaille: '<circle cx="12" cy="9" r="5"/><path d="M9 13.5 7.5 21l4.5-2.5 4.5 2.5-1.5-7.5"/>',
@@ -12447,9 +12594,32 @@ function feuilleSorte(t){ if (!t) return; const k = tdSens(t), UNE = t.niveau ==
 document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-td]'); if (!b) return;
   e.preventDefault(); e.stopPropagation(); vibrer(); feuilleSorte(TD[b.dataset.td]); }, true);
 const badgeSlab = (txt, ton, ic, attrs) => `<${attrs ? 'button' : 'span'} class="sd-b b-${esc(ton || '')}" ${attrs || ''}><svg viewBox="0 0 24 24" aria-hidden="true">${IC_BADGE[ic] || IC_BADGE.etoile}</svg><span>${esc(txt)}</span></${attrs ? 'button' : 'span'}>`;
+// 27 nov 2026, 11 h 24 (Mathieu : « dans notre tableau trend ou si on a une pastille dans Radar, il faut vraiment, mais vraiment
+// que ce soit très, très simple pour le end user de comprendre rapidement qu'est-ce qui est à grader ou non ; on peut même mettre
+// cette pastille-là dans les cartes en inventaire, pas encore sur eBay, pour que la personne décide si elle l'affiche non gradée
+// ou l'envoie grader si elle est assez belle »). UNE pastille verte pleine, « À grader » : elle y est ou elle n'y est pas. La même
+// au Radar, dans l'inventaire et dans les Tendances ; un toucher = une phrase. La règle est sur le serveur (a_grader.vaut_grader).
+// Admin seulement pour l'instant : sa phrase porte un montant (règle des comps).
+const agDe = (x) => (x && (x.ag || (S.agParId || {})[String(x.item_id)])) || null;
+const agBadge = (ag, cls) => ag ? `<span class="sd-b b-ag ${cls || ''}" data-agp="${esc(JSON.stringify(ag))}" role="button" tabindex="0" aria-label="${esc(tt('À grader : voir pourquoi', 'Grade it: see why'))}"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_BADGE.grade}</svg><span>${tt('À grader', 'Grade it')}</span></span>` : '';
+function agTexte(a){
+  const n = a.s > 0 ? Math.max(1, Math.floor(1 / a.s)) : 0, f = decFr((Math.round((a.r || 0) * 10) / 10).toFixed(1));
+  const gain = a.g10 != null ? tt(`Si elle revient PSA 10 : +${argent(a.g10, 0)} de profit.`, `If it grades PSA 10: +${argent(a.g10, 0)} profit.`)
+    : tt(`Si elle revient PSA 10 : ${f} fois ta mise.`, `If it grades PSA 10: ${f} times what you put in.`);
+  const risque = a.s === 0 ? tt('Même un 9 ne te fait pas perdre.', 'Even a 9 doesn’t lose money.')
+    : a.s != null ? tt(`Il suffit de 1 dix sur ${n} pour ne pas perdre.`, `1 ten out of ${n} is enough to break even.`)
+    : tt('Le prix de la PSA 9 n’est pas mesuré.', 'The PSA 9 price isn’t measured.');
+  return gain + ' ' + risque + ' ' + tt('Seulement si elle est belle.', 'Only if it’s clean.');
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest && e.target.closest('[data-agp]'); if (!b) return;
+  e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); vibrer();
+  let a = {}; try { a = JSON.parse(b.dataset.agp); } catch (er) {}
+  notifPastille({ic: 'grade', ton: 'vert', titre: tt('À grader', 'Worth grading'), qui: [a.joueur, a.nom].filter(Boolean).join(' · '), texte: agTexte(a)});
+}, true);
 function pastillesCS(x, est){
-  const c = x.culte, se = x.series, td = badgeTend(x); if (!c && !se && !td) return est && est.includes('sd-b') ? `<span class="sd-cs">${est}</span>` : est || '';
-  return `<span class="sd-cs">${est || ''}${td}${c ? badgeSlab(c.cle ? tt('Clé', 'Key') : tt('Culte', 'Iconic'), c.cle ? 'cle' : 'culte', c.cle ? 'etoile' : 'gemme', `data-cu="${esc(c.set)}" data-cu-cle="${c.cle ? 1 : ''}"`) : ''}${se ? badgeSlab(se.p + ' %', se.ton, 'trophee', `data-se="${esc(JSON.stringify(se))}"`) : ''}</span>`;
+  const c = x.culte, se = x.series, td = badgeTend(x), ag = agBadge(agDe(x)); if (!c && !se && !td && !ag) return est && est.includes('sd-b') ? `<span class="sd-cs">${est}</span>` : est || '';
+  return `<span class="sd-cs">${ag}${est || ''}${td}${c ? badgeSlab(c.cle ? tt('Clé', 'Key') : tt('Culte', 'Iconic'), c.cle ? 'cle' : 'culte', c.cle ? 'etoile' : 'gemme', `data-cu="${esc(c.set)}" data-cu-cle="${c.cle ? 1 : ''}"`) : ''}${se ? badgeSlab(se.p + ' %', se.ton, 'trophee', `data-se="${esc(JSON.stringify(se))}"`) : ''}</span>`;
 }
 // 25 nov 2026 (Mathieu : « quand tu cliques sur la pastille t'as l'explication ; inspire-toi d'Apple iOS pour le pop-up de la
 // notif ») : UNE seule fenetre pour toutes les pastilles d'une annonce : une notification a la iOS (verre depoli, l'icone a
@@ -12475,7 +12645,7 @@ function notifPastille(o){
   clearTimeout(_npT); _npT = setTimeout(fermerNotif, o.lien ? 10000 : 8000);
   return {maj: (x) => { if (n.isConnected) rendre({...o, ...x}); }};
 }
-document.addEventListener('pointerdown', (e) => { const n = $('#np'); if (n && !n.contains(e.target) && !(e.target.closest && e.target.closest('[data-np],[data-cu],[data-se]'))) fermerNotif(); }, true);
+document.addEventListener('pointerdown', (e) => { const n = $('#np'); if (n && !n.contains(e.target) && !(e.target.closest && e.target.closest('[data-np],[data-cu],[data-se],[data-agp]'))) fermerNotif(); }, true);
 // ce que veut dire chaque pastille : [titre, ton, icone, texte]. Des faits, jamais une promesse.
 const NP_TXT = () => ({
   blesse: [tt('Mauvaise nouvelle · Blessé', 'Bad news · Injured'), 'rouge', 'croix', tt('Il est blessé et ne joue pas en ce moment.', 'He is injured and not playing right now.')],
@@ -13290,7 +13460,7 @@ const attrsAnnonce = (x) => x && x.item_id ? `data-annonce="${esc(x.item_id)}" d
 document.addEventListener('click', (e) => {
   const a = e.target.closest('[data-annonce]'); if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
   if (a.dataset.glisse) { e.preventDefault(); e.stopPropagation(); return; }      // 31 oct : un glissement n'ouvre pas la fiche
-  if (e.target.closest('[data-masquer], [data-refus], [data-bonne], [data-comps], [data-pasdeal], [data-watch], [data-wmax], [data-wmiser], [data-sc], [data-cu], [data-se], [data-td], [data-np], .w-go, .x')) return;
+  if (e.target.closest('[data-masquer], [data-refus], [data-bonne], [data-comps], [data-pasdeal], [data-watch], [data-wmax], [data-wmiser], [data-sc], [data-cu], [data-se], [data-td], [data-np], [data-agp], .w-go, .x')) return;
   e.preventDefault(); e.stopPropagation();
   S.fenOrigine = a.getBoundingClientRect();          // 29 oct : la fiche s'ouvre depuis l'annonce touchee
   ouvrirAnnonce({item_id:a.dataset.annonce, titre:a.dataset.titre, photo:a.dataset.photo, total:nb(a.dataset.total), url:a.dataset.url, q:a.dataset.q || null});
@@ -13558,8 +13728,8 @@ async function ouvrirAnnonce(base){
         : d.chargement || d.ventes_attente ? barreProg(S.fenT0, 25, tt('Recherche des ventes réelles de cette carte…', 'Looking up real sales of this card…'))
         : d.valeur_chasseur ? `<div class="fa-vide">${tt('Se vend ', 'Sells for ')}<b>${argent(d.valeur_chasseur.valeur, 0)}</b> ${tt('d’après les ventes lues par le chasseur de deals', 'from the sales read by the deal hunter')}${d.valeur_chasseur.le ? ' (' + esc(ilYa(d.valeur_chasseur.le)) + ')' : ''}. ${tt('Les ventes en direct n’ont pas pu être lues.', 'Live sales could not be read.')} <button class="lien-t" id="fa-reessai">${tt('Réessayer', 'Retry')}</button></div>`
         : `<div class="fa-vide">${d.peu_de_ventes ? raisonSansValeur(d) : tt('Aucune vente de cette carte exacte trouvée.', 'No sale of this exact card found.')}</div>`}</div>
-      <div class="grd-z" data-grader="${esc(a.titre || base.titre || '')}"></div>
-      <div class="fa-btns"><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${encan ? tt('Miser sur eBay', 'Bid on eBay') : tt('Voir sur eBay', 'View on eBay')}</a>${boutonWatch({item_id: base.item_id})}</div>
+      <div class="grd-z" data-grader="${esc(a.titre || base.titre || '')}"></div></div>
+      <div class="fb-ac"><div class="fa-btns"><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${encan ? tt('Miser sur eBay', 'Bid on eBay') : tt('Voir sur eBay', 'View on eBay')}</a>${boutonWatch({item_id: base.item_id})}</div>
       ${blocAutres(base)}
       ${proChips(a)}
       <div class="fa-bas"><a href="#valeur/${encodeURIComponent(a.titre || base.titre || '')}" data-fermer>${tt('Toutes ses ventes ›', 'All its sales ›')}</a>
@@ -14448,6 +14618,7 @@ async function chargerDeals(frais){
     nbDealsGarde(nAff); radarListe([...(d.deals || []), ...SU].map(x => x.item_id)); }
   if (F.type === 'encan' || F.tri === 'fin') SU = [...SU].sort((a, b) => String(a.fin).localeCompare(String(b.fin)));
   S.dealsParId = Object.fromEntries([...(d.deals || []), ...P, ...SU].map(x => [String(x.item_id), x]));
+  S.agParId = d.a_grader || {};                      // 27 nov 2026 : les pastilles « À grader » (admin), à côté des annonces
   const L = d.deals || [], gain = L.filter(x => !x.encan).reduce((t, x) => t + Math.max(0, x.gain || 0), 0), encans = L.filter(x => x.encan).length;
   const sp = Object.entries(d.sports || {}).sort((a, b) => b[1] - a[1]);
   { const zp = $('#d-preuve'), pv_ = preuveDeals(d), g_ = d.diag || {};
@@ -15464,9 +15635,9 @@ async function vueTendancesIQ(arg){
     let vis = R.filter(x => x.offsetParent);
     while (deb() && vis.length > 3) { vis.pop().style.display = 'none'; }
     if (deb() && note) note.style.display = 'none';
-    // 25 nov 2026 : avec le choix Joueurs | Sortes, un petit ecran (iPhone SE) deborde encore : la phrase sous le titre part, puis une rangee
+    // 25 nov 2026 : un petit ecran deborde encore : les rangees se serrent, puis une rangee part. 27 nov : JAMAIS la barre des
+    // onglets ni l'en-tete (ils changeaient de taille d'un onglet a l'autre) : l'en-tete serre des petits ecrans est en CSS
     if (deb()) z.classList.add('tiq-serre');
-    if (deb() && ec_) ec_.classList.add('tiq-court');
     vis = R.filter(x => x.offsetParent);
     while (deb() && vis.length > 2) { vis.pop().style.display = 'none'; } }
   if (!window.__tiqFit) { window.__tiqFit = 1; let t; addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => ajusterTiq($('#tiq-z')), 150); }); }
@@ -15523,7 +15694,7 @@ async function vueTendancesIQ(arg){
           <p class="tiq-ps">${tt('Si elle revient PSA 10 : ce qui revient pour 1 $ mis (la carte + les frais PSA). Des ventes réelles ; aucune chance de 10 n’est supposée.', 'If it grades PSA 10: what comes back per $1 spent (the card + PSA fees). Real sales; no odds of a 10 are assumed.')}</p>
           <div class="tiq-lm">${C.map(ligneG).join('')}</div>
           <div class="tiq-pf">${C.length > 3 ? `<button class="tiq-pl2 tiq-tous" id="tiq-gtous">${tt(`Voir les ${C.length}`, `See all ${C.length}`)} ›</button>` : ''}</div></div></div>
-          <div class="sous tiq-note">${tt(`${nb(AG.n)} cartes mesurées, raw contre PSA 10 sur la même période. Refait chaque semaine. Admin seulement pour l’instant.`, `${nb(AG.n)} cards measured, raw against PSA 10 over the same period. Redone every week. Admin only for now.`)}${AG.le ? ' · ' + tt('mis à jour ', 'updated ') + esc(ilYa(AG.le)) : ''}</div>`;
+          <div class="sous tiq-note">${tt(`${nb(AG.n_grader != null ? AG.n_grader : C.length)} cartes à grader sur ${nb(AG.n)} mesurées (raw, PSA 10 et PSA 9 de la même carte). Refait chaque semaine. Admin seulement pour l’instant.`, `${nb(AG.n_grader != null ? AG.n_grader : C.length)} cards worth grading out of ${nb(AG.n)} measured (raw, PSA 10 and PSA 9 of the same card). Redone every week. Admin only for now.`)}${AG.le ? ' · ' + tt('mis à jour ', 'updated ') + esc(ilYa(AG.le)) : ''}</div>`;
         brG(z);
         const gt = $('#tiq-gtous', z); if (gt) gt.onclick = () => { vibrer(); ouvrirFeuille(`<h3>${tt('À grader', 'Worth grading')}<em class="tiq-pn">${C.length}</em></h3><div class="tiq-lm tiq-ltt">${C.map(ligneG).join('')}</div>`); brG($('#feuille')); };
         brMode(); ajusterTiq(z);
@@ -17798,7 +17969,7 @@ function tuileInv(c){
         <span class="isl-sc ${sc != null ? couleurScore(sc) : 'vide'}" data-isc="${c.id}" ${sc != null ? `data-iq="${c.id}" role="button" aria-label="Score SlabIQ ${lettre(sc)}"` : ''}><b>${sc != null ? lettre(sc) : '–'}</b><small>SlabIQ</small></span></div>
       <span class="sd-3">${k3(vendue ? tt('Vendue', 'Sold') : tt('Prix', 'Price'), prix ? argentCourt(prix) : '—', r ? (r.cl === 'vert' ? 'g' : r.cl === 'rouge' ? 'rg' : '') : '')}${k3(tt('Payé', 'Paid'), cout != null ? argentCourt(cout) : '—')}${k3('Profit', g != null ? (g >= 0 ? '+' : '−') + argentCourt(Math.abs(g)) : '—', g != null ? (g >= 0 ? 'g' : 'rg') : '')}</span></div>
       <div class="sd-ph">${SVG_CARTE}${photoOk(c.photo) ? `<img src="${esc(photoNet(c.photo, 400))}" alt="" loading="lazy" decoding="async" data-oe="rm"${estGradee(c) ? ' data-slab="1"' : ''}>` : ''}
-        <span class="isl-et">${etat}</span>${r ? `<span class="isl-mk inv-mk ${r.cl}">${esc(r.court)}</span>` : ''}</div></div>
+        <span class="isl-et">${etat}</span>${r ? `<span class="isl-mk inv-mk ${r.cl}">${esc(r.court)}</span>` : ''}${c.ag && !vendue ? `<span class="isl-ag">${agBadge(c.ag)}</span>` : ''}</div></div>
   </button>`;
 }
 // 1er nov 2026 (Mathieu : « dans la vue collection, chaque carte comme dans un slab : la photo, le score du slab = celui
@@ -17819,7 +17990,7 @@ function tuileSlab(c){
     <span class="sl-lab"><span class="sl-t">${esc(titre)}</span>
       <span class="sl-n ${n ? (n.vraie ? 'vraie' : '') : 'aucune'}"><b class="${n && n.n.length > 3 ? 'long' : ''}">${n ? esc(n.n) : '—'}</b><small>${n ? esc(n.s) : tt('À NOTER', 'NOT RATED')}</small></span></span>
     <span class="sl-puits">${photoOk(c.photo) ? `<img src="${esc(photoNet(c.photo))}" alt="" loading="lazy" decoding="async" data-oe="rm">` : SVG_CARTE}
-      ${pastilleTend(c, 'sl-tend')}${!env && c.vendre_tot ? `<span class="sl-env">${capsule(tt('Vends tôt', 'Sell early'), 'rouge petit')}</span>` : !env && c.garder_bas ? `<span class="sl-env">${capsule(tt('Garde-la', 'Hold it'), 'vert petit')}</span>` : !env && c.a_afficher ? `<span class="sl-env">${capsule(tt('À mettre sur eBay', 'List on eBay'), 'or petit')}</span>` : ''}${env ? `<span class="sl-env">${capsule(env.type === 'gradation' ? (env.etape ? tt('À soumettre', 'To submit') : tt('Au gradage', 'At grading')) : tt('En encan', 'At auction'), (envoiRetard(env) ? 'or' : env.type === 'gradation' ? 'grad' : 'acc') + ' petit')}</span>` : ''}</span>
+      ${c.ag && !env ? `<span class="sl-ag">${agBadge(c.ag)}</span>` : ''}${pastilleTend(c, 'sl-tend')}${!env && c.vendre_tot ? `<span class="sl-env">${capsule(tt('Vends tôt', 'Sell early'), 'rouge petit')}</span>` : !env && c.garder_bas ? `<span class="sl-env">${capsule(tt('Garde-la', 'Hold it'), 'vert petit')}</span>` : !env && c.a_afficher ? `<span class="sl-env">${capsule(tt('À mettre sur eBay', 'List on eBay'), 'or petit')}</span>` : ''}${env ? `<span class="sl-env">${capsule(env.type === 'gradation' ? (env.etape ? tt('À soumettre', 'To submit') : tt('Au gradage', 'At grading')) : tt('En encan', 'At auction'), (envoiRetard(env) ? 'or' : env.type === 'gradation' ? 'grad' : 'acc') + ' petit')}</span>` : ''}</span>
   </button>`;
 }
 async function consignataires(force){ if (!S.consig || force) S.consig = await API.consignataires_liste(); return S.consig; }
@@ -22636,12 +22807,18 @@ async function chargerGrader(el){
   const pc = (x) => Math.round((x || 0) * 100) + ' %';
   const n = r.chance_10 > 0 ? Math.max(1, Math.round(1 / r.chance_10)) : null;
   const chance = n == null ? '' : n <= 1 ? tt('presque sûr d’avoir un 10', 'a 10 is almost sure') : tt(`1 chance sur ${n} d’avoir un 10`, `1 in ${n} chance of a 10`);
-  const ligne = r.seuil_10 != null && r.brute != null
+  // 27 nov 2026 : une carte mesuree par la liste « A grader » : la MEME reponse que sa pastille, la meme phrase
+  const L_ = r.source === 'liste';
+  const ligne = L_ ? (r.verdict === 'oui' ? agTexte({r: r.rendement, s: r.seuil_10, g10: r.gain})
+      : r.gain != null && r.gain < (r.profit_min || 40) ? (r.gain > 0 ? tt(`Si elle revient PSA 10 : seulement +${argent(r.gain, 0)} une fois tout payé.`, `If it grades PSA 10: only +${argent(r.gain, 0)} after everything.`) : tt('Même un 10 ne paierait pas tout.', 'Even a 10 wouldn’t pay for everything.'))
+      : r.seuil_10 != null ? tt(`Trop risqué : il faudrait plus de 1 dix sur ${Math.max(1, Math.floor(1 / (r.seuil_max || .25)))} pour ne pas perdre.`, `Too risky: you’d need more than 1 ten out of ${Math.max(1, Math.floor(1 / (r.seuil_max || .25)))} to break even.`)
+      : tt('Le prix de la PSA 9 n’est pas mesuré : pas assez sûr.', 'The PSA 9 price isn’t measured: not sure enough.'))
+    : r.seuil_10 != null && r.brute != null
     ? `PSA 10 ${argent(r.psa10, 0)} ${tt('au lieu de', 'instead of')} ${argent(r.brute, 0)}${chance ? ' · ' + chance : ''}`
     : tt('Même un 10 ne paierait pas les frais.', 'Even a 10 wouldn’t pay the fees.');
-  const detail = r.brute != null ? `${tt('Brute', 'Raw')} ${argent(r.brute, 0)} · PSA 10 ${argent(r.psa10, 0)} · PSA 9 ${argent(r.psa9, 0)} · ${tt('frais', 'fees')} ${argent(r.frais, 0)}${r.seuil_10 != null ? ' · ' + tt('il faut', 'need') + ' ' + pc(r.seuil_10) + ' ' + tt('de 10', 'of 10s') + ', ' + (r.source === 'pregrade' ? tt('ton pré-grade', 'your pre-grade') : tt('le marché', 'the market')) + ' ' + pc(r.chance_10) : ''}` : '';
+  const detail = r.brute != null ? `${tt('Brute', 'Raw')} ${argent(r.brute, 0)} · PSA 10 ${argent(r.psa10, 0)}${r.psa9 != null ? ' · PSA 9 ' + argent(r.psa9, 0) : ''} · ${tt('frais', 'fees')} ${argent(r.frais, 0)}${r.seuil_10 != null ? ' · ' + tt('il faut', 'need') + ' ' + pc(r.seuil_10) + ' ' + tt('de 10', 'of 10s') + (r.source === 'liste' ? '' : ', ' + (r.source === 'pregrade' ? tt('ton pré-grade', 'your pre-grade') : tt('le marché', 'the market')) + ' ' + pc(r.chance_10)) : ''}` : '';
   el.innerHTML = `<div class="grd" title="${esc(detail)}"><div class="grd-h"><span class="grd-k">${tt('Grader ?', 'Grade it?')}</span><b class="${V[1]}">${V[0]}</b>
-      ${r.gain != null ? `<em class="${r.gain >= 0 ? 'vert' : 'rouge'}">${r.gain >= 0 ? '+' : '−'}${argent(Math.abs(r.gain), 0)}</em>` : ''}</div>
+      ${r.gain != null && (!L_ || r.verdict === 'oui') ? `<em class="${r.gain >= 0 ? 'vert' : 'rouge'}">${r.gain >= 0 ? '+' : '−'}${argent(Math.abs(r.gain), 0)}</em>` : ''}</div>
     <p>${ligne}</p></div>`;
 }
 new MutationObserver(() => { document.querySelectorAll('[data-grader]:not([data-gok])').forEach(chargerGrader); })
