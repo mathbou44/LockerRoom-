@@ -40,3 +40,9 @@ assert set(ag.pour_client(e)) == {"r", "s", "c", "jours", "nom", "joueur", "an"}
 assert ag.pourquoi_non({"ok": False, "g10": 20, "s": 0.1, "c": 0.99}) == "gain" and ag.pourquoi_non({"ok": False, "g10": 90, "s": 0.1, "c": 0.5}) == "confiance"
 assert ag.pourquoi_non({"ok": False, "g10": 90, "s": 0.3, "c": 0.95}) == "chance" and ag.pourquoi_non({"ok": True}) is None
 print("FORFAITS OK")
+
+# ---- 4. une liste d'une autre version de la regle n'est jamais montree (27 nov, 18 h 20) : rien jusqu'au nouveau calcul
+with open(ag._chemin(), "w", encoding="utf-8") as f:
+    json.dump({"version": 5, "cartes": [{"joueur": "X", "grader": True}], "index": [{"ok": True}]}, f)
+assert ag.lire() == {"version": 5} and ag.top_tendances()["cartes"] == []
+print("ANCIENNE LISTE CACHEE OK")

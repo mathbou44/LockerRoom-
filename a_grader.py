@@ -786,6 +786,10 @@ def lire():
             v = json.load(f) or {}
     except (OSError, ValueError):
         v = {}
+    # 27 nov 2026, 18 h 20 : une liste faite par une AUTRE version de la regle n'est jamais montree (ses pastilles suivaient l'ancienne
+    # regle) : rien jusqu'a ce que la nouvelle soit calculee (refaire_si_besoin la refait au premier tour de la boucle)
+    if v and v.get("version") != VERSION:
+        v = {"version": v.get("version")}
     with _verrou:
         _MEM.update(mtime=mt, v=v)
     return v
