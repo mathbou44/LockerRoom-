@@ -1675,3 +1675,59 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
 - Prochaine étape demandée (« Go ») : le modèle de prédiction (prix d'une carte dans 30 / 60 jours), avec champion et aspirant
   (l'aspirant roule en arrière, fige ses prédictions chaque jour, ne remplace le champion que s'il gagne sur les mêmes cartes ;
   piège : une mauvaise version doit être refusée ; l'ancien champion reprend si le nouveau faiblit).
+
+## p121 — 27 nov 2026, midi : « Pas sûr » dans la fiche, les raw en vente sous une carte à grader, le modèle de prix (banc)
+- **Fiche « Grader ? » (son « Oui go » de 12 h 06)** : une carte PAS mesurée par la liste ne dit plus « Oui » / « Peut-être » : verdict
+  `incertain` → « Pas sûr · Pas assez de ventes PSA de cette carte pour être sûr. » (`carte_grader`, sauf avec un pré-grade photo de
+  l'utilisateur, qui garde l'ancien calcul). Le « Non » quand même un 10 ne paie pas reste.
+- **Admin seulement jusqu'à preuve** (son mot) : la pastille, la liste, les raw en vente et le modèle de prix.
+- **Les raw en vente (12 h 23 : « des cartes à scroller de gauche à droite, comme les stories ; toutes les raw les moins chères à vendre en
+  ce moment, en encan ou en vente directe »)** : dans la fenêtre d'une carte de Tendances › To grade, la rangée « En vente maintenant ·
+  raw · la moins chère d'abord » (`agVente`, même rangée `fv-car` que les ventes de la fiche ; classe `agv`, PAS `ag-v` qui existe
+  déjà pour « Grader ? » de l'inventaire). Serveur : `Api.a_grader_annonces(q, annee, num, serie)` : deux recherches eBay (prix fixe
+  récents 200, encans qui finissent 100), `a_grader.classer` : MÊME carte et raw seulement ; encans finis, doublons dehors ; prix +
+  port croissant ; 24 au plus ; cache 30 min (`_AG_ANN`). Un toucher ouvre l'annonce sur eBay. Prix en vert : sous la médiane raw.
+- **Le modèle de prix (`modele_prix.py`, banc dans /tmp/modele/)** : 2 097 080 ventes lues (archives du 26 nov + fichier PSA), 789 073
+  rangées par carte exacte et note (327 672 cartes-notes) ; table : 168 935 lignes (carte × note × lundi, mars 2024 → oct. 2026) ;
+  cible à 30 j : 62 200 lignes, à 60 j : 48 854. Appris mois par mois sans jamais voir la suite (janv. 2025 → sept. 2026) :
+  30 j : +2,3 % contre « ne bouge pas » (raw +3,4 % ; PSA 9 −2,5 % ; PSA 10 −2,2 %) ; 60 j : −2,1 %. Quand il annonce ≥ 10 % : le bon
+  sens 65 % (30 j). Champion figé de janv. 2025 : −4,5 % (le marché change : il faut réapprendre).
+  Champion / aspirant PAR SEGMENT (30/60 × raw/gradée), départ « ne bouge pas » partout, réserve qui reprend. Rejoué : avec
+  300 prédictions / 1 % : le système faisait PIRE sur les gradées (−3 % et −7 %) ; avec **1 000 / 3 % (adopté)** : jamais pire nulle part,
+  seul 30-raw pris (avril 2026) : +1,2 % sur toute la période, prouvé ; 67 % de bon sens sur 5 708 annonces ≥ 10 %. Piège (bruit) :
+  refusé. Test : `tests/test_modele_prix.py`.
+- **Pas encore sur le serveur** (prochaine étape) : le rangement des ventes par carte au fil de l'eau, la table du lundi, figer les
+  prédictions de chaque version chaque semaine, la maturation, le tour, et une carte « Modèle de prix » dans l'admin.
+
+## p122 — 27 nov 2026, 12 h 45 : « SlabIQ asks » ne clignote plus, « En feu » en vert ; VÉRIFICATION du marché des joueurs
+- Accueil (sa capture de 12 h 40) : la tuile « SlabIQ asks » n'est dessinée que si le DERNIER compte connu (`iqqN`, localStorage
+  `lr_iqq_n`) a des questions ; la réponse met le compte à jour (enlève la tuile si 0, la redessine si une question arrive).
+  Mesuré : sans question, jamais visible (1re visite et retour) ; avec 3, présente dès le retour. Test : `tests/test_accueil_iqq.py`.
+- « En feu » (12 h 42 : « nouvelle positive, on peut la confondre avec une négative à cause du rouge ») : vert partout (8 tables de
+  pastilles, le compteur « 36 on fire » des Tendances, les « N pts » de la liste).
+- **Vérification demandée (12 h 38 : « double puis triple vérifier les graphiques de prise de valeur ; des pommes avec des pommes »)**,
+  sur les archives du 26 nov (1 555 245 ventes), même code (`marche_joueurs.point`, `_depuis`), deux façons de grouper les ventes :
+  en ligne = `marche_cles.series` (la « sorte » : famille + note + tranche de tirage + saison) ; pommes avec pommes = la CARTE EXACTE et
+  sa note (`a_grader.classer`). 271 joueurs comparables : corrélation des rangs 0,56 ; écart médian 9 points ; 54 joueurs à plus de
+  20 points ; 9 en sens contraire. Le bruit d'un point à l'autre est le même (10,9 % contre 10,8 %).
+  Pourquoi (détail de Bobrovsky, −59 % en ligne, −28 % carte par carte) : la sorte « young_guns|10|2010 » contenait ce mois-ci une
+  « 2024 UD Young Guns Renewed YGR-37 PSA Auto 10 » à 62 $ (une autre carte) contre une année de vraies YG 2010 PSA 10 à 431 $ ;
+  « young_guns|g|2010 » mélange une PSA 7 (33 $) et des PSA 9 ; « cup|r|2025 » prend un insert « Day with the Cup » pour The Cup.
+  Evangelista (−34 % / −10 %) : « black_diamond|r|99|2023 » mélange des cartes différentes (7,75 $ contre 34 $). Fowler, Celebrini,
+  Caufield, Knies, Chernyshov : les deux méthodes concordent. Le seuil actuel est aussi mince : 2 sortes et 6 ventes suffisent.
+  Script : /tmp/verif/verif.py, detail.py. **Correctif proposé, pas fait (attend son mot)** : grouper par carte exacte (cache de
+  classement des titres sur disque pour ne pas recalculer 1,5 M titres chaque jour), au moins 3 cartes et 8 ventes dans le mois.
+
+## p123 — 27 nov 2026, 13 h 40 : la watchlist suit le ramassage et la fiche (la Heiskanen Shutter Speed /99)
+- Ses captures (13 h 33) : fiche admin « mise max — / profit — » (une seule vente, 43 $ le 18 nov) ; watchlist « ta mise max 7 $,
+  profit +14 $, au-dessus de ta mise max » ; « ça fait pas de sens sachant que j'ai coché le vendeur comme pick up local ».
+  Les chiffres de la watchlist collent à une valeur de ~50 $ (gardée à l'ajout) avec 13 $ de port. La lecture refait déjà la mise
+  max avec le ramassage (`_mises_a_jour`, depuis le 6 nov) : le port comptait donc parce que la ligne de la watchlist n'avait PAS le
+  vendeur (l'ajout ne le reçoit pas toujours ; `_du_chasseur` ne le remplit que si le chasseur voit l'annonce), et la watchlist
+  gardait une valeur que la fiche n'accepte plus (une seule vente).
+- `deals_ramassage` appelle `watchlist._refaire_mises` (les mises gardées et leurs alertes suivent tout de suite).
+- `annonce_detail` = `_annonce_detail0` + `_sync_watch` : la fiche COMPLÈTE (pas la rapide, ventes lues, pas en panne) est la référence :
+  sans valeur sûre → `watchlist.sync_fiche` enlève la valeur et la mise max par défaut (une mise écrite à la main reste) ; le vendeur
+  manquant est gardé (le ramassage en dépend).
+- La fiche dit pourquoi : « une seule vente : pas assez pour une mise max » / « pas assez de ventes sûres pour une mise max ».
+- Test : `tests/test_watchlist_ramassage.py`. Pas vu ses vraies données (le vendeur exact de l'annonce) : à confirmer sur son cell.

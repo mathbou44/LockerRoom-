@@ -1877,6 +1877,11 @@ class Api:
         """Les vendeurs ou l'utilisateur ramasse sur place : le port ne compte pas dans ses deals."""
         l = [re.sub(r"[^A-Za-z0-9._-]", "", str(v))[:64].lower() for v in (liste or [])][:40]
         self.reglages_sauver({"ramassage": [v for v in l if v]})
+        try:                                     # 27 nov 2026 : les mises max de la watchlist suivent tout de suite le ramassage
+            import watchlist
+            watchlist._refaire_mises(self)
+        except Exception as e:
+            print("Watchlist (ramassage) : " + repr(e)[:160], flush=True)
         return self.deals_vendeurs_liste()
 
     # 10 nov 2026 (Mathieu : « traquer vraiment large : toutes les rookies, autos, patchs, auto-patchs, numerotees, sans joueur »)
@@ -12557,6 +12562,75 @@ class Api:
             out.append(x)
         return out
 
+    _AG_ANN = {}
+    AG_ANN_S = 1800                               # 30 minutes (deux appels eBay par carte ; jamais garde plus de 24 h)
+
+    def a_grader_annonces(self, q, annee=None, num=None, serie=None):
+        """27 nov 2026, 12 h 23 (Mathieu : « quand on clique sur les cartes a grader, on verrait toutes les raw, les moins cheres a
+        vendre en ce moment, pour qu'on puisse aller les voir rapidement puis decider de les acheter ; en encan ou en vente
+        directe »). Les annonces eBay EN COURS de la MEME carte (a_grader.classer : meme joueur, sorte, saison, /N, numero), RAW
+        seulement (jamais une gradee), la moins chere d'abord (prix + port). ADMIN seulement, comme la liste."""
+        if not self._est_admin():
+            return {"ok": False, "raison": "admin"}
+        import a_grader
+        q = re.sub(r"\s+", " ", str(q or "")).strip().lower()[:80]
+        if len(q.split()) < 3:
+            return {"ok": False, "raison": "carte"}
+        try:
+            an = int(annee) if annee not in (None, "") else None
+            se = int(serie) if serie not in (None, "") else None
+        except (TypeError, ValueError):
+            return {"ok": False, "raison": "carte"}
+        num = re.sub(r"[^a-z0-9]", "", str(num or "").lower()) or None
+        pays = self._pays_radar()
+        k = (q, an, se, num, str(pays))
+        e = Api._AG_ANN.get(k)
+        if e and time.time() - e[0] < Api.AG_ANN_S:
+            return {"ok": True, "annonces": e[1], "le": e[2]}
+        res = []
+        for ench in (False, True):
+            try:
+                res += ebay_compte.rechercher(q + (f" /{se}" if se else ""), categorie=CATEGORIE_CARTES, limite=100 if ench else 200, fond=False,
+                                              encheres=ench, recentes=not ench, pays=pays) or []
+            except TypeError:
+                pass
+            except Exception as ex:
+                print("A grader (annonces) : " + repr(ex)[:160], flush=True)
+                return {"ok": False, "erreur": "eBay ne répond pas en ce moment"}
+        maint, vus, out = time.time(), set(), []
+        for x in res:
+            iid = str(x.get("item_id") or "")
+            tot = round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2)
+            if not iid or iid in vus or not tot:
+                continue
+            try:
+                c = a_grader.classer(x.get("titre") or "")
+            except Exception:
+                c = None
+            if not c or c[1] != "raw":
+                continue
+            j_, q_, an_, se_, num_ = c[0]
+            if q_ != q or se_ != se or (an is not None and an_ != an) or (num and num_ and num_ != num):
+                continue
+            if x.get("encan") and x.get("fin"):
+                try:
+                    if datetime.fromisoformat(str(x["fin"]).replace("Z", "+00:00")).timestamp() < maint:
+                        continue
+                except ValueError:
+                    pass
+            vus.add(iid)
+            out.append({"item_id": iid, "titre": x.get("titre"), "total": tot, "photo": x.get("photo"), "url": x.get("url"),
+                        "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises"), "lieu": x.get("lieu")})
+        out.sort(key=lambda x: x["total"])
+        out = out[:24]
+        le = datetime.now().isoformat(timespec="seconds")
+        with Api._RECH_VERROU:
+            if len(Api._AG_ANN) > 300:
+                for z in sorted(Api._AG_ANN, key=lambda z: Api._AG_ANN[z][0])[:150]:
+                    Api._AG_ANN.pop(z, None)
+            Api._AG_ANN[k] = (time.time(), out, le)
+        return {"ok": True, "annonces": out, "le": le}
+
     def _a_grader_de(self, annonces, cle="item_id", titre=lambda x: x.get("titre")):
         """27 nov 2026 (Mathieu : « une pastille dans Radar [...] tres, tres simple pour le end user de comprendre rapidement
         qu'est-ce qui est a grader ou non ») : {identifiant: la pastille « A grader »} pour les cartes NON gradees de la liste
@@ -13225,6 +13299,27 @@ class Api:
             return []
 
     def annonce_detail(self, item_id, titre=None, rapide=False, q=None):
+        r = self._annonce_detail0(item_id, titre=titre, rapide=rapide, q=q)
+        try:
+            self._sync_watch(item_id, r, rapide)
+        except Exception as e:
+            print("Watchlist (fiche) : " + repr(e)[:160], flush=True)
+        return r
+
+    def _sync_watch(self, item_id, r, rapide):
+        """27 nov 2026 (Mathieu, la Heiskanen Shutter Speed Auto /99 : la fiche disait mise max et profit « — » (une seule vente),
+        la watchlist « mise max 7 $, profit +14 $ » ; « ca fait pas de sens sachant que j'ai coche le vendeur comme pick up
+        local »). La fiche COMPLETE est la reference : quand elle a relu les ventes et ne trouve pas de valeur sure (une seule
+        vente, ventes trop vieilles), la carte de la watchlist n'en a plus non plus (sa mise max par defaut part ; une mise
+        ecrite a la main reste) ; le vendeur lu dans la fiche est garde (le ramassage en depend)."""
+        if rapide or not isinstance(r, dict) or not r.get("ok") or not comps_permis(self):
+            return
+        import watchlist
+        a = r.get("article") or {}
+        lue = isinstance(r.get("ventes"), list) and not (r.get("ventes_lentes") or r.get("chargement") or r.get("ventes_attente"))
+        watchlist.sync_fiche(self, item_id, vendeur=a.get("vendeur"), sans_valeur=lue and not r.get("valeur"))
+
+    def _annonce_detail0(self, item_id, titre=None, rapide=False, q=None):
         """26 oct 2026 (Mathieu : « beaucoup trop long à charger ») : l'ecran demande d'abord la version rapide
         (annonce + memes cartes en vente, sans les ventes), puis la complete (+ ventes reelles) qui la remplace."""
         """24 oct 2026 (Mathieu : « comme Hall of Cardz, une fenetre dans l'app qui ouvre avec l'annonce eBay et les comps
@@ -13675,7 +13770,13 @@ class Api:
             fpsa = float(r.get("frais_psa") or grader.FRAIS_PSA)
         except (TypeError, ValueError):
             fpsa = grader.FRAIS_PSA
-        return grader.calculer((g or {}).get("series"), note, (r.get("frais_ebay_pct") or 13.25) / 100, r.get("frais_ebay_fixe") or 0.40, fpsa)
+        res = grader.calculer((g or {}).get("series"), note, (r.get("frais_ebay_pct") or 13.25) / 100, r.get("frais_ebay_fixe") or 0.40, fpsa)
+        # 27 nov 2026, 12 h 06 (Mathieu : « oui go » a : une carte PAS mesuree par la liste ne dit plus « Oui » ; elle dit « pas
+        # assez de ventes pour etre sur »). L'ancien calcul suppose une chance de 10 : jamais un « Oui » que les ventes ne
+        # prouvent pas. Son « Non » quand meme un 10 ne paie pas reste (il ne depend d'aucune chance).
+        if isinstance(res, dict) and res.get("verdict") in ("oui", "peut-etre") and not note:
+            res = {**res, "verdict": "incertain", "gain": None, "source": "estime"}
+        return res
 
     JOUEUR_SEUL_MIN = 20.0
 

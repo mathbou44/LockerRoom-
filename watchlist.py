@@ -659,6 +659,22 @@ def valeur_trouvee(api, item_id, valeur, remplacer=False):
     return bool(n)
 
 
+def sync_fiche(api, item_id, vendeur=None, sans_valeur=False):
+    """27 nov 2026 : ce que la fiche COMPLETE de l'annonce vient de lire. Le vendeur manquant est garde ; sans valeur sure
+    (les ventes relues ne suffisent pas), la carte perd sa valeur et sa mise max par defaut (une mise ecrite a la main reste)."""
+    c = _cx(api)
+    try:
+        if vendeur:
+            c.execute("UPDATE watchlist SET vendeur=? WHERE item_id=? AND (vendeur IS NULL OR vendeur='')", (str(vendeur)[:80], str(item_id)))
+        if sans_valeur:
+            c.execute("UPDATE watchlist SET valeur=NULL, sans_comps_le=?, mise_max=CASE WHEN COALESCE(mise_perso,0)=1 THEN mise_max ELSE NULL END, "
+                      "notif_seuil=CASE WHEN COALESCE(mise_perso,0)=1 THEN notif_seuil ELSE 0 END WHERE item_id=?",
+                      (datetime.now().isoformat(timespec="seconds"), str(item_id)))
+        c.commit()
+    finally:
+        c.close()
+
+
 def _chercher_en_fond(api, items):
     """5 nov 2026 (« encore pas de comp / your max bid ») : le cache seul ne suffit pas (une carte jamais cherchee n'a rien).
     Les cartes que TU suis sans valeur : une vraie recherche de ses ventes (budget de fond, protege), quelques-unes a la

@@ -95,3 +95,47 @@ for bout in ("[data-sc], [data-cu], [data-se], [data-td], [data-np], [data-agp],
     assert bout in app, bout
 assert "r.source === 'liste'" in app and "agTexte({r: r.rendement, s: r.seuil_10, g10: r.gain})" in app
 print("PASTILLE A GRADER OK")
+
+# ---- 6. 27 nov, 12 h 06 (son « oui go ») : une carte PAS mesuree ne dit plus « Oui » dans la fiche : « Pas sur »
+i = src.index("    def carte_grader(self"); f_ = src[i:i + 4200]
+assert 'if isinstance(res, dict) and res.get("verdict") in ("oui", "peut-etre") and not note:' in f_ and '"verdict": "incertain", "gain": None' in f_
+assert "incertain: [tt('Pas sûr', 'Not sure'), 'or']" in app and "r.verdict === 'incertain' ? tt('Pas assez de ventes PSA de cette carte pour être sûr.'" in app
+print("PASTILLE A GRADER OK (fiche)")
+
+# ---- 7. 27 nov, 12 h 23 : sous une carte a grader, les raw EN VENTE de la MEME carte, la moins chere d'abord (admin seulement)
+import lockerroom, ebay_compte
+class Faux:
+    admin = True
+    def _est_admin(self): return Faux.admin
+    def _pays_radar(self): return "CA"
+appels = []
+def rechercher(q, **k):
+    appels.append((q, k.get("encheres")))
+    b = "2024-25 Upper Deck Cutter Gauthier Young Guns #212"
+    if k.get("encheres"):
+        return [{"item_id": "a1", "titre": b + " RC", "prix_cad": 30, "port_cad": 5, "encan": True, "fin": "2099-01-01T00:00:00Z", "mises": 2},
+                {"item_id": "a2", "titre": b + " RC", "prix_cad": 10, "port_cad": 2, "encan": True, "fin": "2001-01-01T00:00:00Z"}]   # fini
+    return [{"item_id": "f1", "titre": b + " Ducks", "prix_cad": 48, "port_cad": 4}, {"item_id": "f2", "titre": b + " PSA 10 GEM", "prix_cad": 20, "port_cad": 0},
+            {"item_id": "f3", "titre": "2023-24 Upper Deck Cutter Gauthier Young Guns #212", "prix_cad": 9, "port_cad": 0},
+            {"item_id": "f4", "titre": "2024-25 Upper Deck Cutter Gauthier Young Guns Canvas #C212", "prix_cad": 8, "port_cad": 0},
+            {"item_id": "f5", "titre": "2024-25 Upper Deck Leo Carlsson Young Guns #212", "prix_cad": 7, "port_cad": 0},
+            {"item_id": "f1", "titre": b + " Ducks", "prix_cad": 48, "port_cad": 4}, {"item_id": "f6", "titre": b + " rookie", "prix_cad": 19, "port_cad": 3}]
+vrai = ebay_compte.rechercher
+ebay_compte.rechercher = rechercher
+try:
+    lockerroom.Api._AG_ANN.clear()
+    r = lockerroom.Api.a_grader_annonces(Faux(), "cutter gauthier young guns", 2024, "212", None)
+    assert r["ok"] and [x["item_id"] for x in r["annonces"]] == ["f6", "a1", "f1"], r          # gradee, autre saison / sorte / joueur, encan fini, doublon : dehors
+    assert [x["total"] for x in r["annonces"]] == [22, 35, 52] and r["annonces"][1]["encan"] and len(appels) == 2
+    r2 = lockerroom.Api.a_grader_annonces(Faux(), "cutter gauthier young guns", 2024, "212", None)
+    assert r2["annonces"] == r["annonces"] and len(appels) == 2, "30 minutes de cache : pas d'autre appel a eBay"
+    Faux.admin = False
+    assert lockerroom.Api.a_grader_annonces(Faux(), "cutter gauthier young guns", 2024, "212", None) == {"ok": False, "raison": "admin"}
+    Faux.admin = True
+    assert lockerroom.Api.a_grader_annonces(Faux(), "x y", 2024)["ok"] is False and lockerroom.Api.a_grader_annonces(Faux(), "a b c", "abc")["ok"] is False
+finally:
+    ebay_compte.rechercher = vrai
+for bout in ("async function agVente(x){", "API.a_grader_annonces(x.q, x.annee, x.num, x.serie)", "agVente(x); };", "const SANS_EFFET = new Set(['a_grader_annonces', ",
+             "Aucune raw de cette carte en vente en ce moment.", "target=\"_blank\" rel=\"noopener\"", '<div class="agv" id="ag-v">'):
+    assert bout in app, bout
+print("PASTILLE A GRADER OK (en vente)")
