@@ -63,7 +63,7 @@ assert b["psa10"] == 1000 and b["n10"] == 6 and b["jours"] == 14 and b["psa9"] i
 z = par["Zayne Parekh"]
 assert z["reste10"] < 0 and z["reste9"] < 0 and z["seuil"] is None, "elle perd meme en 10 : pas de seuil"
 assert [x["joueur"] for x in R["cartes"]] == sorted(par, key=lambda j: -par[j]["rendement"]), "classee par ce qui revient pour 1 $ mis si elle revient 10"
-assert R["ecartees"] == {"peu de PSA 10": 1, "peu de raw": 1, "periode trop courte": 0, "prix trop etales": 1}, R["ecartees"]
+assert R["ecartees"] == {"peu de PSA 10": 1, "peu de raw": 1, "periode trop courte": 0, "prix trop etales": 1, "raw melangee a des gradees": 0}, R["ecartees"]
 assert "chance" not in json.dumps(R) and "espere" not in json.dumps(R), "jamais une chance de 10 ni un profit espere"
 # une vente sans numero ni annee : a la carte si elle n'a qu'un numero et qu'une saison ; sinon ecartee
 R2 = a_grader.analyser(V("r", YG, [38] * 5, [1, 2, 3, 4, 5]) + V("s", "Upper Deck Cutter Gauthier Young Guns rookie", [38] * 3, [1, 2, 3]) + V("t", YG + " PSA 10", [406] * 5, [1, 2, 3, 4, 5]))
@@ -72,10 +72,12 @@ R3 = a_grader.analyser(V("r", YG, [38] * 5, [1, 2, 3, 4, 5]) + V("u", "2023-24 U
 assert R3["cartes"][0]["n_raw"] == 5 and R3["cartes"][0]["raw"] == 38, "deux saisons existent : la vente sans annee n'est a personne"
 # ---- 2b. 26 nov, 16 h 36 (Mathieu : « le temps est important la-dedans » ; son « Oui ») : les 60 derniers jours quand la carte s'y vend
 # assez (raw, PSA 10, et PSA 9 si elle a un prix PSA 9), sinon les 120 jours. Les memes cartes dans la liste : seule la mesure change.
-assert a_grader.JOURS_RECENT == 60 and a_grader.JOURS == 120
+# 26 nov, 18 h 50 (« besoin de plus de data [...] au moins entre 500 et 1 000 » ; son choix : 12 mois + 500 joueurs) : trois periodes,
+# la plus recente d'abord : 60 jours, sinon 120, sinon 12 mois.
+assert a_grader.JOURS_RECENT == 60 and a_grader.FENETRES == (60, 120) and a_grader.JOURS == 365
 for x in R["cartes"]:
     assert x["fenetre"] == 60, "tout se vend dans les 60 derniers jours : mesure sur 60 jours (%r)" % x["joueur"]
-assert R["jours_recent"] == 60 and R["n_recent"] == 3 and R["jours"] == 120
+assert R["jours_recent"] == 60 and R["n_recent"] == 3 and R["jours"] == 365 and R["fenetres"] == [60, 120, 365] and R["par_fenetre"] == {"60": 3}
 MI = "2025-26 Upper Deck Michael Misa Young Guns #201"
 def misa(raw_r, raw_v, p10_r, p10_v, p9_r=(), p9_v=()):
     recents, vieux = [2, 6, 10, 20, 30, 40, 50, 55], [70, 80, 90, 100, 105, 110, 112, 115]
@@ -104,6 +106,34 @@ assert m["fenetre"] == 60 and m["psa9"] is None and m["psa10"] == 309, m
 # des prix trop etales dans les 60 derniers jours (deux cartes melangees ?) : on garde la mesure des 120 jours
 m = misa([10, 12, 60, 70, 80, 11], [41] * 8, [309] * 5, [309] * 6)
 assert m["fenetre"] == 120 and m["n_raw"] == 12 and m["raw"] == 41, m
+# 12 mois : une carte RARE en PSA 10 (2 ventes dans 120 jours, 6 dans l'annee) entre dans la liste, mesuree sur ses 12 mois, sur
+# la periode commune (la raw doit etre connue aussi loin) ; la fiche dit sa vraie periode
+def rare(raw_j, p10_j, p10_prix=300):
+    L = V("qr", MI, [41] * len(raw_j), raw_j) + V("qp", MI + " PSA 10", [p10_prix] * len(p10_j), p10_j)
+    return a_grader.analyser(L)
+Rr = rare([5, 40, 90, 150, 220, 300, 340], [10, 100, 160, 200, 260, 330])
+m = Rr["cartes"][0]
+assert (m["fenetre"], m["n10"], m["n_raw"], m["jours"]) == (365, 6, 6, 330) and Rr["par_fenetre"] == {"365": 1}, m
+assert rare([5, 40, 90, 100, 110], [10, 100, 160, 200, 260, 330])["cartes"] == [], "la raw n'est connue que depuis 110 jours : la meme periode n'a pas 5 PSA 10"
+assert rare([5, 40, 90, 150, 220, 300, 340], [10, 100, 160, 200, 380, 400])["cartes"] == [], "une vente de plus de 12 mois ne compte pas"
+# le prix a triple dans l'annee (trop etale sur 12 mois) mais il se tient depuis 60 jours : la carte RESTE, mesuree sur 60 jours
+L3 = V("tr", MI, [41] * 6 + [12] * 8, [2, 6, 10, 20, 30, 40, 100, 150, 200, 250, 300, 320, 340, 350]) \
+    + V("tp", MI + " PSA 10", [900] * 5 + [150] * 8, [3, 7, 11, 21, 31, 100, 150, 200, 250, 300, 320, 340, 350])
+m = a_grader.analyser(L3)["cartes"][0]
+assert (m["fenetre"], m["raw"], m["psa10"]) == (60, 41, 900), m
+# 26 nov, 19 h 13 (Mathieu, la fiche Dylan Larkin Young Guns Canvas, raw 152 $ / PSA 10 131 $ : « impossible, une raw ne se vend
+# jamais plus chere qu'une PSA 10 »). Les vraies ventes : 3 « raw » sur 5 au titre automatique d'eBay, sans note : des gradees.
+LK = "2015-16 Upper Deck - Ud Canvas Young Guns Dylan Larkin #C112 (RC)"
+def larkin(raw_prix):                                       # raw et PSA 10 vendues les memes jours : la meme periode
+    return a_grader.analyser(V("lr", LK, raw_prix, [3 + i % 5 for i in range(len(raw_prix))]) + V("lp", LK + " PSA 10", [122, 131, 178, 178, 131], [3, 4, 5, 6, 7]))
+Rl = larkin([64, 152, 156, 51, 171])
+assert Rl["cartes"] == [] and Rl["ecartees"]["raw melangee a des gradees"] == 1, "2 vraies raw seulement : la carte sort de la liste"
+Rl = larkin([44, 152, 156, 41, 171, 38, 36, 40, 131])        # 131 $ = le prix de la PSA 10 : jetee aussi
+m = Rl["cartes"][0]
+assert (m["raw"], m["n_raw"], m["psa10"]) == (40, 5, 131) and Rl["raw_gradees"] == 4 and m["raw"] < m["psa10"], m
+for R_ in (R, Rr, Rl):
+    assert all(x["raw"] < x["psa10"] for x in R_["cartes"]), "jamais une raw au prix de la PSA 10 ou plus"
+assert R["raw_gradees"] == 0
 # une fenetre demandee de 60 jours ou moins : pas de deuxieme lecture
 R45 = a_grader.analyser(ventes, jours=45)
 assert R45["jours_recent"] is None and R45["n_recent"] == 0 and all(x["fenetre"] == 45 for x in R45["cartes"]) and R45["cartes"]
@@ -156,17 +186,17 @@ def attendre_calcul():
 
 attendre_calcul()
 banque_psa._run_maj(statut="en_cours", battement=time.time())
-assert a_grader.REFAIRE_COLLECTE_MIN == 50
-os.utime(a_grader._chemin(), (time.time() - 20 * 60,) * 2)
-assert a_grader.refaire_si_besoin() is None, "une liste de 20 minutes n'est pas refaite, meme pendant la collecte"
+assert a_grader.REFAIRE_COLLECTE_MIN == 110
 os.utime(a_grader._chemin(), (time.time() - 55 * 60,) * 2)
-assert a_grader.refaire_si_besoin() is not None, "pendant la collecte, une liste de pres d'une heure est refaite"
+assert a_grader.refaire_si_besoin() is None, "une liste de moins de 2 heures n'est pas refaite, meme pendant la collecte"
+os.utime(a_grader._chemin(), (time.time() - 115 * 60,) * 2)
+assert a_grader.refaire_si_besoin() is not None, "pendant la collecte, une liste de pres de 2 heures est refaite"
 attendre_calcul()
 banque_psa._run_maj(statut="erreur", battement=time.time() - 3600)
-os.utime(a_grader._chemin(), (time.time() - 55 * 60,) * 2)
+os.utime(a_grader._chemin(), (time.time() - 115 * 60,) * 2)
 assert a_grader.refaire_si_besoin() is None, "collecte arretee : retour au rythme de la semaine"
 # 26 nov, 16 h 36 : une regle de calcul change (les 60 derniers jours) : la liste faite avec l'ancienne regle est refaite seule, une fois
-assert a_grader.VERSION == 3 and a_grader.lire()["version"] == 3
+assert a_grader.VERSION == 4 and a_grader.lire()["version"] == 4
 with open(a_grader._chemin(), encoding="utf-8") as f_:
     anc = json.load(f_)
 anc.pop("version")
@@ -175,7 +205,7 @@ with open(a_grader._chemin(), "w", encoding="utf-8") as f_:
 os.utime(a_grader._chemin(), (time.time() - 20 * 60,) * 2)
 assert a_grader.refaire_si_besoin() is not None, "une liste sans version (faite avant la regle) est refaite"
 attendre_calcul()
-assert a_grader.lire()["version"] == 3 and a_grader.refaire_si_besoin() is None, "une seule fois"
+assert a_grader.lire()["version"] == 4 and a_grader.refaire_si_besoin() is None, "une seule fois"
 banque_psa._run_maj(statut="terminee", battement=time.time() - 3600)
 
 # ---- 3b. la couverture est MESUREE : parmi les ventes dont le titre dit PSA 10 (ou PSA 9), combien sont rangees, et pourquoi pas

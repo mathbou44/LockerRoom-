@@ -34,12 +34,18 @@ import urllib.error
 import uuid
 from datetime import datetime, timedelta, timezone
 
-JOURS = 120                          # « 3 derniers mois, ou plus » : 4 mois
+JOURS = 365                          # 26 nov, 18 h 50 (Mathieu : « besoin de plus de data [...] au moins entre 500 et 1 000 » ; son choix :
+                                     # « 12 mois + 500 joueurs ») : 12 mois (avant : 120 jours)
+VERSION_PLAN = 2                     # 2 = 12 mois, 500 joueurs : une collecte finie avec l'ancien plan est ETENDUE quand l'admin la relance
+AUTRES_MIN = 100                     # une recherche « <joueur> psa 10 » de 100 ventes et plus dont moins de 30 % nomment le joueur
+AUTRES_PART = 0.30                   # (« cam york » -> Cam Schlittler, Yankees de New York) n'est pas etendue ;
+AUTRES_PAGES = 2                     # et une recherche s'arrete apres 2 pages de suite ou moins de 15 % des ventes le nomment
+AUTRES_PAGE_PART = 0.15
 PAR_PAGE = 50
 PAGES_MAX = 30                       # « <joueur> psa 10 » : 1 500 ventes au plus (les plus recentes)
 PAGES_MAX_RAW = 8                    # la version raw d'une carte : 400 ventes au plus
 PLAFOND_DEFAUT = 8000                # credits au plus pour toute la collecte
-JOUEURS_N = 200
+JOUEURS_N = 500
 NOTES = ("psa 10", "psa 9")
 N10_MIN = 4                          # ventes PSA 10 de la carte (120 jours) pour aller chercher sa version raw
 RAW_MAX = 1500                       # recherches raw au plus
@@ -87,10 +93,11 @@ def _cx():
     c.execute("CREATE TABLE IF NOT EXISTS collecte (id INTEGER PRIMARY KEY CHECK (id = 1), statut TEXT, plafond INTEGER, credits INTEGER,"
               " debut REAL, battement REAL, texte TEXT, erreur TEXT, raw_planifie INTEGER DEFAULT 0)")
     if not _MIGRE["fait"]:                                    # la base du 26 nov, 13 h 27, n'a pas la colonne du jeton
-        try:
-            c.execute("ALTER TABLE collecte ADD COLUMN jeton TEXT")
-        except sqlite3.OperationalError:
-            pass
+        for col in ("jeton TEXT", "version INTEGER"):          # version : le plan de la collecte (voir VERSION_PLAN)
+            try:
+                c.execute("ALTER TABLE collecte ADD COLUMN " + col)
+            except sqlite3.OperationalError:
+                pass
         _MIGRE["fait"] = True
     return c
 
@@ -99,7 +106,7 @@ def _cx():
 def _run_lire():
     c = _cx()
     try:
-        return c.execute("SELECT statut, plafond, credits, debut, battement, texte, erreur, raw_planifie, jeton FROM collecte WHERE id=1").fetchone()
+        return c.execute("SELECT statut, plafond, credits, debut, battement, texte, erreur, raw_planifie, jeton, version FROM collecte WHERE id=1").fetchone()
     finally:
         c.close()
 
@@ -109,7 +116,7 @@ def _run():
         r = _run_lire()
     except sqlite3.Error:
         r = None
-    return dict(zip(("statut", "plafond", "credits", "debut", "battement", "texte", "erreur", "raw_planifie", "jeton"), r)) if r else {}
+    return dict(zip(("statut", "plafond", "credits", "debut", "battement", "texte", "erreur", "raw_planifie", "jeton", "version"), r)) if r else {}
 
 
 # 26 nov 2026, 13 h 28 (journal du serveur, 45 s apres le lancement par Mathieu : « Donnees PSA : reprise (en_cours) ») : la boucle
@@ -201,6 +208,83 @@ def construire_plan(joueurs=None):
         finally:
             c.close()
     return n
+
+
+def _nomme(titre, joueur):
+    try:
+        import a_grader
+        return a_grader._nomme(titre, joueur)
+    except Exception:
+        return True
+
+
+@_tenace
+def _parts_nommees():
+    """Pour chaque recherche de la phase 1 : (ventes gardees, ventes qui nomment bien le joueur)."""
+    c = _cx()
+    try:
+        rows = c.execute("SELECT q, joueur, titre FROM ventes WHERE q LIKE '% psa 10' OR q LIKE '% psa 9'").fetchall()
+    finally:
+        c.close()
+    out = {}
+    for k, (q, joueur, titre) in enumerate(rows):
+        if k % 2000 == 1999:
+            time.sleep(0.01)
+        n = out.setdefault(q, [0, 0])
+        n[0] += 1
+        n[1] += 1 if _nomme(titre, joueur) else 0
+    return out
+
+
+def etendre_plan(joueurs=None):
+    """26 nov 2026, 18 h 50 (Mathieu : « besoin de plus de data parce qu'on doit etre vraiment tres complet [...] au moins entre
+    500 et 1 000 » ; son choix : « 12 mois + 500 joueurs »). La collecte du 26 nov (200 joueurs, 120 jours) n'est PAS refaite :
+    1. chaque recherche finie recoit la TRANCHE D'AVANT (de 12 mois a la plus vieille vente recue, sinon a son ancien debut) :
+       rien n'est paye deux fois ;
+       pas celles qui ramenent surtout d'autres joueurs (« cam york » : du baseball), ni une raw arretee par ses pages (une carte
+       tres vendue : ses ventes recentes suffisent), ni une raw deja dans nos archives ;
+    2. les joueurs de plus (jusqu'a JOUEURS_N) entrent dans la phase 1, sur 12 mois ;
+    3. la phase 2 sera replanifiee : la raw des cartes vues en PSA 10 sur 12 mois.
+    -> {« tranches », « nouvelles », « autres_joueurs »}. Ne part jamais seule : c'est l'admin qui relance."""
+    debut, fin = fenetre()
+    joueurs = joueurs if joueurs is not None else joueurs_cibles()
+    parts = _parts_nommees()
+    return _etendre_ecrire(joueurs, parts, debut, fin)
+
+
+@_tenace
+def _etendre_ecrire(joueurs, parts, debut, fin):
+    bilan_ = {"tranches": 0, "nouvelles": 0, "autres_joueurs": 0}
+    with _verrou:
+        c = _cx()
+        try:
+            for q, phase, d0, raison, fini, recu in c.execute("SELECT q, phase, debut, raison, fini, recu_min FROM plan").fetchall():
+                if not fini or not d0 or d0 <= debut or str(raison or "").startswith("refusee"):
+                    continue                                  # pas finie (elle reprendra telle quelle), deja aussi loin, ou refusee
+                if phase == 1:
+                    n, nn = parts.get(q, (0, 0))
+                    if raison == "autres joueurs" or (n >= AUTRES_MIN and nn < AUTRES_PART * n):
+                        c.execute("UPDATE plan SET raison='autres joueurs' WHERE q=?", (q,))
+                        bilan_["autres_joueurs"] += 1
+                        continue
+                elif raison not in ("toutes les ventes", "fenetre atteinte"):
+                    continue
+                # la tranche finit ou les ventes recues se sont arretees (« jack hughes psa 10 », 26 nov : 42 ventes, la plus vieille
+                # d'il y a 8 jours) : pas de trou entre les deux tranches ; sans vente recue, a l'ancien debut
+                recu = str(recu or "")[:10]
+                c.execute("UPDATE plan SET fini=0, pages=0, raison=NULL, debut=?, fin=? WHERE q=?", (debut, recu if d0 < recu <= fin else d0, q))
+                bilan_["tranches"] += 1
+            base = (c.execute("SELECT COALESCE(MAX(ordre), -1) FROM plan WHERE phase=1").fetchone()[0] or 0) + 1
+            for k, nom in enumerate(joueurs):
+                for i, note in enumerate(NOTES):
+                    if c.execute("INSERT OR IGNORE INTO plan (q, phase, joueur, ordre, debut, fin) VALUES (?,1,?,?,?,?)",
+                                 (_mots_joueur(nom) + " " + note, nom, base + k * len(NOTES) + i, debut, fin)).rowcount:
+                        bilan_["nouvelles"] += 1
+            c.execute("UPDATE collecte SET raw_planifie=0, version=? WHERE id=1", (VERSION_PLAN,))
+            c.commit()
+        finally:
+            c.close()
+    return bilan_
 
 
 def carte_du_titre(titre, joueur, note="10"):
@@ -391,7 +475,8 @@ def _collecter(plafond, arret, pause):
         return {**bilan(), "deja": True}
     plafond = int(plafond or r0.get("plafond") or PLAFOND_DEFAUT)
     if r0.get("statut") in (None, "aucune"):
-        _run_maj(statut="en_cours", plafond=plafond, credits=0, debut=time.time(), battement=time.time(), texte="Le plan", erreur=None, jeton=jeton)
+        _run_maj(statut="en_cours", plafond=plafond, credits=0, debut=time.time(), battement=time.time(), texte="Le plan", erreur=None, jeton=jeton,
+                 version=VERSION_PLAN)
     else:
         _run_maj(statut="en_cours", plafond=plafond, battement=time.time(), texte="Reprise", erreur=None, jeton=jeton)
     a_moi = lambda: _run().get("jeton") == jeton
@@ -401,6 +486,11 @@ def _collecter(plafond, arret, pause):
             fin_statut = "erreur"
             _run_maj(erreur="Aucun joueur dans l'indice SlabIQ : rien à collecter")
             return None
+        if (r0.get("version") or 1) < VERSION_PLAN and r0.get("statut") not in (None, "aucune") and not _plan_vide():
+            _texte("Le plan : 12 mois, plus de joueurs")
+            e_ = etendre_plan()
+            print(f"Donnees PSA : plan etendu ({JOURS} jours, {JOUEURS_N} joueurs) : {e_['tranches']} recherches recoivent la tranche d'avant, "
+                  f"{e_['nouvelles']} nouvelles, {e_['autres_joueurs']} laissees (d'autres joueurs)", flush=True)
         taux = vendues._taux_usd_cad() or 1.37
         refus_suite = 0
         while True:
@@ -424,6 +514,7 @@ def _collecter(plafond, arret, pause):
                 pages_max = PAGES_MAX if phase == 1 else PAGES_MAX_RAW
                 page = (pages or 0) + 1
                 vus = set()
+                autres_suite = 0
                 while True:
                     if not a_moi():                           # une autre collecte a pris le relais : celle-ci s'arrete, sans rien toucher
                         fin_statut = None
@@ -482,10 +573,18 @@ def _collecter(plafond, arret, pause):
                     ajoutees = _noter(q, joueur, v) if v else 0
                     plus_vieux = min((x["le"] for x in v), default=None)
                     raison = None
+                    # 26 nov 2026 (le fichier de la collecte : « cam york psa 10 » = 1 480 ventes de baseball et de football, 30 pages
+                    # payees) : deux pages de suite ou presque personne ne nomme le joueur : la recherche s'arrete la
+                    if phase == 1 and joueur and len(v) >= 20 and sum(1 for x in v if _nomme(x["titre"], joueur)) < AUTRES_PAGE_PART * len(v):
+                        autres_suite += 1
+                    else:
+                        autres_suite = 0
                     if len((d or {}).get("results") or []) < PAR_PAGE * 0.9:
                         raison = "toutes les ventes"
                     elif not neuves:
                         raison = "page repetee"
+                    elif autres_suite >= AUTRES_PAGES:
+                        raison = "autres joueurs"
                     elif plus_vieux and plus_vieux < debut:
                         raison = "fenetre atteinte"
                     elif page >= pages_max:
@@ -603,4 +702,6 @@ def bilan():
             "cartes_raw": int(n - n1), "pages": int(pg), "ventes": int(nv), "raisons": raisons,
             "credits": r.get("credits") or 0, "plafond": r.get("plafond") or PLAFOND_DEFAUT, "debut": r.get("debut"),
             "battement": r.get("battement"), "erreur": r.get("erreur"), "reserve_app": reserve_app(), "jours": JOURS,
-            "joueurs_vises": JOUEURS_N, "dispo": credits_disponibles(), "compsniper": historique.etat()}
+            "joueurs_vises": JOUEURS_N, "dispo": credits_disponibles(), "compsniper": historique.etat(),
+            # une collecte faite avec l'ancien plan (120 jours, 200 joueurs) : la relancer l'ETEND (12 mois, 500 joueurs)
+            "a_etendre": bool(n and (r.get("version") or 1) < VERSION_PLAN and r.get("statut") not in (None, "aucune"))}

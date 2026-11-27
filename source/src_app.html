@@ -49,6 +49,10 @@ body{min-height:100vh; padding-bottom:calc(76px + var(--bas))}
 html, body{overflow-x:hidden; overscroll-behavior-x:none} @supports (overflow:clip){ html, body{overflow-x:clip} }
 body.sandbox::before{content:'SANDBOX eBay · données de test'; position:sticky; top:0; z-index:60; display:block; text-align:center; padding:6px 10px; font:700 12px/1.2 'Barlow Condensed',sans-serif; letter-spacing:.12em; background:#F2B84B; color:#1A1205}
 button,input,select,textarea{font-family:inherit; font-size:16px; color:inherit}
+/* 26 nov 2026, 19 h 22 (Mathieu, captures a l'ordi des menus « Ships from », « Listings », « SlabIQ grade » : texte blanc sur
+   fond blanc ; « tous les drop down doivent etre revus ») : la liste d'un menu heritait du texte clair de l'app sur le fond
+   blanc du navigateur. Tous les menus : liste sombre, texte clair (au cell, c'est le menu d'iOS). */
+select{color-scheme:dark} select option, select optgroup{background:#1B1B22; color:#F4F2EE; font-size:15px}
 button{cursor:pointer}
 a{color:var(--acc); text-decoration:none}
 h1,h2,h3{margin:0}
@@ -4281,6 +4285,12 @@ body.zp-ouvert{overflow:hidden}
 .io-n{flex:none; color:var(--doux); font-size:14px; font-variant-numeric:tabular-nums}
 .io-plus{flex:none; width:28px; height:28px; border-radius:50%; border:0; background:var(--acc); color:#111118; font:700 20px/1 var(--f-txt, inherit); display:grid; place-items:center; padding:0 0 2px; cursor:pointer}
 .io-plus:disabled{opacity:.3}
+/* 26 nov 2026 : la cueillette locale dans les filtres : les vendeurs proposes s'ouvrent SOUS le champ, une rangee chacun */
+#rv-aj .ic-h{flex:none; width:20px; height:20px; color:var(--acc)}
+.io-sg{border-top:1px solid color-mix(in srgb, var(--ligne) 60%, transparent)} .io-sg[hidden]{display:none}
+.io-sgb{display:flex; align-items:center; width:100%; min-height:44px; padding:0 16px 0 46px; border:0; background:none; color:var(--acc); font:500 17px/1.2 var(--f-txt, inherit); text-align:left; cursor:pointer}
+.io-sgb + .io-sgb{border-top:1px solid color-mix(in srgb, var(--ligne) 60%, transparent)} .io-sgb:active{background:var(--carte2)}
+.io-sg0{min-height:44px; display:flex; align-items:center; padding:0 16px 0 46px; color:var(--doux); font-size:15px}
 /* 24 nov 2026 (Mathieu : « My radar, c'est laid, ca brise l'experience Apple ») : la fenetre « Ton radar » avec les memes pieces */
 .io-fin{justify-self:end; font-weight:600; padding:6px 2px 6px 4px}
 .io-fl{flex:none; width:8px; height:13px; color:var(--doux); opacity:.55}
@@ -11451,6 +11461,15 @@ const nbFiltresDeals = (F) => ['prix_min', 'prix_max', 'rabais_min', 'gain_min']
 const IO_CHEV = `<svg class="io-c" viewBox="0 0 10 16" aria-hidden="true"><path d="M1.6 6 5 2.6 8.4 6M1.6 10 5 13.4 8.4 10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const IO_OK = `<svg class="io-ok" viewBox="0 0 16 12" aria-hidden="true"><path d="M1.5 6.5 5.8 10.5 14.5 1.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const IO_FL = `<svg class="io-fl" viewBox="0 0 8 14" aria-hidden="true"><path d="M1.5 1.5 7 7l-5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+// Les vendeurs proposes pour la cueillette : ceux dont le nom COMMENCE par ce qui est tape d'abord, puis ceux qui le contiennent ;
+// jamais un vendeur deja choisi ; 4 au plus ; sans tenir compte des majuscules ni des tirets, points et soulignes.
+function vendeursProposes(tous, choisis, q){
+  const n = (v) => String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const k = n(q); if (!k) return [];
+  const pris = new Set((choisis || []).map(v => String(v).toLowerCase()));
+  const L = (tous || []).filter(v => v && !pris.has(String(v).toLowerCase()) && n(v).includes(k));
+  return L.sort((a, b) => (n(b).startsWith(k) - n(a).startsWith(k)) || String(a).toLowerCase().localeCompare(String(b).toLowerCase())).slice(0, 4);
+}
 function ioMenu(id, nom, L, v){
   const opts_ = L.map(([k, t]) => `<option value="${esc(String(k))}" ${String(k) === String(v) ? 'selected' : ''}>${esc(t)}</option>`).join('');
   return `<label class="io-r io-m"><span class="io-l">${nom}</span><span class="io-v" id="${id}-v">${esc((L.find(x => String(x[0]) === String(v)) || L[0])[1])}</span>${IO_CHEV}<select id="${id}" aria-label="${esc(nom)}">${opts_}</select></label>`;
@@ -11535,6 +11554,11 @@ async function feuilleFiltresDeals(){
       <form class="io-r io-aj" id="fv-aj"><input class="io-in" id="fv-in" enterkeyhint="done" autocomplete="off" aria-label="${esc(tt('Ajouter un joueur', 'Add a player'))}" placeholder="${esc(tt('Ajouter un joueur', 'Add a player'))}"><small class="io-n" id="fv-n"></small><button class="io-plus" id="fv-ok" aria-label="${esc(tt('Ajouter', 'Add'))}">+</button></form>
       <label class="io-r io-sw"><span class="io-l">${tt('Seulement mes joueurs', 'Only my players')}</span><input type="checkbox" id="fd-seul" ${seul ? 'checked' : ''}><i></i></label>
     </div>
+    <div class="io-g" id="rv-g">
+      <div class="io-r io-fvl" id="rv-l" hidden></div>
+      <form class="io-r io-aj" id="rv-aj">${icPin()}<input class="io-in" id="rv-in" enterkeyhint="done" autocomplete="off" autocapitalize="none" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="rv-s" aria-label="${esc(tt('Cueillette locale : vendeur', 'Local pickup: seller'))}" placeholder="${esc(tt('Cueillette locale : vendeur', 'Local pickup: seller'))}"><small class="io-n" id="rv-n"></small></form>
+      <div class="io-sg" id="rv-s" role="listbox" hidden></div>
+    </div>
     </div>
     <div class="fd-app" id="fd-app" hidden><button class="btn" id="fd-ok">${tt('Appliquer', 'Apply')}</button></div>`);
   // la barre « Appliquer » : visible des qu'un choix change (sinon on ne sait pas si ca a pris)
@@ -11577,6 +11601,37 @@ async function feuilleFiltresDeals(){
   lier('fd-bud', v => { bud = +v; });
   lier('fd-prov', v => { PV.clear(); v.split(',').forEach(k => PV.add(k)); });
 
+  // 26 nov 2026, 17 h 54 (Mathieu : « pour le radar ajoute une section pour selectionner les vendeurs avec lesquels l'utilisateur
+  // peut aller en cueillette ; notre app lui donne les choix [...] il commence a taper le nom et la proposition pop en dessous ;
+  // notre app doit absolument lui proposer le vendeur pour eviter des bugs ou erreurs d'ecriture » ; 19 h 24 : « il n'y a aucun
+  // port pour les vendeurs que l'utilisateur va selectionner [...] donc meilleure marge de profit »). Le calcul existait deja
+  // (30 oct, Reglages > Mes deals > « Je ramasse sur place » : port a 0 $ chez eux) ; il se choisit maintenant ICI, dans les
+  // filtres du Radar. On ne peut PAS ecrire un nom libre : seul un vendeur propose par l'app s'ajoute (les vendeurs suivis et
+  // ceux des annonces du Radar).
+  const RMAX = 20, RAM = [], RAM0 = [];
+  let VEND = [...new Set(Object.values(S.dealsParId || {}).map(x => String(x.vendeur || '').trim()).filter(Boolean))];
+  const cleV = (v) => String(v || '').toLowerCase();
+  const propV = (q) => vendeursProposes(VEND, RAM, q);
+  const peindreRam = () => { const l = $('#rv-l'); if (!l) return;
+    l.innerHTML = RAM.map((n, i) => `<span class="fv-p">${esc(n)}<button type="button" data-rvx="${i}" aria-label="${esc(tt('Retirer', 'Remove'))}">×</button></span>`).join('');
+    l.hidden = !RAM.length; $('#rv-n').textContent = RAM.length ? `${RAM.length}/${RMAX}` : '';
+    $('#rv-in').disabled = RAM.length >= RMAX;
+    $$('[data-rvx]').forEach(b => b.onclick = () => { RAM.splice(+b.dataset.rvx, 1); vibrer(); peindreRam(); peindreProp(); marquer(); }); };
+  const peindreProp = () => { const z = $('#rv-s'), q = $('#rv-in').value.trim(); if (!z) return;
+    const L = q ? propV(q) : [];
+    z.hidden = !q; $('#rv-in').setAttribute('aria-expanded', q ? 'true' : 'false');
+    z.innerHTML = !q ? '' : L.length ? L.map(v => `<button type="button" class="io-sgb" role="option" data-rv="${esc(v)}">${esc(v)}</button>`).join('')
+      : `<div class="io-sg0">${tt('Aucun vendeur à ce nom dans le Radar', 'No seller by that name in the Radar')}</div>`;
+    $$('#rv-s [data-rv]').forEach(b => b.onclick = () => { if (RAM.length < RMAX && !RAM.some(x => cleV(x) === cleV(b.dataset.rv))) RAM.push(b.dataset.rv);
+      $('#rv-in').value = ''; vibrer(); peindreRam(); peindreProp(); marquer(); }); };
+  $('#rv-in').oninput = peindreProp;
+  $('#rv-aj').onsubmit = (e) => { e.preventDefault(); const b = $('#rv-s [data-rv]'); if (b) b.click(); };      // Entree : la 1re proposition, jamais le texte tape
+  peindreRam();
+  API.deals_vendeurs_liste().then(r => { if (!r || !r.ok || !$('#rv-in')) return;
+    VEND = [...new Map([...(r.vendeurs || []), ...VEND, ...(r.ramassage || [])].map(v => [cleV(v), v])).values()];
+    (r.ramassage || []).forEach(v => { const n = VEND.find(x => cleV(x) === cleV(v)) || v; if (!RAM.some(x => cleV(x) === cleV(n))) { RAM.push(n); RAM0.push(cleV(n)); } });
+    peindreRam(); peindreProp(); }).catch(() => {});
+
   const appliquer = async (raz) => {
     const enCours = $('#fv-in').value.trim();                          // un nom tape sans toucher « + » compte aussi
     if (!raz && enCours.length >= 3 && FAV.length < FMAX && !FAV.some(x => x.toLowerCase() === enCours.toLowerCase())) FAV.push(enCours.slice(0, 40));
@@ -11592,6 +11647,10 @@ async function feuilleFiltresDeals(){
       : {collectionne: [...ep], favoris: noms, prix_min: null, prix_max: bud ? Math.round(versCAD(bud) * 100) / 100 : null, iq_min: iqm < 0 ? null : iqm};
     const pvN = raz ? ['CA', 'US'] : ['CA', 'US'].filter(k => PV.has(k));
     if (pvN.join() !== PV0.join()) { const x = await API.reglages_sauver({provenance: pvN}).catch(() => null); if (x) S.reglages = x; }
+    // la cueillette est un fait du compte (ou il peut aller), pas un filtre : « Réinitialiser » n'y touche pas
+    const ramN = RAM.map(cleV).sort();
+    if (!raz && ramN.join() !== [...RAM0].sort().join()) { const x = await API.deals_ramassage(ramN).catch(e => ({ok: false, erreur: e.message}));
+      if (!x || x.ok === false) { toast((x && x.erreur) || 'Erreur', 4000); return; } }
     const r = await API.deals_profil_regler(d).catch(e => ({ok:false, erreur:e.message}));
     if (r && r.ok === false) { toast(r.erreur || 'Erreur', 4000); return; }
     S.dealsProfil = r || null; sauverDealsF(); MEMO.clear(); fermerFeuille();
@@ -14027,7 +14086,7 @@ async function feuilleMegaTest(){
   if (r.en_cours) setTimeout(() => { if ($('#mt-go') && !$('#fond-feuille').hidden) feuilleMegaTest(); }, 10000);
 }
 // 26 nov 2026 (Mathieu : « on y va pour le mega test pour donnees PSA, juste me dire quand le partir ») : les ventes PSA 10 et PSA 9
-// de chaque joueur (120 jours), puis la version raw de chaque carte vue en PSA 10 (banque_psa.py). Admin seulement ; ne part
+// de chaque joueur (12 mois depuis le 26 nov, 18 h 50 ; avant : 120 jours), puis la version raw de chaque carte vue en PSA 10 (banque_psa.py). Admin seulement ; ne part
 // jamais seule : c'est ce bouton qui la lance.
 async function feuilleBanquePSA(){
   const r = await API.admin_banque_psa().catch(e => ({ok: false, erreur: e.message}));
@@ -14039,7 +14098,8 @@ async function feuilleBanquePSA(){
     interrompue: tt('En pause : reprend seul', 'Paused: resumes by itself'), en_cours: tt('En pause : reprend seul', 'Paused: resumes by itself'), arretee: tt('Arrêté', 'Stopped')}[r.statut] || r.statut;
   const phase = r.statut === 'aucune' ? '' : r.phase === 2 ? tt('Étape 2 de 2 : la version raw de chaque carte', 'Step 2 of 2: the raw version of each card') : tt('Étape 1 de 2 : ce qui se vend en PSA 10 et PSA 9', 'Step 1 of 2: what sells in PSA 10 and PSA 9');
   ouvrirFeuille(`<h3>${tt('Données PSA', 'PSA data')}</h3>
-    <div class="sous" style="margin-bottom:10px">${tt(`Les ventes PSA 10 et PSA 9 de ${nb(r.joueurs || r.joueurs_vises)} joueurs sur ${r.jours} jours, puis la version raw de chaque carte vendue en PSA 10 (CompSniper). Pour savoir quelles cartes valent la peine d’être envoyées chez PSA.`, `PSA 10 and PSA 9 sales of ${nb(r.joueurs || r.joueurs_vises)} players over ${r.jours} days, then the raw version of every card sold in PSA 10 (CompSniper). To learn which cards are worth sending to PSA.`)}</div>
+    <div class="sous" style="margin-bottom:10px">${tt(`Les ventes PSA 10 et PSA 9 de ${nb(r.joueurs || r.joueurs_vises)} joueurs sur ${r.a_etendre ? 120 : r.jours} jours, puis la version raw de chaque carte vendue en PSA 10 (CompSniper). Pour savoir quelles cartes valent la peine d’être envoyées chez PSA.`, `PSA 10 and PSA 9 sales of ${nb(r.joueurs || r.joueurs_vises)} players over ${r.a_etendre ? 120 : r.jours} days, then the raw version of every card sold in PSA 10 (CompSniper). To learn which cards are worth sending to PSA.`)}</div>
+    ${r.a_etendre && !r.en_cours ? `<div class="bandeau info" style="margin-bottom:10px"><b>${tt('À étendre', 'To extend')}</b> · ${tt(`Cette collecte couvre 120 jours et 200 joueurs. « Lancer ou reprendre » l’étend à 12 mois et ${nb(r.joueurs_vises)} joueurs : seule la période d’avant et les nouveaux joueurs sont payés.`, `This collection covers 120 days and 200 players. “Start or resume” extends it to 12 months and ${nb(r.joueurs_vises)} players: only the earlier period and the new players are paid for.`)}</div>` : ''}
     <div class="jb tq-g">
       <div class="jb-t"><span class="jb-k">${tt('Recherches', 'Searches')}</span><b class="jb-v">${nb(r.recherches_finies)} / ${nb(r.recherches)}</b><small>${tt('complètes', 'done')} (${pj} %)</small></div>
       <div class="jb-t"><span class="jb-k">${tt('Ventes lues', 'Sales read')}</span><b class="jb-v">${nb(r.ventes)}</b><small>${nb(r.pages)} ${tt('pages', 'pages')}${r.cartes_raw ? ' · ' + nb(r.cartes_raw) + ' ' + tt('cartes', 'cards') : ''}</small></div>
@@ -14057,6 +14117,12 @@ async function feuilleBanquePSA(){
   if (r.en_cours) setTimeout(() => { if ($('#bp-go') && !$('#fond-feuille').hidden) feuilleBanquePSA(); }, 10000);
 }
 // la carte « a grader » : son rang, le joueur, la carte, le rendement si 10 ; raw / PSA 10 / PSA 9 ; ce qui reste si 10, si 9, et le seuil
+// 26 nov, 18 h 50 (« 12 mois + 500 joueurs ») : la periode la plus recente ou la carte se vend assez : 60 jours, sinon 120, sinon 12 mois
+const agJours = (j, en) => j >= 360 ? (en ? '12 months' : '12 mois') : j + (en ? ' days' : ' jours');
+const agPeriodes = (r) => { const f = (r.fenetres && r.fenetres.length ? r.fenetres : r.jours_recent ? [r.jours_recent, r.jours] : [r.jours]);
+  if (f.length < 2) return [`${agJours(f[0])} au plus`, `${agJours(f[0], true)} at most`];
+  return [`les ${agJours(f[0])} les plus récents quand la carte s’y vend assez, sinon ${f.slice(1).map(j => agJours(j)).join(', sinon ')}`,
+          `the most recent ${agJours(f[0], true)} when the card sells enough in them, otherwise ${f.slice(1).map(j => agJours(j, true)).join(', otherwise ')}`]; };
 const agSaison = (a) => a ? a + '-' + String((a + 1) % 100).padStart(2, '0') : '';
 const agRend = (x) => '×' + decFr((Math.round(x.rendement * 10) / 10).toFixed(1));
 const agSeuil = (x) => x.seuil === 0 ? tt('Rentable même en 9', 'Pays off even at 9') : x.seuil != null ? tt(`Il faut ${Math.max(1, Math.round(x.seuil * 100))} % de 10 pour ne pas perdre`, `Needs ${Math.max(1, Math.round(x.seuil * 100))}% 10s to break even`) : x.reste9 != null && x.reste10 <= 0 ? tt('Perd même en 10', 'Loses even at 10') : tt('PSA 9 : pas assez de ventes', 'PSA 9: too few sales');
@@ -14065,7 +14131,7 @@ function agCarte(x, rg){
   const nb = (v) => (v || 0).toLocaleString(LOC()), sg = (v) => (v >= 0 ? '+' : '−') + argent(Math.abs(v), 0);
   return `<div class="ag-c"><div class="ag-h">${rg ? `<i class="tiq-rg">${rg}</i>` : ''}<span class="ag-n"><b>${esc(x.joueur)}</b><small>${esc(agNom(x))}${x.num ? ' · #' + esc(String(x.num).toUpperCase()) : ''}</small></span><em class="ag-x" title="${esc(tt('Ce qui revient pour 1 $ mis, si elle revient 10', 'What comes back per $1 spent, if it grades 10'))}">${agRend(x)}</em></div>
       <div class="ag-p"><span><small>Raw</small><b>${argent(x.raw, 0)}</b><i>${nb(x.n_raw)} ${tt('ventes', 'sales')}</i></span><span><small>PSA 10</small><b>${argent(x.psa10, 0)}</b><i>${nb(x.n10)} ${tt('ventes', 'sales')}</i></span><span><small>PSA 9</small><b>${x.psa9 != null ? argent(x.psa9, 0) : '—'}</b><i>${nb(x.n9)} ${tt('ventes', 'sales')}</i></span></div>
-      <div class="ag-r"><span class="${x.reste10 >= 0 ? 'vert' : 'rouge'}">${tt('Si 10', 'If 10')} : <b>${sg(x.reste10)}</b></span><span class="${x.reste9 == null ? '' : x.reste9 >= 0 ? 'vert' : 'rouge'}">${tt('Si 9', 'If 9')} : <b>${x.reste9 != null ? sg(x.reste9) : '—'}</b></span><span>${agSeuil(x)}</span>${x.jours != null ? `<span class="ag-j">${tt(`Ventes des ${Math.max(2, x.jours)} derniers jours`, `Sales of the last ${Math.max(2, x.jours)} days`)}</span>` : ''}</div></div>`;
+      <div class="ag-r"><span class="${x.reste10 >= 0 ? 'vert' : 'rouge'}">${tt('Si 10', 'If 10')} : <b>${sg(x.reste10)}</b></span><span class="${x.reste9 == null ? '' : x.reste9 >= 0 ? 'vert' : 'rouge'}">${tt('Si 9', 'If 9')} : <b>${x.reste9 != null ? sg(x.reste9) : '—'}</b></span><span>${agSeuil(x)}</span>${x.jours != null ? `<span class="ag-j">${x.jours >= 330 ? tt('Ventes des 12 derniers mois', 'Sales of the last 12 months') : tt(`Ventes des ${Math.max(2, x.jours)} derniers jours`, `Sales of the last ${Math.max(2, x.jours)} days`)}</span>` : ''}</div></div>`;
 }
 // 26 nov 2026 (Mathieu : « savoir les cartes qui valent le plus la peine d'etre gradees [...] ceux avec le meilleur rapport achat
 // versus vente [...] dans Admin, le temps qu'elle soit parfaite ») : la liste « A grader » (a_grader.py). Pour chaque carte exacte :
@@ -14079,7 +14145,7 @@ async function feuilleAGrader(){
   const nb = (v) => (v || 0).toLocaleString(LOC()), C = r.cartes || [], sg = (v) => (v >= 0 ? '+' : '−') + argent(Math.abs(v), 0);
   const ligne = (x, i) => agCarte(x, i + 1);
   ouvrirFeuille(`<h3>${tt('À grader', 'Worth grading')}<em class="tiq-pn">${nb(r.n_cartes)}</em></h3>
-    <p class="sous" style="margin:-4px 0 10px">${tt(`Des ventes réelles, la même carte, la même période : ${r.jours_recent ? `les ${r.jours_recent} derniers jours quand la carte s’y vend assez, sinon ${r.jours}` : `${r.jours} jours au plus`}. « Si 10 » et « Si 9 » : ce qui reste après la carte, ${argent(r.frais_psa, 0)} de PSA et d’envoi, et les frais eBay de la revente. Classé par ce qui revient pour 1 $ mis si elle revient 10. Aucune chance de 10 n’est supposée.`, `Real sales, the same card, the same period: ${r.jours_recent ? `the last ${r.jours_recent} days when the card sells enough in them, otherwise ${r.jours}` : `${r.jours} days at most`}. “If 10” and “If 9”: what is left after the card, ${argent(r.frais_psa, 0)} of PSA and shipping, and eBay resale fees. Ranked by what comes back per $1 spent if it grades 10. No odds of a 10 are assumed.`)}</p>
+    <p class="sous" style="margin:-4px 0 10px">${tt(`Des ventes réelles, la même carte, la même période : ${agPeriodes(r)[0]}. « Si 10 » et « Si 9 » : ce qui reste après la carte, ${argent(r.frais_psa, 0)} de PSA et d’envoi, et les frais eBay de la revente. Classé par ce qui revient pour 1 $ mis si elle revient 10. Aucune chance de 10 n’est supposée.`, `Real sales, the same card, the same period: ${agPeriodes(r)[1]}. “If 10” and “If 9”: what is left after the card, ${argent(r.frais_psa, 0)} of PSA and shipping, and eBay resale fees. Ranked by what comes back per $1 spent if it grades 10. No odds of a 10 are assumed.`)}</p>
     <div class="by-l" style="margin-bottom:8px"><span>${r.en_cours ? tt('Calcul en cours…', 'Computing…') + (r.texte ? ' ' + esc(r.texte) : '') : r.le ? tt('Calculé ', 'Computed ') + esc(ilYa(r.le)) + ' · ' + nb(r.lues) + ' ' + tt('ventes lues', 'sales read') : tt('Pas encore calculée', 'Not computed yet')}</span><button class="lien-t" id="ag-go" ${r.en_cours ? 'disabled' : ''}>${tt('Recalculer', 'Recompute')}</button></div>
     <div class="ag-l">${C.length ? C.map(ligne).join('') : `<div class="sous tiq-vide">${r.en_cours ? tt('La liste arrive dans quelques minutes.', 'The list arrives in a few minutes.') : tt('Aucune carte encore : lance le calcul.', 'No card yet: start the computation.')}</div>`}</div>`);
   const go = $('#ag-go'); if (go) go.onclick = async () => { vibrer(); go.disabled = true; const x = await API.admin_a_grader_calculer().catch(e => ({ok: false, erreur: e.message}));

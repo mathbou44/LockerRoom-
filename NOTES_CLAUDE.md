@@ -1468,3 +1468,46 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
 - **Demandé pour demain (21 h 02)** : « améliore SlabIQ et refais nos tests avec les nouvelles data une fois obtenues ; tu devrais
   aller chercher tout automatiquement » → refaire les tests sur les ventes de la collecte de 3 ans ; SlabIQ ne change que si le test
   le prouve ; le test publié sur le site doit tourner seul sur le serveur (tâche `g_c_auto`), sans export à la main.
+
+## 26 nov 2026, soir (p112) : collecte PSA 12 mois + 500 joueurs, fausses raw, menus, banc des comps
+
+- **Collecte PSA étendue (18 h 50, « besoin de plus de data […] au moins entre 500 et 1 000 » ; son choix : « 12 mois + 500
+  joueurs »)** : `banque_psa.JOURS` 120 → 365, `JOUEURS_N` 200 → 500, `VERSION_PLAN = 2` (colonne `version` de `collecte`).
+  Relancer une collecte finie avec l'ancien plan l'ÉTEND (`etendre_plan`) : chaque recherche finie reçoit seulement la tranche
+  d'avant (de 12 mois à la plus vieille vente reçue, `recu_min`, sinon à son ancien début) ; pas celles qui ramènent d'autres
+  joueurs (« cam york » : 1 480 ventes de baseball) ni une raw arrêtée par ses pages ; les joueurs 201-500 entrent sur 12 mois ;
+  la phase 2 est replanifiée. Une recherche s'arrête après 2 pages de suite où moins de 15 % des ventes nomment le joueur
+  (« autres joueurs »). Elle ne part jamais seule : la fiche Admin › Données PSA montre un bandeau « À étendre ».
+  Estimation sur le fichier : 4 500 à 6 000 crédits de plus. `tests/test_banque_psa_etendre.py`.
+- **`a_grader` VERSION 4** : `JOURS = 365`, `FENETRES = (60, 120)` : la période la plus récente où la carte se mesure (60 jours,
+  sinon 120, sinon 12 mois) ; la fiche dit sa vraie période. `_nomme` : le prénom puis le nom côte à côte (« Cam Schlittler New
+  York Yankees » n'est plus Cam York). Mesuré ici avec le fichier + 12 mois de nos archives : 176 → 288 cartes (133 sur 12 mois).
+- **Fausses raw (19 h 13, la fiche Dylan Larkin Canvas, raw 152 $ / PSA 10 131 $ : « impossible, une raw ne se vend jamais plus
+  chère qu'une PSA 10 »)** : 3 « raw » sur 5 portaient le titre automatique d'eBay sans note (des gradées). `_meme_periode` jette
+  toute « raw » au prix médian de la PSA 10 ou plus ; s'il reste moins de 5 vraies raw, la carte sort (« raw melangee a des
+  gradees »). Journal : « A grader : N ventes « raw » au prix de la PSA 10 jetees ».
+- **Menus déroulants (19 h 22, texte blanc sur fond blanc à l'ordi)** : règle globale `select{color-scheme:dark}` + options
+  sombres. `tests/test_menus_lisibles.py`.
+- **Comps (19 h 16 – 19 h 20, Josh Doan Violet Pixels /65 annoncée 128 $ alors que 25-26 $ en novembre ; Porter Martone Auto
+  Patch /175 annoncée 356 $ alors que 83-87 $ : « c'est inacceptable »)**. Reproduit sur la copie des archives : (1) les ventes
+  récentes sont dans nos archives mais sous d'autres recherches (« josh doan rookie auto », « porter martone ») ; la fiche ne lit
+  que la recherche de la carte ; (2) le tri rejette « autre année » (2024 / 2024-25 / 2025 / 2025-26 pour la même carte Update)
+  et « autre numéro » (#20 vs #59) ; (3) `mediane_robuste` jette une vente sous le tiers de la médiane.
+  **Banc (1 500 ventes récentes cachées, `/tmp/banc2`)** : règle en place : 25 % de couverture, 54 % à ± 25 %, trop haut ×1,5 :
+  9,7 %, ×2 : 3 %. Les trois corrections proposées NE passent PAS le banc : « la dernière vente basse fixe la valeur » : 50 % à
+  ± 25 %, et quand la vente d'avant était sous la moitié, la suivante REMONTE (trop bas 92 % des fois) ; « toutes les ventes du
+  joueur » : 49 % à ± 25 %, trop haut 11,3 % ; tri assoupli : n'ajoute des ventes qu'à 19 cartes sur 1 500, pas plus juste.
+  Rien de cela n'est livré. À l'essai : plafonner à la dernière vente du MÊME titre exact (le même vendeur qui remet la carte).
+- **À faire, demandé ce soir** : section admin simplifiée, style iOS, couleurs de l'accueil, données rafraîchies (19 h 10 – 19 h 11) ;
+  layout « Worth grading » (19 h 25) ; vendeurs en cueillette dans les filtres du Radar, port à 0 $ pour eux (17 h 54, confirmé
+  19 h 24) ; Small Business Program d'Apple pas encore fait (19 h 08) ; APNs dans Render : fait.
+- **Cueillette locale dans les filtres du Radar (p113 ; demandé 17 h 54, confirmé 19 h 24 : « aucun port pour les vendeurs que
+  l'utilisateur va sélectionner […] donc meilleure marge de profit »)** : le calcul existait depuis le 30 oct (`Api._ramasser` :
+  port à 0 $, total et mise max sans livraison ; Réglages › Mes deals › « Je ramasse sur place »). Il se choisit maintenant dans
+  la feuille Filtres : un groupe `#rv-g` (pastilles `#rv-l`, champ `#rv-in`, propositions `#rv-s` SOUS le champ). On ne peut pas
+  écrire un nom libre : seul un vendeur proposé s'ajoute (`vendeursProposes` : vendeurs suivis + vendeurs des annonces du Radar ;
+  début du nom d'abord, 4 au plus ; Entrée prend la 1re proposition). « Appliquer » appelle `deals_ramassage` seulement si la liste
+  change ; « Réinitialiser » n'y touche pas. Mesuré : la feuille tient sans défiler à 393 × 852 (649 px, 738 px avec 2
+  propositions) et à l'ordi. `tests/test_cueillette_filtres.py`. Suite complète : 311 fichiers, 0 échec.
+- **Règle D des comps (proposée, PAS livrée, attend son oui)** : quand le même titre exact s'est déjà vendu dans les 60 jours, la
+  valeur ne dépasse pas cette vente. Banc (2 500 ventes cachées, 323 cas) : trop haut ×1,5 : 6,2 % → 3,8 % ; à ± 25 % : 57 % → 53 %.

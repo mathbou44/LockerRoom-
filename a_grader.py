@@ -45,20 +45,22 @@ import threading
 import time
 from datetime import datetime, timedelta, timezone
 
-JOURS = 120
+JOURS = 365                          # 26 nov, 18 h 50 (Mathieu : « besoin de plus de data [...] au moins entre 500 et 1 000 » ; son choix :
+                                     # « 12 mois + 500 joueurs ») : une carte rare en PSA 10 se compte sur 12 mois
 RAW_MIN = 5
 P10_MIN = 5                          # 4 -> 5 des le premier essai : a 4 ventes, une PSA 10 d'une autre parallele suffit a fausser la mediane
 P9_MIN = 3
-VERSION = 3                          # 2 = la regle des 60 derniers jours (26 nov) ; 3 = les titres ecrits comme l'etiquette PSA ;
+VERSION = 4                          # 2 = la regle des 60 derniers jours (26 nov) ; 3 = les titres ecrits comme l'etiquette PSA ; 4 = 12 mois, les fausses raw jetees ;
                                      # une liste d'une autre version est refaite seule
 NUM_MIN = 5                          # titre « etiquette » : la carte doit deja avoir 5 ventes qui disent ce numero...
 NUM_NOTE_MIN = 3                     # ... dont 3 de la meme note, et le prix doit etre de 0,4 a 2,5 fois leur mediane
 NUM_PRIX = (0.4, 2.5)
-JOURS_RECENT = 60                    # 26 nov, 16 h 36 (Mathieu : « le temps est important » ; son « Oui ») : les 60 derniers jours quand
-                                     # la carte s'y vend assez (raw, PSA 10, et PSA 9 si elle a un prix PSA 9), sinon toute la fenetre
+JOURS_RECENT = 60                    # 26 nov, 16 h 36 (Mathieu : « le temps est important » ; son « Oui ») : la periode la plus RECENTE qui a
+FENETRES = (60, 120)                 # assez de ventes (raw, PSA 10, et PSA 9 si la carte a un prix PSA 9) : 60 jours, sinon 120, sinon
+                                     # toute la fenetre (12 mois). Une vieille vente ne sert que si la carte n'en a pas assez de recentes.
 REFAIRE_J = 7                        # 26 nov, 15 h 06 (Mathieu : « le top 100 a grader qui se refresh chaque semaine ») : refaite chaque semaine,
                                      # une fois de plus quand la collecte PSA finit, et quand l'admin le demande
-REFAIRE_COLLECTE_MIN = 50            # pendant une collecte PSA : la liste est refaite a chaque tour de la boucle (1 h)
+REFAIRE_COLLECTE_MIN = 110           # pendant une collecte PSA : la liste suit, refaite aux 2 heures (12 mois de ventes : ~10 minutes)
 N_TOP = 100
 ETAT = {"en_cours": False, "texte": None}
 _verrou = threading.Lock()
@@ -110,15 +112,21 @@ def _etiquette(titre, joueur):
 
 
 def _nomme(titre, joueur):
-    """Le titre nomme-t-il ce joueur ? Son nom de famille, et un mot qui commence comme son prenom (« Alex » / « Alexander »)."""
+    """Le titre nomme-t-il ce joueur ? Un mot qui commence comme son prenom (« Alex » / « Alexander »), puis son nom de famille
+    juste apres (un mot d'ecart au plus). 26 nov 2026 (le fichier de la collecte) : « Cam Schlittler New York Yankees » avait
+    un « cam » et un « york » : la recherche « cam york psa 10 » a ramene 1 480 ventes de baseball et de football."""
     import cartes_match as cm
-    mots = set(cm.norm(titre).split())
+    mots = cm.norm(titre).split()
     nom = cm.norm(joueur).split()
     if not nom:
         return True
-    if nom[-1] not in mots:
-        return False
-    return len(nom) < 2 or any(m.startswith(nom[0][:3]) for m in mots)
+    if len(nom) < 2:
+        return nom[0] in mots
+    fin = nom[1:]
+    for i, m in enumerate(mots):
+        if m.startswith(nom[0][:3]) and (mots[i + 1:i + 1 + len(fin)] == fin or mots[i + 2:i + 2 + len(fin)] == fin):
+            return True
+    return False
 
 
 def _duos(titre, joueur=None):
@@ -208,9 +216,14 @@ def _etale(prix):
     return (_q(prix, 0.75) / _q(prix, 0.25)) if len(prix) >= 4 and _q(prix, 0.25) > 0 else 1.0
 
 
-def _meme_periode(g, depuis):
+def _meme_periode(g, depuis, jetees=None):
     """Les prix raw, PSA 10 et PSA 9 d'une carte depuis `depuis`, sur LA MEME periode (elle commence a la plus tardive des
-    premieres ventes raw et PSA 10). -> (« ok », debut, raw, psa 10, psa 9), ou (la raison,) si la carte ne peut pas etre mesuree."""
+    premieres ventes raw et PSA 10). -> (« ok », debut, raw, psa 10, psa 9), ou (la raison,) si la carte ne peut pas etre mesuree.
+    26 nov 2026, 19 h 13 (Mathieu, la fiche Dylan Larkin Young Guns Canvas : raw 152 $, PSA 10 131 $ : « impossible, une raw ne
+    se vend jamais plus chere qu'une PSA 10 »). Les vraies ventes : 3 des 5 « raw » (152 $, 156 $, 171 $) portaient le titre
+    automatique d'eBay (« 2015-16 Upper Deck - Ud Canvas Young Guns Dylan Larkin #C112 (RC) »), sans note ecrite : des cartes
+    GRADEES ; les vraies raw : 10 $ a 64 $. Une vente « raw » au prix median de la PSA 10 ou plus n'est pas une raw : elle est
+    jetee, et la carte n'est mesuree que s'il reste assez de vraies raw. `jetees` (une liste) recoit leur nombre."""
     raw = [(d, p) for d, p in g["raw"] if d >= depuis]
     p10 = [(d, p) for d, p in g["10"] if d >= depuis]
     if len(raw) < RAW_MIN or len(p10) < P10_MIN:
@@ -220,6 +233,14 @@ def _meme_periode(g, depuis):
     p10 = [p for d, p in p10 if d >= d0]
     if len(raw) < RAW_MIN or len(p10) < P10_MIN:
         return ("periode trop courte",)
+    m10 = statistics.median(p10)
+    vraies = [p for p in raw if p < m10]
+    if len(vraies) < len(raw):
+        if len(vraies) < RAW_MIN:
+            return ("raw melangee a des gradees",)
+        if jetees is not None:
+            jetees.append(len(raw) - len(vraies))
+        raw = vraies
     if _etale(raw) > DISPERSION_MAX or _etale(p10) > DISPERSION_MAX:
         return ("prix trop etales",)
     return "ok", d0, raw, p10, [p for d, p in g["9"] if d >= d0]
@@ -366,8 +387,8 @@ def analyser(ventes, aujourd=None, jours=JOURS, respirer=None):
                 couv[note]["raisons"]["sorte pas reconnue"] = reste
             else:
                 couv[note]["raisons"].pop("sorte pas reconnue", None)
-    out, ecartees = [], {"peu de PSA 10": 0, "peu de raw": 0, "periode trop courte": 0, "prix trop etales": 0}
-    recent = (auj - timedelta(days=JOURS_RECENT)).isoformat() if jours > JOURS_RECENT else None
+    out, ecartees = [], {"peu de PSA 10": 0, "peu de raw": 0, "periode trop courte": 0, "prix trop etales": 0, "raw melangee a des gradees": 0}
+    raw_gradees = 0                                           # les « raw » au prix de la PSA 10, jetees (voir _meme_periode)
     fp = frais_psa()
     net = lambda p: p * (1 - FRAIS_EBAY) - FRAIS_FIXE
     for (j, q, an, se, num), g in finales.items():
@@ -380,20 +401,21 @@ def analyser(ventes, aujourd=None, jours=JOURS, respirer=None):
         if len(g["raw"]) < RAW_MIN:
             ecartees["peu de raw"] += 1
             continue
-        longue = _meme_periode(g, d_min)                      # la meme periode pour les deux
-        if longue[0] != "ok":
-            ecartees[longue[0]] += 1
-            continue
-        _, d0, raw, p10, p9 = longue
-        fenetre = jours
         # 26 nov 2026 (Mathieu : « le temps est important la-dedans » ; mesure : en 120 jours la PSA 10 de Misa est passee de 417 $ a
-        # 309 $, x4,39 -> x3,26) : les JOURS_RECENT derniers jours quand la carte s'y vend assez des deux cotes, sinon toute la
-        # fenetre. On ne passe PAS au recent si la carte y perd son prix PSA 9 (moins de P9_MIN ventes) : il fait le seuil.
-        if recent:
-            courte = _meme_periode(g, recent)
-            if courte[0] == "ok" and (len(courte[4]) >= P9_MIN or len(p9) < P9_MIN):
-                _, d0, raw, p10, p9 = courte
-                fenetre = JOURS_RECENT
+        # 309 $, x4,39 -> x3,26) : la periode la plus RECENTE ou la carte se mesure (assez de raw et de PSA 10, des prix qui se
+        # tiennent) : 60 jours, sinon 120, sinon toute la fenetre. On saute une periode courte si la carte y perd son prix PSA 9
+        # (moins de P9_MIN ventes) alors qu'une plus longue le donne : il fait le seuil.
+        essais = []
+        for f in [f for f in FENETRES if f < jours] + [jours]:
+            jt = []
+            essais.append((f, _meme_periode(g, (auj - timedelta(days=f)).isoformat() if f < jours else d_min, jt), sum(jt)))
+        bons = [e for e in essais if e[1][0] == "ok"]
+        if not bons:
+            ecartees[essais[-1][1][0]] += 1
+            continue
+        avec9 = [e for e in bons if len(e[1][4]) >= P9_MIN]
+        fenetre, (_, d0, raw, p10, p9), n_jetees = (avec9 or bons)[0]
+        raw_gradees += n_jetees
         m_raw, m10 = statistics.median(raw), statistics.median(p10)
         m9 = statistics.median(p9) if len(p9) >= P9_MIN else None
         if m_raw <= 0:
@@ -417,8 +439,10 @@ def analyser(ventes, aujourd=None, jours=JOURS, respirer=None):
     couv["sortes_inconnues"] = [[d, n] for d, n in sorted(mots_inconnus.items(), key=lambda x: (-x[1], x[0]))[:N_INCONNUES] if n >= 3]
     couv["exemples"] = {d: ex_duo.get(d) or [] for d, _ in couv["sortes_inconnues"]}
     couv["exemples_lot"] = ex_lot
-    return {"version": VERSION, "cartes": out[:N_LISTE], "n_cartes": len(out), "lues": lues, "rangees": rangees, "ecartees": ecartees, "couverture": couv,
-            "jours_recent": JOURS_RECENT if recent else None, "n_recent": sum(1 for x in out if recent and x["fenetre"] == JOURS_RECENT),
+    return {"version": VERSION, "cartes": out[:N_LISTE], "n_cartes": len(out), "lues": lues, "rangees": rangees, "ecartees": ecartees, "raw_gradees": raw_gradees, "couverture": couv,
+            "jours_recent": JOURS_RECENT if jours > JOURS_RECENT else None,
+            "n_recent": sum(1 for x in out if jours > JOURS_RECENT and x["fenetre"] == JOURS_RECENT),
+            "fenetres": [f for f in FENETRES if f < jours] + [jours], "par_fenetre": {str(f): sum(1 for x in out if x["fenetre"] == f) for f in sorted({x["fenetre"] for x in out})},
             "frais_psa": fp, "frais_ebay": FRAIS_EBAY, "jours": jours, "le": datetime.now().isoformat(timespec="seconds"),
             "regles": {"raw_min": RAW_MIN, "p10_min": P10_MIN, "p9_min": P9_MIN}}
 
@@ -501,8 +525,11 @@ def calculer():
     os.replace(ch + ".tmp", ch)
     print(f"A grader : {r['n_cartes']} cartes ({r['lues']} ventes lues, {r['rangees']} rangees, {r['secondes']} s)", flush=True)
     try:
-        if r.get("jours_recent"):
-            print(f"A grader : {r.get('n_recent') or 0} cartes mesurees sur les {r['jours_recent']} derniers jours, {r['n_cartes'] - (r.get('n_recent') or 0)} sur {r['jours']}", flush=True)
+        if r.get("raw_gradees") or (r.get("ecartees") or {}).get("raw melangee a des gradees"):
+            print(f"A grader : {r.get('raw_gradees') or 0} ventes « raw » au prix de la PSA 10 jetees (gradees sans note dans le titre) ; "
+                  f"{(r.get('ecartees') or {}).get('raw melangee a des gradees') or 0} cartes sorties (trop peu de vraies raw)", flush=True)
+        if r.get("par_fenetre"):
+            print("A grader : periode mesuree : " + ", ".join(f"{k} jours {v} cartes" for k, v in r["par_fenetre"].items()), flush=True)
         cv = r.get("couverture") or {}
         for n in ("10", "9"):
             x = cv.get(n) or {}
@@ -604,5 +631,5 @@ def page():
     return {"ok": True, "en_cours": ETAT["en_cours"], "texte": ETAT["texte"], "cartes": v.get("cartes") or [], "n_cartes": v.get("n_cartes") or 0,
             "lues": v.get("lues"), "rangees": v.get("rangees"), "ecartees": v.get("ecartees") or {}, "le": v.get("le"),
             "frais_psa": v.get("frais_psa") or frais_psa(), "frais_ebay": FRAIS_EBAY, "jours": v.get("jours") or JOURS,
-            "jours_recent": v.get("jours_recent"), "n_recent": v.get("n_recent"),
+            "jours_recent": v.get("jours_recent"), "n_recent": v.get("n_recent"), "fenetres": v.get("fenetres"), "par_fenetre": v.get("par_fenetre"),
             "regles": v.get("regles") or {"raw_min": RAW_MIN, "p10_min": P10_MIN, "p9_min": P9_MIN}}

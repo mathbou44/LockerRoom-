@@ -46,7 +46,7 @@ assert banque_psa.joueurs_cibles(10) == ["Connor Bedard", "Tim Stützle"], "acti
 assert banque_psa.construire_plan() == 4 and banque_psa.construire_plan() == 0
 c = banque_psa._cx(); plan = c.execute("SELECT q, phase, joueur, debut, fin FROM plan ORDER BY ordre").fetchall(); c.close()
 assert [p[0] for p in plan] == ["connor bedard psa 10", "connor bedard psa 9", "tim stutzle psa 10", "tim stutzle psa 9"], plan
-assert all(p[1] == 1 and p[3] == (auj - timedelta(days=120)).isoformat() and p[4] == auj.isoformat() for p in plan), plan
+assert all(p[1] == 1 and p[3] == (auj - timedelta(days=banque_psa.JOURS)).isoformat() and p[4] == auj.isoformat() for p in plan), plan
 
 # ---- 3. une fausse CompSniper
 def v(i, titre, prix="100", j=5):
@@ -86,7 +86,7 @@ APP.clear()
 b = banque_psa.collecter(plafond=100, pause=0)
 assert b["statut"] == "terminee" and b["phase"] == 2, b
 assert [a[:2] for a in APP] == [("connor bedard psa 9", 1), ("tim stutzle psa 10", 1), ("tim stutzle psa 9", 1), ("connor bedard o-pee-chee glossy", 1)], APP
-assert all(a[2] == (auj - timedelta(days=120)).isoformat() and a[3] == auj.isoformat() for a in APP)
+assert all(a[2] == (auj - timedelta(days=banque_psa.JOURS)).isoformat() and a[3] == auj.isoformat() for a in APP)
 assert b["credits"] == 6 and historique.utilises()["mois"] - u0 == 6, b                   # 1 page = 1 credit, compte avec les autres
 # phase 2 : la Glossy (12 PSA 10) est cherchee ; la Young Guns (36) est deja dans nos archives ; la Platinum (3) : trop peu
 c = banque_psa._cx(); p2 = c.execute("SELECT q, joueur, n10, fini, raison, pages FROM plan WHERE phase=2 ORDER BY ordre").fetchall(); c.close()
@@ -112,7 +112,7 @@ def http(code):
     return urllib.error.HTTPError("https://x", code, "x", {}, io.BytesIO(b""))
 banque_psa._run_maj(statut="interrompue", credits=0, raw_planifie=1)
 c = banque_psa._cx(); c.execute("DELETE FROM plan")
-c.execute("INSERT INTO plan (q, phase, joueur, ordre, debut, fin) VALUES ('a b psa 10', 1, 'A B', 0, ?, ?), ('c d psa 10', 1, 'C D', 1, ?, ?)", (jr(120), jr(0), jr(120), jr(0)))
+c.execute("INSERT INTO plan (q, phase, joueur, ordre, debut, fin) VALUES ('a b psa 10', 1, 'A B', 0, ?, ?), ('c d psa 10', 1, 'C D', 1, ?, ?)", (jr(banque_psa.JOURS), jr(0), jr(banque_psa.JOURS), jr(0)))
 c.commit(); c.close()
 def page4(q, p, debut, fin):
     APP.append((q, p))
