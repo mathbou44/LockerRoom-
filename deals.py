@@ -620,7 +620,9 @@ def _revalider_un(x):
     bons = [v for v in vs if not cartes_match.raisons_refus(cib, v.get("titre") or "")]
     if len(bons) == len(vs):
         return x
-    m, _pv = valeur_sure(bons, x.get("titre") or "")
+    m, _pv = valeur_sure(sans_doublons(bons), x.get("titre") or "")
+    if m and (age_ventes(_pv) is None or age_ventes(_pv) > JOURS_FRAIS):
+        m = None                                     # 26 nov 2026 : plus aucune vente de 45 jours ou moins
     if not m or not x.get("total") or x["total"] > prix_max(m, taxe=taxe_de(x, valeur=m)):
         return None
     x.update(valeur=m, vendues=bons, ratio=round(x["total"] / m, 3))
@@ -750,7 +752,7 @@ def _rejuger(x):
     import cartes_match
     if cartes_match.abimee(x.get("titre") or ""):
         return False
-    m, _pv = valeur_sure([v for v in x.get("vendues") or [] if v.get("prix")], x.get("titre") or "")
+    m, _pv = valeur_sure(sans_doublons([v for v in x.get("vendues") or [] if v.get("prix")]), x.get("titre") or "")
     if not m or not x.get("total") or x["total"] > prix_max(m, taxe=taxe_de(x, valeur=m)):
         return False
     x.update(valeur=m, ratio=round(x["total"] / m, 3), v=VERSION)
@@ -870,20 +872,48 @@ def _total(a):
     return round((a.get("prix_cad") or 0) + (PORT_INCONNU if port is None and a.get("prix_cad") else (port or 0)), 2)
 
 
-def memes_ventes(cib, ventes):
-    """Les ventes de la MEME carte (sans doublons : une vente vue par deux recherches ne compte qu'une fois)."""
-    import cartes_match
-    vus, out = set(), []
+_RE_ITEM = re.compile(r"/itm/(?:[^/?#]*/)?(\d{9,14})")
+
+
+def cle_vente(v):
+    """Ce qui identifie UNE vente : son numero d'item eBay (dans le lien), sinon son titre et sa date."""
+    m = _RE_ITEM.search(str(v.get("url") or ""))
+    if m:
+        return "i" + m.group(1)
+    if v.get("item_id") or v.get("cle"):
+        return "i" + str(v.get("item_id") or v.get("cle"))
+    return "t" + " ".join(str(v.get("titre") or "").lower().split()) + "|" + str(v.get("le") or "")[:10]
+
+
+def sans_doublons(ventes):
+    """26 nov 2026, 21 h 18 (Mathieu, la fiche Gabe Perreault Ice Premieres Patch /25 : chaque vente montree DEUX fois, et une
+    mise max de 31 $ tiree d'une seule vraie vente ; son « oui » aux 3 regles a 21 h 21). Une vente ne compte qu'une fois, meme
+    si elle nous arrive par deux recherches (le prix converti differe de quelques sous, le lien aussi) : le meme numero d'item,
+    ou le meme titre vendu le meme jour a 3 % pres."""
+    vus, par_jour, out = set(), {}, []
     for v in ventes or []:
         if not v.get("prix"):
             continue
-        k = v.get("url") or f"{v.get('titre')}|{v.get('le')}|{v.get('prix')}"
-        if k in vus:
+        k = cle_vente(v)
+        if k[0] == "i" and k in vus:                 # le meme numero d'item ; sans numero, c'est le prix du meme jour qui tranche
+            continue
+        t = " ".join(str(v.get("titre") or "").lower().split()) + "|" + str(v.get("le") or "")[:10]
+        try:
+            px = float(v["prix"])
+        except (TypeError, ValueError):
+            continue
+        if any(abs(px - q) <= 0.03 * max(px, q) for q in par_jour.get(t, ())):
             continue
         vus.add(k)
-        if not cartes_match.raisons_refus(cib, v.get("titre") or ""):
-            out.append(v)
+        par_jour.setdefault(t, []).append(px)
+        out.append(v)
     return out
+
+
+def memes_ventes(cib, ventes):
+    """Les ventes de la MEME carte (sans doublons : une vente vue par deux recherches ne compte qu'une fois)."""
+    import cartes_match
+    return [v for v in sans_doublons(ventes) if not cartes_match.raisons_refus(cib, v.get("titre") or "")]
 
 
 # 27 oct 2026 (Mathieu : « quand on va etre live, je veux pas que les utilisateurs aient de faux deals ou de faux prix »)
@@ -1078,40 +1108,106 @@ def _titre_exact(t):
     return " ".join(str(t or "").lower().split())
 
 
-def _ventes_meme_titre(a, cib, maint=None):
-    """Les ventes du MEME titre exact que l'annonce, dans nos archives du joueur, depuis MEME_TITRE_J jours : la plus recente
-    en dernier. [] si le titre est trop court, le joueur inconnu ou la base occupee : jamais d'attente, jamais d'erreur."""
+ARCHIVES_J = 90                      # ce qu'on relit des archives d'un joueur (le meme titre : 60 jours ; les ventes recentes : 90)
+RECHERCHE_VIEILLE_J = 30             # la recherche de la carte n'a aucune vente depuis 30 jours : on ajoute nos autres ventes du joueur
+
+
+def _archives_joueur(cib, maint=None):
+    """Nos ventes des ARCHIVES_J derniers jours pour ce joueur, toutes recherches (« q » commence par son nom) :
+    [(date, prix, cle, photo, lien, titre)], la plus vieille d'abord. [] si le joueur est inconnu ou la base occupee."""
     import cartes_match
-    titre = _titre_exact(a.get("titre"))
     j = cartes_match.norm((cib or {}).get("joueur") or "")
-    if len(titre) < 20 or len(j.split()) < 2 or (a.get("sport") or "hockey") != "hockey":
+    if len(j.split()) < 2:
         return []
     t = time.time()
     with _verrou_meme:
         e = _MEME.get(j)
-    if not e or t - e[0] > _MEME_S:
-        par = {}
+    if e and t - e[0] <= _MEME_S:
+        return e[1]
+    par = {}
+    try:
+        import base_ventes
+        depuis = ((maint or datetime.now()) - timedelta(days=ARCHIVES_J)).strftime("%Y-%m-%d")
+        c = base_ventes._cx()
         try:
-            import base_ventes
-            depuis = ((maint or datetime.now()) - timedelta(days=MEME_TITRE_J)).strftime("%Y-%m-%d")
-            c = base_ventes._cx()
-            try:
-                for cle, prix, le, photo, url, tv in c.execute(
-                        "SELECT cle, prix, le, photo, url, titre FROM ventes WHERE q >= ? AND q < ? AND le >= ?", (j, j + "{", depuis)):
-                    if prix and prix > 0:
-                        par.setdefault(_titre_exact(tv), {})[str(cle)] = (str(le)[:10], float(prix), str(cle), photo, url)
-            finally:
-                c.close()
-        except Exception as ex:                      # sqlite3.Error, base absente : la regle se tait
-            print("Deals (meme titre) : " + repr(ex)[:120], flush=True)
-            return []
-        e = (t, {k: sorted(v.values()) for k, v in par.items()})
-        with _verrou_meme:
-            if len(_MEME) > 400:
-                _MEME.clear()
-            _MEME[j] = e
+            for cle, prix, le, photo, url, tv in c.execute(
+                    "SELECT cle, prix, le, photo, url, titre FROM ventes WHERE q >= ? AND q < ? AND le >= ?", (j, j + "{", depuis)):
+                if prix and prix > 0:
+                    par[str(cle)] = (str(le)[:10], float(prix), str(cle), photo, url, tv)
+        finally:
+            c.close()
+    except Exception as ex:                      # sqlite3.Error, base absente : les regles se taisent
+        print("Deals (archives du joueur) : " + repr(ex)[:120], flush=True)
+        return []
+    lignes = sorted(par.values())
+    with _verrou_meme:
+        if len(_MEME) > 250:
+            _MEME.clear()
+        _MEME[j] = (t, lignes)
+    return lignes
+
+
+def _ventes_meme_titre(a, cib, maint=None):
+    """Les ventes du MEME titre exact que l'annonce, dans nos archives du joueur, depuis MEME_TITRE_J jours : la plus recente
+    en dernier. [] si le titre est trop court, le joueur inconnu ou la base occupee : jamais d'attente, jamais d'erreur."""
+    titre = _titre_exact(a.get("titre"))
+    if len(titre) < 20 or (a.get("sport") or "hockey") != "hockey":
+        return []
+    depuis = ((maint or datetime.now()) - timedelta(days=MEME_TITRE_J)).strftime("%Y-%m-%d")
     moi = str(a.get("item_id") or "")
-    return [v for v in e[1].get(titre, []) if v[2] != moi]
+    return [v[:5] for v in _archives_joueur(cib, maint) if v[0] >= depuis and v[2] != moi and _titre_exact(v[5]) == titre]
+
+
+def avec_ventes_du_joueur(a, cib, pv, maint=None):
+    """26 nov 2026, 21 h 18 (Mathieu, la fiche Matvei Michkov Credentials Debut Ticket Access Auto /99 : « mise max 70 $ [...]
+    explique-moi ou est le profit » ; son « oui » a 21 h 21). La valeur (127 $) venait de 8 ventes de fevrier a aout : la
+    recherche de la carte n'avait rien lu de plus recent, alors que nos archives du meme joueur, sous d'autres recherches,
+    avaient 143 $ (14 nov), 59 $ (15 oct) et 83 $ (8 oct). Quand la recherche de la carte n'a aucune vente depuis
+    RECHERCHE_VIEILLE_J jours, on y AJOUTE nos autres ventes de la meme carte, plus recentes que sa derniere (le meme tri :
+    cartes_match). Refait sur la copie des archives : valeur 127 $ -> 83 $, mise max 70 $ -> 45 $."""
+    pv = list(pv or [])
+    if (a.get("sport") or "hockey") != "hockey":
+        return pv
+    try:
+        dernier = max((str(v.get("le") or "")[:10] for v in pv), default="")
+        limite = ((maint or datetime.now()) - timedelta(days=RECHERCHE_VIEILLE_J)).strftime("%Y-%m-%d")
+        if dernier >= limite:
+            return pv
+        moi = str(a.get("item_id") or "")
+        plus = [{"titre": tv, "prix": prix, "le": le, "photo": photo, "url": url, "item_id": cle, "_arch": True}
+                for le, prix, cle, photo, url, tv in _archives_joueur(cib, maint) if le > dernier and cle != moi]
+        return memes_ventes(cib, pv + plus) if plus else pv
+    except Exception as ex:
+        print("Deals (ventes du joueur) : " + repr(ex)[:120], flush=True)
+        return pv
+
+
+SOURCES_SURES = ("vendues", "echange")
+
+
+def fraiche(va, maint=None):
+    """26 nov 2026, 21 h 21 (son « oui ») : pas de mise max ni de profit si la vente comparable la plus recente a plus de
+    JOURS_FRAIS (45) jours. Le chasseur l'appliquait deja a ses deals (18 nov) ; pas les encans suivis (Savage, Remi...), ni la
+    fiche, ni la watchlist : la Michkov etait un encan suivi. Mesure (1 500 ventes cachees) : une valeur dont la derniere vente
+    a plus de 30 jours est 1,5 fois trop haute 21 % du temps, contre 9 % sinon. -> la valeur, ou None si elle est perimee."""
+    if not va or not va[0]:
+        return va
+    # La regle vise une valeur ANNONCEE comme sure (« Se vend X $ », la mediane des ventes de la carte). Les valeurs dites
+    # « Estimé » (une autre saison, une vente unique d'une carte rare, une autre note, une carte similaire) gardent leurs
+    # propres regles, decidees par Mathieu avec leur rabais de prudence : la Luke Hughes Honorable Numbers /43 (16 nov), la
+    # Kaprizov The Cup /35 chez Remi (14 nov : « oui go »), les saisons voisines (7 nov).
+    if len(va) > 1 and va[1] not in SOURCES_SURES:
+        return va
+    # ... et les 2 ventes d'un an d'une carte rare (auto, patch, /99 et moins), deja comptees a la plus basse moins 10 %
+    # (7 nov, la Nazar Future Watch Auto Inscribed). La Perreault du 26 nov n'en etait pas : c'etait UNE vente vue deux fois.
+    if len(va) > 2 and va[2] == 2:
+        return va
+    return va if any(_jours(v, maint) <= JOURS_FRAIS for v in ((va[3] if len(va) > 3 else None) or [])) else None
+
+
+def age_ventes(ventes, maint=None):
+    """L'age (en jours) de la vente la plus recente, ou None."""
+    return min((_jours(v, maint) for v in ventes or [] if v.get("le")), default=None)
 
 
 def plafonner_meme_titre(a, va, cib=None, maint=None):
@@ -1148,7 +1244,7 @@ def _valeur_annonce0(a, ventes, actives, cib=None):
     autres annonces de la meme carte (moins 15 %) ne servent que de plafond. -> (valeur, source, n, ventes) ou None."""
     import cartes_match
     cib = cib or cartes_match.cible_titre(a.get("titre") or "")
-    pv = memes_ventes(cib, ventes)
+    pv = avec_ventes_du_joueur(a, cib, memes_ventes(cib, ventes))
     if len(pv) < 2:
         return None
     m, pv = valeur_sure(pv, a.get("titre") or "")
@@ -1476,8 +1572,8 @@ def valeur_ou_saison(a, ventes, actives, cib=None):
     """La valeur de la carte (ses propres ventes) ; sinon celle des saisons voisines (valeur_autre_saison), dite comme telle."""
     # 16 nov 2026 (Mathieu, Luke Hughes Honorable Numbers /43 : « faut pas que ca arrive, surtout quand on a les comps ») :
     # UNE vente de LA carte passe avant les cartes similaires
-    return valeur_annonce(a, ventes, actives, cib=cib) or plafonner_meme_titre(a, valeur_autre_saison(a, ventes, cib=cib) or valeur_unique(a, ventes, cib=cib)
-                                                                               or valeur_autre_note(a, ventes, cib=cib) or valeur_approx(a, ventes, cib=cib), cib=cib)
+    return fraiche(valeur_annonce(a, ventes, actives, cib=cib)) or plafonner_meme_titre(a, valeur_autre_saison(a, ventes, cib=cib) or valeur_unique(a, ventes, cib=cib)
+                                                                                        or valeur_autre_note(a, ventes, cib=cib) or valeur_approx(a, ventes, cib=cib), cib=cib)
 
 
 UNIQUE_SERIE_MAX = 25            # 12 nov 2026 : une carte numerotee /25 ou moins...

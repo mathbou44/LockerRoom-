@@ -13273,6 +13273,21 @@ class Api:
         import deals as _deals
         # 30 oct 2026 (Mathieu : « les comps n'ont toujours pas update ») : on dit POURQUOI il n'y a pas de valeur (aucune
         # vente trouvee, ventes trop vieilles, trop differentes...) au lieu d'un « pas assez de ventes » pour tout
+        # 26 nov 2026, 21 h 21 (Mathieu, les fiches Michkov Credentials /99 et Perreault Ice Premieres /25 : « explique-moi ou est le
+        # profit » ; son « oui » aux 3 regles) : (3) une vente ne compte qu'une fois ; (2) quand la recherche de la carte n'a aucune
+        # vente depuis 30 jours, nos autres ventes de la meme carte, plus recentes, s'y ajoutent (deals.avec_ventes_du_joueur)
+        try:
+            import cartes_match as _cmf
+            _cibf = _cmf.cible_titre(t or "")
+            _av = _deals.sans_doublons([x for x in (vc.get("ventes") or []) if x.get("prix")])
+            _ap = _deals.avec_ventes_du_joueur({"titre": t, "item_id": item_id}, _cibf, _av) if t else _av
+            if len(_ap) != len(vc.get("ventes") or []):
+                _ap.sort(key=lambda x: str(x.get("le") or ""), reverse=True)
+                vc = dict(vc, ventes=_ap, nb=len(_ap))
+                ventes = _ap
+                nb_v = len(_ap)
+        except Exception as e_:
+            print("Fiche (ventes du joueur) : " + repr(e_)[:120], flush=True)
         vs_ = _deals.valeur_sure([x for x in (vc.get("ventes") or []) if x.get("prix")], t or "") if nb_v >= 2 else (None, "pas assez de ventes")
         vm = vs_[0]
         # 7 nov 2026 (Mathieu : « utiliser l'API seulement pour les cartes sans comps de 3 mois ») : pas de valeur sure avec les
@@ -13409,6 +13424,24 @@ class Api:
             return {"ok": True, "article": {**a, "total": total}, "comps": [], "n": 0, "coupe": True,
                     "taxe_achat": _deals.taxe_de({**a, "_pays": pays_}, total=total), "etranger": _deals.etranger({**a, "_pays": pays_}, pays_),
                     "mes_achats": mes_achats, "deja_achetee": deja_achetee}
+        # (1) la fraicheur : la vente comparable la plus recente a plus de 45 jours -> pas de valeur, donc ni mise max ni profit ;
+        # la fiche garde ses ventes et dit leur age (« derniere vente il y a 94 jours : prix a verifier »)
+        perimees = None
+        try:
+            age_ = _deals.age_ventes(ventes)
+            src_ = "chasseur" if chasseur else src_vm if vm else saison_v[1] if saison_v else "annonces"
+            # seulement une valeur dite sure (les ventes de la carte) ; une valeur « Estimé » garde ses regles (deals.fraiche)
+            # (la valeur du chasseur, gardee quand les ventes ne se lisent pas, a deja passe sa propre regle de fraicheur ; les
+            # 2 ventes d'un an d'une carte rare, comptees a la plus basse moins 10 %, aussi : voir deals.fraiche)
+            if valeur and src_ in ("vendues", "echange") and age_ is not None and age_ > _deals.JOURS_FRAIS and len(ventes or []) != 2:
+                perimees, valeur, vm, chasseur, saison_v, suggere = (age_ if age_ is not None else 999), None, None, None, None, None
+        except Exception as e_:
+            print("Fiche (fraicheur) : " + repr(e_)[:120], flush=True)
+        if perimees:
+            return {"ok": True, "article": {**a, "total": total}, "comps": comps, "mediane": med, "n": n, "deal_retire": bool(maj_deal and maj_deal.get("retire")) or bool(isinstance(corr, dict) and corr.get("retire")),
+                    "suggere": None, "ventes": ventes, "mediane_vendue": None, "nb_vendues": len(ventes or []), "valeur": None, "valeur_source": "perimee",
+                    "ventes_perimees": perimees, "ventes_attente": False, "valeur_chasseur": None, "ventes_panne": panne, "vieux_cache": bool(vc.get("vieux_cache")),
+                    "peu_de_ventes": True, "pourquoi": None, "nb_trouvees": nb_v, "mes_achats": mes_achats, "deja_achetee": deja_achetee}
         return {"ok": True, "article": {**a, "total": total}, "comps": comps, "mediane": med, "n": n, "deal_retire": bool(maj_deal and maj_deal.get("retire")) or bool(isinstance(corr, dict) and corr.get("retire")),
                 "suggere": suggere, "ventes": ventes, "mediane_vendue": None if saison_v else vc.get("mediane"),
                 "nb_vendues": len(ventes) if saison_v else vc.get("nb") or len(ventes),

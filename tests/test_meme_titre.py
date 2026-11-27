@@ -26,20 +26,29 @@ base_ventes.noter("porter martone", [{"titre": T, "prix": 82.88, "le": jr(7), "u
                                      {"titre": T, "prix": 40.0, "le": jr(75), "url": "https://e/40"}], sport="hockey")     # 75 jours : trop vieille
 deals._MEME.clear()
 va = deals.valeur_annonce(A, ETE, [])
+# (depuis 21 h 21, la recherche de l'ete est « vieille » : nos ventes du joueur plus recentes s'y ajoutent, voir test_comps_fraiches)
+assert va[0] == 82.88 and va[3][0]["prix"] == 82.88 and va[3][0]["le"] == jr(7), va[:3]
+# la recherche de la carte est FRAICHE (3 ventes du mois, autour de 300 $) : c'est le plafond du meme titre qui joue
+FR = ETE + [v(8, 300, 5), v(9, 310, 12), v(10, 290, 20)]
+sans = deals._valeur_annonce0(A, FR, [])
+assert sans[0] >= 290, sans[0]
+va = deals.valeur_annonce(A, FR, [])
 assert va[0] == 82.88, va[0]
 assert va[3][0].get("meme") is True and va[3][0]["prix"] == 82.88 and va[3][0]["le"] == jr(7), va[3][0]
-assert va[1] == avant[1] and va[2] == avant[2] and len(va[3]) <= 6
+assert va[1] == sans[1] and va[2] == sans[2] and len(va[3]) <= 6
 # la mise max suit : bien sous les 51 $ deja mises + 13 $ de port -> plus un deal
 mm = deals.prix_max(va[0], taxe=deals.taxe_de(A, valeur=va[0])) - deals.port_eff(A["port_cad"])
 assert mm < 51, mm
-# majuscules et espaces : le meme titre quand meme ; un titre different (le #20) ne plafonne rien
-assert deals.valeur_annonce(dict(A, titre="  " + T.lower().replace(" #59", "  #59")), ETE, [])[0] == 82.88
-B = dict(A, titre="2024 Upper Deck Team Canada Juniors Porter Martone Auto Patch /175")
-assert deals.valeur_annonce(B, ETE, [])[0] == avant[0], "un autre titre : la regle ne joue pas"
-# la vente du meme titre est PLUS HAUTE que la valeur : rien ne change (un plafond, jamais un plancher)
+# majuscules et espaces : le meme titre quand meme
+assert deals.valeur_annonce(dict(A, titre="  " + T.lower().replace(" #59", "  #59")), FR, [])[0] == 82.88
+# un titre qui ne s'est jamais vendu tel quel : pas de plafond (la valeur de la recherche fraiche reste)
+B = dict(A, titre="2024 Upper Deck Team Canada Juniors Porter Martone Auto Patch /175 SP")
+assert deals._ventes_meme_titre(B, cartes_match.cible_titre(B["titre"])) == []
+# la vente du meme titre est PLUS HAUTE que la valeur : rien ne monte (un plafond, jamais un plancher)
 base_ventes.noter("porter martone", [{"titre": T, "prix": 900.0, "le": jr(2), "url": "https://e/900"}], sport="hockey")
 deals._MEME.clear()
-assert deals.valeur_annonce(A, ETE, [])[0] == avant[0]
+assert deals.plafonner_meme_titre(A, (300.0, "vendues", 3, []))[0] == 300.0
+assert deals.valeur_annonce(A, FR, [])[0] <= sans[0]
 # l'annonce elle-meme (meme numero d'item) ne compte pas ; un titre trop court ou sans joueur : la regle se tait
 assert deals.plafonner_meme_titre({"titre": "Porter Martone", "item_id": "1"}, (300.0, "vendues", 3, [])) == (300.0, "vendues", 3, [])
 assert deals.plafonner_meme_titre(A, None) is None
@@ -53,7 +62,7 @@ deals._MEME.clear()
 vrai = base_ventes._cx
 base_ventes._cx = lambda *a_, **k_: (_ for _ in ()).throw(__import__("sqlite3").OperationalError("database is locked"))
 try:
-    assert deals.valeur_annonce(A, ETE, [])[0] == avant[0]
+    assert deals.valeur_annonce(A, FR, [])[0] == sans[0]
 finally:
     base_ventes._cx = vrai
 # la fiche le dit : « le même titre s'est vendu ... »

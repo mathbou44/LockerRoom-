@@ -1541,3 +1541,35 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
 - **Suite complète, 20 h 50 : 313 fichiers, 0 échec.**
 - **À faire (20 h 46, capture de la fiche d'annonce à l'ordi, 1377 × 841)** : « devrait pas avoir de scroll bar » : la fiche doit
   tenir sans défiler (les tuiles Joueur / Vendeur étaient coupées).
+
+## 26 nov 2026, 21 h 18 – 22 h (p116) : les 3 règles des comps (son « oui » à 21 h 21)
+
+- **Ce qu'il a montré (21 h 18)** : la Matvei Michkov Credentials Debut Ticket Access Auto /99 (encan SUIVI chez Savage) : « Sells for
+  $127 », mise max 70 $, profit +24 $, sur 8 ventes de février à août (la plus récente : 24 août) ; eBay montrait 94 $ (21 oct) et
+  71 $ + 22 $ de port (9 nov) : « explique-moi où est le profit ». La Gabe Perreault Ice Premieres Patch /25 : mise max 31 $ quand
+  nous n'avions qu'UNE vraie vente (64 $, 24 sept), montrée deux fois.
+- **Pourquoi** : la règle de fraîcheur du 18 nov (`JOURS_FRAIS = 45`) ne vivait que dans le chasseur (`_juger0`) ; ni les encans
+  suivis (`_noter_suivi`), ni la fiche, ni la watchlist ne l'appliquaient. Et la fiche ne lit que la recherche de la carte.
+- **Règle 1, fraîcheur** (`deals.fraiche`, dans `valeur_ou_saison` et à la fin de la fiche) : une valeur dite SÛRE (source
+  `vendues` / `echange`) sans vente de 45 jours ou moins n'est plus une valeur : ni mise max ni profit ; la fiche écrit « Prix à
+  vérifier · dernière vente il y a N jours : pas de mise max » (`ventes_perimees`). GARDENT leurs règles (ses décisions, avec
+  leur rabais de prudence) : les valeurs « Estimé » (autre saison 7 nov, vente unique d'une carte rare 14 nov, Luke Hughes 16 nov,
+  autre note, similaire) et les 2 ventes d'un an d'une carte rare à la plus basse −10 % (Nazar, 7 nov). À lui dire.
+- **Règle 2, recherche vieille** (`deals.avec_ventes_du_joueur`, dans `_valeur_annonce0` et la fiche) : quand la recherche de la
+  carte n'a aucune vente depuis 30 jours (`RECHERCHE_VIEILLE_J`), nos autres ventes de la même carte (archives du joueur, 90 jours,
+  même tri `cartes_match`), plus récentes que sa dernière, s'y ajoutent. `_archives_joueur` : mémoire 30 min, 250 joueurs au plus.
+- **Règle 3, une vente une fois** (`deals.sans_doublons`, `cle_vente`) : le même numero d'item eBay (dans le lien), ou le même
+  titre vendu le même jour à 3 % près. Dans `memes_ventes`, `_revalider_un`, `_rejuger` et la fiche.
+- **Vérifié sur la copie des archives, la recherche de la carte en entrée** : Michkov 127,23 $ → 82,69 $ (mise max sans port
+  69,94 $ → 44,58 $) ; Martone 373 $ → 82,88 $ ; Doan 127,97 $ → 25,99 $ (source « approx », plafonnée par le même titre) ;
+  Perreault : plus de « 2 ventes » (valeur_annonce None), estimation 22 $.
+- **Banc, la limite avouée** : le banc du soir tirait des cartes dont la recherche venait d'être relue. Refait en séparant :
+  dernière vente ≤ 30 jours : 9 % de valeurs 1,5× trop hautes ; > 30 jours : 21 % (24 cas seulement) ; avec les ventes du joueur
+  ajoutées : 19 % : c'est la fraîcheur (règle 1) qui protège.
+- **Bouton des filtres « encore mort » (21 h 24)** : son onglet datait de 20 h 38, le correctif est arrivé à 20 h 52 (journal
+  Render : aucun « GET / » de son Chrome après le déploiement). L'app ne se met pas à jour seule dans un onglet ouvert : Ctrl+F5.
+  À FAIRE : prévenir l'utilisateur quand une nouvelle version est en ligne (ou recharger au retour sur l'onglet).
+- **À faire, demandé à 21 h 26** : l'onglet Tendances › Cards ne montre que des Young Guns (6 sortes) : « ça fait boboche, on dirait
+  qu'on bug ou on est incomplet » : mesurer d'autres sortes (O-Pee-Chee Platinum, SPx, Credentials, Allure…) depuis nos archives.
+- **Collecte PSA relancée par lui à 21 h 40** (501 joueurs, 365 jours, 1 221 recherches, plafond laissé à 10 000).
+- `tests/test_comps_fraiches.py`. Suite complète, 22 h : 314 fichiers, 0 échec.
