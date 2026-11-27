@@ -29,7 +29,8 @@ from datetime import datetime, timedelta
 JOURS_RECENT = 30
 JOURS_AVANT = 60
 JOURS_LUS = 130                  # la courbe : ~18 semaines
-CARTES_MIN = 5                   # cartes differentes mesurees dans la sorte
+CARTES_MIN = 3                   # cartes differentes mesurees dans la sorte (27 nov 2026 : 5 -> 3, voir cartes_des_titres : la rangee dit
+                                 # toujours « N ventes · K cartes », et une hausse ou une baisse n'est ecrite que si le test la confirme)
 VENTES_MIN = 40                  # ventes dans les deux periodes
 SEMAINE_MIN = 12                 # ventes dans la fenetre glissante de 3 semaines pour un point de la courbe
 PCT_MIN = 5                      # sous 5 % : « stable »
@@ -461,7 +462,7 @@ def croiser(pc, mes, auj):
 # joueur (p < 0,01 et la courbe dans le meme sens) : sans mouvement net, le joueur n'est dans aucune liste.
 JOUEUR_CARTES_MIN = 2
 JOUEUR_VENTES_MIN = 40               # comme une sorte
-FORMAT = 2                           # le fichier garde « joueurs » : un fichier d'avant est refait au prochain tour
+FORMAT = 3                           # 3 = avec les cartes lues dans les titres (27 nov) ; 2 = avec « joueurs » : un fichier d'avant est refait au prochain tour
 
 
 def joueurs_ensemble(pc, mes, auj):
@@ -600,6 +601,90 @@ def _chemin():
     return os.path.join(comptes.DONNEES, "tendance_sortes.json")
 
 
+# 26 nov 2026, 21 h 26 (Mathieu, capture de l'onglet Cartes : « juste des Young Guns, ca fait boboche, on dirait qu'on bug ou on
+# est incomplet » ; son « oui go » du 27 nov). MESURE (archives du 26 nov, 130 jours) : la mesure suivait la RECHERCHE qui a
+# ramene chaque vente (« jacob fowler young guns ») : 172 cartes mesurees, dont 154 Young Guns ; hors Young Guns, 65 cartes
+# seulement avaient assez de ventes dans les deux periodes, eparpillees (1 ou 2 par sorte). En rangeant chaque VENTE par son
+# TITRE (le decodeur de la liste « A grader » : a_grader.classer) : 977 cartes mesurables, et de nouvelles sortes qui ont 5
+# cartes et plus : Future Watch Auto (35 cartes), Ice Auto (12), Young Guns Canvas (132), Renewed (32), Outburst (28).
+# On AJOUTE donc aux cartes des recherches les cartes lues dans les titres, seulement celles que les recherches n'ont pas deja.
+# Refait sur la copie des archives (26 nov) : 172 -> 581 cartes mesurees ; sortes annoncees 2 -> 11 (dont Future Watch Auto /999,
+# 64 cartes) et 19 avec CARTES_MIN = 3 (Credentials Debut Ticket Auto /199, Artifacts, O-Pee-Chee Platinum Rainbow Retro...) ;
+# cartes dans les listes hausse / baisse : 50 -> 87, dont 17 hors Young Guns (Jacob Fowler Future Watch Auto /999...).
+# Les cartes deja mesurees par leurs recherches ne changent pas : les titres n'ajoutent que ce qui manquait.
+TITRES_PRIX_MIN = 12.0               # une vente de moins de 12 $ n'aide pas une carte qui doit valoir 20 $ (les Young Guns : toutes)
+TITRES_VENTES_MIN = CARTE_VENTES_MIN
+
+
+def cartes_des_titres(jours=JOURS_LUS, maint=None, respirer=None):
+    """Les ventes de nos archives rangees par leur TITRE -> des entrees comme celles de base_ventes.cartes_toutes (une par carte :
+    un joueur, une sorte, raw / PSA 10 / PSA 9 a part), avec le detail de chaque vente (date, prix, numero, saison lue dans le
+    titre). Une carte numerotee garde sa numerotation dans son nom (« future watch auto /999 »). Aucun credit, aucun appel."""
+    import a_grader
+    import base_ventes
+    auj = maint or datetime.now()
+    d0 = (auj - timedelta(days=jours)).strftime("%Y-%m-%d")
+    # UN JOUEUR A LA FOIS (ses recherches : « q » commence par son nom) : la memoire reste petite. Mesure (27 nov, copie des
+    # archives) : tout lire d'un coup prenait 269 Mo de plus, sur un serveur deja a 3,4 Go sur 4.
+    import cartes_match
+    if _CONNUS["t"] is None:
+        _CONNUS["t"] = set(cartes_match._joueurs_connus())
+    joueurs = sorted(j for j in _CONNUS["t"] if len(j.split()) >= 2)
+    out = []
+    c = base_ventes._cx()
+    try:
+        for n_j, jn in enumerate(joueurs):
+            if respirer:
+                respirer(n_j)
+            vus, gr, lu = set(), {}, ""
+            for cle, titre, prix, le in c.execute("SELECT cle, titre, prix, le FROM ventes WHERE q >= ? AND q < ? AND le >= ? AND prix > 0", (jn, jn + "{", d0)):
+                if cle in vus or not titre:
+                    continue
+                vus.add(cle)                                 # une vente arrive par plusieurs recherches : une fois
+                le = str(le)[:10]
+                if le > lu:
+                    lu = le
+                bas = titre.lower()
+                if prix < TITRES_PRIX_MIN and "young guns" not in bas and " yg " not in " " + bas + " ":
+                    continue
+                try:
+                    r = a_grader.classer(titre)
+                except Exception:
+                    r = None
+                if not r:
+                    continue
+                (joueur, q, an, serie, _num), note = r
+                if _cle_joueur(joueur) != jn:                # le titre nomme un AUTRE joueur que la recherche : pas ici
+                    continue
+                # la numerotation fait partie de la carte (la Future Watch Auto /999 n'est pas la /10) : elle reste dans le nom
+                gr.setdefault((joueur, q + (f" /{serie}" if serie else ""), note), []).append((le, float(prix), str(cle), an))
+            for (joueur, q, note), v in gr.items():
+                if len(v) >= TITRES_VENTES_MIN:
+                    out.append({"joueur": joueur, "q": q + ("" if note == "raw" else " psa " + note), "carte": q, "annee": None, "recrue": None,
+                                "produit_id": None, "sport": "hockey", "ventes": v, "points": (), "lu_le": lu or None, "titres": True})
+    finally:
+        c.close()
+    return out
+
+
+def _cle_voisine(k):
+    """« upper deck young guns canvas » et « young guns canvas » : la meme sorte (pour ne pas compter une carte deux fois)."""
+    return re.sub(r"^(upper deck|ud) ", "", str(k or ""))
+
+
+def ajouter_titres(cartes, des_titres):
+    """Les cartes des recherches + celles lues dans les titres que les recherches n'ont PAS deja (le meme joueur, la meme sorte)."""
+    deja = {(jn, _cle_voisine(k)) for (jn, k) in _cartes_exactes(cartes)}
+    plus = []
+    for c in des_titres or []:
+        j = str(c.get("joueur") or "").strip()
+        k = cle_sorte(j, c.get("q"))
+        jn = _cle_joueur(j) if _joueur_ok(j) else None
+        if k and jn and (jn, _cle_voisine(k)) not in deja:
+            plus.append(c)
+    return list(cartes) + plus
+
+
 def calculer(maint=None):
     """Refait la mesure sur nos ventes (base_ventes), la garde. Aucun credit, aucun appel. Si trop de ventes de la fenetre ne sont
     pas encore triees (base_ventes en trie 15 000 par passe), RIEN n'est ecrit : {« partiel »: n} et on reessaie plus tard."""
@@ -610,8 +695,16 @@ def calculer(maint=None):
     if reste > PARTIEL_MAX * max(1, lues + reste):
         return {"partiel": reste, "lues": lues}
     cartes = [c for c in cartes if (c.get("sport") or "hockey") == "hockey"]
+    n_rech = len(cartes)
+    recherches = cartes                                  # ce qui se relit (a_relire) : les VRAIES recherches, jamais une carte lue dans les titres
+    try:                                                 # les cartes lues dans les titres (voir cartes_des_titres)
+        t0 = time.time()
+        cartes = ajouter_titres(cartes, cartes_des_titres(maint=maint, respirer=lambda _i: time.sleep(0.004)))
+        print(f"Tendance des sortes : {len(cartes) - n_rech} cartes lues dans les titres, en plus des {n_rech} recherches ({time.time() - t0:.0f} s)", flush=True)
+    except Exception as e:                               # jamais moins qu'avant : les recherches seules
+        print("Tendance des sortes (titres) : " + repr(e)[:160], flush=True)
     r = listes(cartes, maint)
-    r["a_relire"] = a_relire(cartes, maint or datetime.now())
+    r["a_relire"] = a_relire(recherches, maint or datetime.now())
     r["le"] = (maint or datetime.now()).isoformat(timespec="seconds")
     r["n_cartes_lues"] = len(cartes)
     ch = _chemin()

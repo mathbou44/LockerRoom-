@@ -154,7 +154,7 @@ JOUEURS = ["Connor Bedard", "Macklin Celebrini", "Lane Hutson", "Matvei Michkov"
 C = [entree(j, j.lower() + " young guns", ventes(40 + 30 * i, (40 + 30 * i) * 0.78, 2020 + i)) for i, j in enumerate(JOUEURS[:6])]
 C += [entree(j, j.lower() + " future watch auto", ventes(120 + 50 * i, (120 + 50 * i) * 1.32, 2020 + i)) for i, j in enumerate(JOUEURS[:6])]
 C += [entree(j, j.lower() + " sizzle reel", ventes(60 + 10 * i, 60 + 10 * i, 2025)) for i, j in enumerate(JOUEURS[:6])]
-C += [entree(j, j.lower() + " ice premieres", ventes(300, 450, 2025)) for j in JOUEURS[:4]]                  # 4 cartes : pas assez pour une sorte
+C += [entree(j, j.lower() + " ice premieres", ventes(300, 450, 2025)) for j in JOUEURS[:2]]                  # 2 cartes : pas assez pour une sorte (27 nov 2026 : il en faut 3, avant 5)
 rs = ts_.listes(C, AUJ)
 ps = rs["sortes"]
 assert set(ps) == {"young guns", "future watch auto", "sizzle reel"}, sorted(ps)
@@ -164,7 +164,7 @@ pus = ts_.public(ps["young guns"])
 assert pus["niveau"] == "sorte" and "joueur" not in pus and "brut" not in pus, pus
 # les listes : des cartes de 20 ventes et plus, classees par leur pourcentage
 assert [x["cle"] for x in rs["cartes_baisses"]][:1] and all(x["n"] >= ts_.LISTE_VENTES_MIN and x["sens"] == "baisse" for x in rs["cartes_baisses"]), rs["cartes_baisses"]
-assert all(x["sens"] == "hausse" for x in rs["cartes_hausses"]) and len(rs["cartes_hausses"]) == 10, len(rs["cartes_hausses"])     # 6 Future Watch + 4 Ice Premieres
+assert all(x["sens"] == "hausse" for x in rs["cartes_hausses"]) and len(rs["cartes_hausses"]) == 8, len(rs["cartes_hausses"])     # 6 Future Watch + 2 Ice Premieres
 
 # ---------------------------------------------------------------- calculer : rien n'est publie tant que les ventes ne sont pas triees
 import base_ventes
@@ -394,7 +394,7 @@ assert m_["sens"] == "hausse" and 20 <= m_["pct"] <= 35 and m_["n_cartes"] == 3 
 assert sorted(m_["cartes"]) == sorted(k for k in pc_ if k.startswith("monte fort|")), "exactement les cartes qu'on voit en touchant le joueur"
 assert je["baisse net"]["sens"] == "baisse" and je["baisse net"]["n_cartes"] == 2, "les notes d'une meme carte comptent : ce sont toutes SES cartes"
 assert je["bouge pas"]["sens"] == "stable" and je["tire deux"]["sens"] == "stable", "sans mouvement net : dans aucune liste"
-assert ts_.JOUEUR_CARTES_MIN == 2 and ts_.JOUEUR_VENTES_MIN == 40 and ts_.FORMAT == 2
+assert ts_.JOUEUR_CARTES_MIN == 2 and ts_.JOUEUR_VENTES_MIN == 40 and ts_.FORMAT == 3
 # le meme test que LA carte d'un joueur (p < 0,01), pas celui d'une sorte (p < 0,10)
 src_ts = inspect.getsource(ts_.joueurs_ensemble)
 assert 'a["p"] < P_CARTE' in src_ts
@@ -407,7 +407,7 @@ try:
     L_ = ts_.listes([], MAINT)
 finally:
     ts_._mesures = vrai_mes
-assert L_["format"] == 2 and [x["joueur"] for x in L_["joueurs_hausses"]] == ["Monte Fort"] and [x["joueur"] for x in L_["joueurs_baisses"]] == ["Baisse Net"] and len(L_["joueurs"]) == 3
+assert L_["format"] == ts_.FORMAT and [x["joueur"] for x in L_["joueurs_hausses"]] == ["Monte Fort"] and [x["joueur"] for x in L_["joueurs_baisses"]] == ["Baisse Net"] and len(L_["joueurs"]) == 3
 vrai_lire = ts_.lire
 ts_.lire = lambda: json.loads(json.dumps(L_))
 try:

@@ -1581,3 +1581,25 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   un encan TERMINÉ dont le numéro d'annonce est dans les achats du compte ; les gagnés d'abord dans « Ended ». Écran : pastille
   verte « Gagnée », « Gagnée · payé 25 $ » à la place de « on le cherche… ». L'achat arrive avec la synchro eBay : une carte gagnée
   à l'instant peut rester « Terminé » jusque-là. `tests/test_watchlist_gagnee.py`. Suite : 315 fichiers, 0 échec.
+
+## 27 nov 2026, matin (p118) : l'onglet Cartes des Tendances ne montre plus seulement des Young Guns
+
+- **Demande (26 nov, 21 h 26, capture ; « oui go » le 27 à 7 h 48)** : « juste des Young Guns, ça fait boboche, on dirait qu'on bug
+  ou on est incomplet ».
+- **Mesure (copie des archives du 26, 130 jours)** : la mesure suivait la RECHERCHE de chaque vente : 172 cartes mesurées, 154
+  Young Guns ; hors Young Guns, 65 cartes mesurables, éparpillées. Rangées par leur TITRE (`a_grader.classer`) : bien plus.
+- **Fait** : `tendance_sortes.cartes_des_titres` (un joueur connu à la fois : ses recherches, `q` commence par son nom ; chaque
+  vente une fois ; prix ≥ 12 $ sauf Young Guns ; la numérotation reste dans le nom : « future watch auto /999 » ; raw, PSA 10 et
+  PSA 9 à part) et `ajouter_titres` (seulement les cartes que les recherches n'ont PAS déjà ; « upper deck young guns canvas » =
+  « young guns canvas »). Branché dans `calculer` ; si la lecture des titres plante, les recherches seules restent. `a_relire`
+  ne reçoit que les vraies recherches (jamais de crédits pour un nom de carte lu dans un titre). `CARTES_MIN` 5 → 3.
+- **Résultat ici** : 172 → 563 cartes mesurées ; sortes annoncées 2 → 17 (Future Watch SP Authentic Auto /999 : 61 cartes, /599 :
+  16 ; Credentials Debut Ticket Auto /199, Clear Cut Dazzlers Auto, Clear Cut Canvas, Artifacts Ruby /499, O-Pee-Chee Platinum
+  Rainbow Retro ; Young Guns Canvas 66, Outburst 32, Renewed…) ; cartes en hausse / baisse 50 → 87, dont 17 hors Young Guns. Les
+  cartes déjà mesurées par leur recherche gardent le même pourcentage. Coût : 128 à 140 s, ~170 Mo au plus haut ici (aux 3 jours).
+  La réalité reste : le hockey se vend surtout en Young Guns ; O-Pee-Chee Platinum, SPx, Allure n'ont pas assez de cartes à 20 $
+  et plus vendues 4 fois dans chaque période.
+- **À vérifier en ligne** : la ligne « Tendance des sortes : N cartes lues dans les titres, en plus des M recherches (T s) » au
+  prochain calcul (aux 3 jours ; `calculer_si_besoin`) et la mémoire du serveur à ce moment-là.
+- `tests/test_tendance_titres.py`, `tests/test_tendance_sortes.py` (seuil de 3). Suite : 316 fichiers, 0 échec.
+- `tendance_sortes.FORMAT` 2 → 3 : le fichier d'avant est refait au premier tour après le déploiement (pas dans 3 jours).
