@@ -7345,6 +7345,43 @@ html body .w-ligne .w-pr2 small{color:rgba(255,255,255,.6) !important}
 html body .w-info{display:flex; flex-wrap:wrap; align-items:center; gap:4px 8px; margin:3px 0 4px; font-size:12px; color:rgba(255,255,255,.62)}
 html body .w-info > span + span::before{content:'·'; margin-right:8px; color:rgba(255,255,255,.3)}
 html body .w-ligne .w-tps{background:rgba(185,190,255,.16); color:#E6E7FF; border:1px solid rgba(185,190,255,.35)} html body .w-ligne .w-tps.bientot{background:#FF9F43 !important; color:#15120B !important; border-color:#FF9F43}
+/* 27 nov 2026, 20 h 53 (Mathieu : « l'entete prend beaucoup de place pour rien », Breaks) : le choix « J'achete une place / Je fais un
+   break » sur la ligne du titre (comme le Radar), « Mes breaks » a droite ; au telephone, le choix passe sous le titre */
+html body .ecran.bk-page > .entete.bk-ent{justify-content:flex-start; gap:18px; flex-wrap:nowrap; margin-bottom:6px !important}
+html body .ecran.bk-page > .entete.bk-ent .bk-mode{flex:0 1 380px; margin:0 !important}
+html body .ecran.bk-page > .entete.bk-ent > .pastilles{margin-left:auto}
+@media (max-width:899px){ html body .ecran.bk-page > .entete.bk-ent{flex-wrap:wrap; gap:10px} html body .ecran.bk-page > .entete.bk-ent .bk-mode{order:3; flex:1 0 100%} }
+@media (min-width:900px){ html body .ecran.bk-page > .entete.bk-ent{margin-top:-18px} }
+/* 27 nov 2026, 20 h 55 (Mathieu, la notification « Bad news » : « la pastille doit s'ajuster au texte ») : la notification prend la largeur
+   de son texte (une phrase courte = une petite bulle), jamais plus de 440 px ; le texte revient a la ligne avec la meme marge des deux cotes */
+html body .np{width:fit-content; max-width:min(440px, calc(100vw - 16px)); padding-right:20px}
+html body .np > .np-t{flex:0 1 auto} html body .np > .np-t p{text-wrap:pretty} html body .np-h{justify-content:flex-start; gap:12px}
+/* 27 nov 2026, 21 h 07 (Mathieu : « tout croche », la tuile « Il manque un produit ? ») : centree, le texte revient a la ligne dans la tuile */
+html body .tuile-c.tuile-ajout{display:flex !important; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:6px; padding:16px 14px !important; white-space:normal}
+html body .tuile-c.tuile-ajout b{font-size:15px; line-height:1.2} html body .tuile-c.tuile-ajout > span:not(.plus-g){font-size:12.5px; line-height:1.35; color:var(--doux); overflow-wrap:anywhere}
+/* 27 nov 2026, 21 h 09 (Mathieu, capture : « la fleche est dans l'icone ») : la fleche du menu de gauche passe dans la marge du bord,
+   hors des carres des icones (ils finissent a 62 px ; le menu fait 76 px) */
+@media (min-width:900px){ html body .onglets::after{right:3px !important; width:7px; height:7px} }
+html body .fc-jours{display:block; margin:4px 0 2px; font-size:13px; color:rgba(255,255,255,.65)} html body .fc-jours.vieux{color:#FFB86B}   /* 27 nov : depuis 30 jours et plus : a ajuster */
+html body .bx-pct{display:grid; grid-template-columns:repeat(4, 1fr); gap:8px} html body .bx-pct .btn{padding:14px 0; font-size:16px}   /* 27 nov : -% en un geste */
+/* 27 nov 2026, 21 h 50 : le fait du type (fiche) et les types qui prennent le plus de valeur gradés (Trends) */
+html body .ag-type{display:flex; gap:8px; align-items:flex-start; padding:9px 12px; border-radius:12px; background:rgba(48,209,88,.08); border:1px solid rgba(48,209,88,.28); font-size:13px; line-height:1.35; color:rgba(255,255,255,.85)}
+html body .ag-type svg{flex:none; width:15px; height:15px; margin-top:1px; color:#30D158; fill:currentColor}
+html body .ag-types{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; margin:6px 0 12px} html body .ag-types .am-t{grid-column:1 / -1}
+html body .ag-types > span{display:flex; flex-direction:column; gap:2px; padding:10px 12px; border-radius:14px; border:1.5px solid transparent; background:linear-gradient(160deg, #272631, #15151B) padding-box, var(--holo) border-box}
+html body .ag-types b{font-size:13.5px; color:#fff} html body .ag-types em{font-style:normal; font:800 22px/1 var(--f-cond); color:#30D158} html body .ag-types small{font-size:11.5px; color:rgba(255,255,255,.55)}
+/* 27 nov 2026, 21 h 51 : l'ecran photo en deux tuiles (Comp rapide / Inventaire · Collection) et la vitrine */
+html body .cam-2{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:18px}
+html body .cam-t{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; min-height:230px; padding:20px 14px; border-radius:24px; text-align:center; cursor:pointer; color:#fff;
+  border:1.5px solid transparent; background:linear-gradient(160deg, #2A2933, #16161C) padding-box, var(--holo) border-box; box-shadow:0 12px 30px rgba(0,0,0,.4)}
+@media (max-width:899px){ html body .cam-t{min-height:38vh} } html body .cam-t:active{transform:scale(.98)} html body .cam-t b{font:800 22px/1.05 var(--f-cond); text-transform:uppercase; letter-spacing:.03em} html body .cam-t > span:last-child{font-size:13px; color:rgba(255,255,255,.65); line-height:1.3}
+html body .cam-ic{display:grid; place-items:center; width:64px; height:64px; border-radius:50%; border:1.5px solid transparent; background:linear-gradient(#1C1C22, #1C1C22) padding-box, var(--holo) border-box}
+html body .cam-ic svg{width:28px; height:28px; stroke:#fff; fill:none}
+html body .vitrine .vt-c{display:flex; gap:14px; align-items:flex-start; margin:14px 0} html body .vitrine .vt-c img{width:96px; border-radius:10px} html body .vitrine .vt-c b{display:block; font:800 22px/1.1 var(--f-cond); text-transform:uppercase}
+html body .vitrine .vt-c span{display:block; font-size:13.5px; color:rgba(255,255,255,.7); margin:4px 0 8px} html body .vitrine #vt-eb{width:100%; display:flex; gap:10px; justify-content:center; align-items:center; margin:6px 0 12px}
+html body .med3{display:grid; grid-template-columns:1fr auto; align-items:end; gap:2px 12px; margin:10px 0 14px; padding:14px 16px; border-radius:18px; border:1.5px solid transparent;
+  background:linear-gradient(160deg, #272631, #15151B) padding-box, var(--holo) border-box} html body .med3 small{grid-column:1 / -1; font-size:12px; color:rgba(255,255,255,.62); text-transform:uppercase; letter-spacing:.06em}
+html body .med3 b{font:800 34px/1 var(--f-cond); color:#fff} html body .med3 span{font-size:13px; color:rgba(255,255,255,.62)}   /* 27 nov : la mediane 3 mois */
 /* ===== 27 nov 2026 — LE STANDARD DES EN-TETES (PDF de Mathieu, points 1, 5, 6 et 7 : « l'entete doit etre translucide, tous les
    entetes dans le meme format, style, couleur, police [...] juste l'onglet Breaks a une entete fonctionnelle et ok, faire la meme
    pour tout le reste ») : UN titre (celui de Breaks : 32 px, condense, majuscules, blanc) sur toutes les pages, et a l'ordi une bande
@@ -9978,7 +10015,48 @@ async function vueVendre(arg){
 }
 // une etape photo : 0 = devant, 1 = dos
 const ICO_BIBLIO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-4.5-4.5L6 21"/></svg>';
+// 27 nov 2026, 21 h 51 (Mathieu, l'ecran « Front photo » : « l'ecran devrait etre split en 2 boutons dans notre style : un cote pour comp
+// rapide et info sur la carte, l'autre pour inventaire/collection ; l'option comp ULTRA rapide, a jour et verifiee » ; 21 h 55 : « une
+// vitrine avec les resultats d'eBay dans notre app, le plus clean possible ») : avant la photo, deux grosses tuiles. Comp rapide = la
+// photo du devant seulement (pas de dos), la lecture, puis la vitrine (vitrineComp)
+function choixCamera(){
+  V().innerHTML = `<section class="ecran vendre assist choix-cam"><div class="titre">${tt('Ta carte', 'Your card')}</div>
+    <div class="cam-2"><button class="cam-t" id="cam-comp"><span class="cam-ic">${ICO_VENDUS}</span><b>${tt('Comp rapide', 'Quick comp')}</b><span>${tt('Une photo : la carte et ses ventes eBay', 'One photo: the card and its eBay sales')}</span></button>
+      <button class="cam-t" id="cam-inv"><span class="cam-ic">${ICONES.plus}</span><b>${tt('Inventaire · Collection', 'Inventory · Collection')}</b><span>${tt('Ajouter la carte chez toi', 'Add the card to your cards')}</span></button></div></section>`;
+  // 27 nov, 22 h 11 (Mathieu : « pour les comps ce n'est pas une photo mais un scan devant et derriere ; lightning fast ») : le scanner en direct
+  $('#cam-comp').onclick = () => { vibrer(); ouvrirScanner(); };
+  $('#cam-inv').onclick = () => { vibrer(); V2.choix = true; V2.comp = false; etapePhoto(0); };
+}
+// 27 nov 2026, 22 h 13 (Mathieu : « une mediane du prix des ventes des 3 derniers mois » ; Pro aussi) : en haut de la fiche d'une
+// carte (#valeur/...), UN chiffre : la mediane des 90 derniers jours et le nombre de ventes
+async function medTroisMois(){
+  const h = location.hash; if (!h.startsWith('#valeur/')) return;
+  const q = decodeURIComponent(h.slice(8)); if (q.length < 6) return;
+  const r = await API.mediane_3mois(q).catch(() => null);
+  if (!r || !r.ok || location.hash !== h) return;
+  const ec = document.querySelector('#vue > .ecran'); if (!ec || ec.querySelector('.med3')) return;
+  const b = document.createElement('div'); b.className = 'med3';
+  b.innerHTML = `<small>${tt('Médiane des ventes · 3 derniers mois', 'Median sale · last 3 months')}${r.note ? ' · ' + esc(r.note) : ''}</small><b>${argent(r.mediane, r.mediane < 10 ? 2 : 0)}</b><span>${r.n} ${tt('ventes', 'sales')}</span>`;
+  const t = ec.querySelector('.entete, .tete-fixe'); if (t) t.after(b); else ec.prepend(b);
+}
+addEventListener('hashchange', () => setTimeout(medTroisMois, 600));
+async function vitrineComp(){
+  const c = V2.champs || {}, titre = [c.annee, c.marque, c.set_nom, c.joueur, c.parallele, c.numero ? '#' + c.numero : '', c.grade].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+  V().innerHTML = `<section class="ecran vendre assist vitrine"><div class="titre">${tt('Comp rapide', 'Quick comp')}</div>
+    <div class="vt-c">${V2.photos && V2.photos[0] ? `<img src="${esc(V2.photos[0])}" alt="">` : ''}<div><b>${esc(c.joueur || tt('Carte', 'Card'))}</b><span>${esc(titre)}</span><div id="vt-ag"></div></div></div>
+    <button class="btn gros" id="vt-eb">${ICO_VENDUS}<span>${tt('Ses ventes sur eBay', 'Its sales on eBay')}</span></button>
+    <div class="boutons"><button class="btn ghost" id="vt-re">${tt('Autre carte', 'Another card')}</button><button class="btn" id="vt-aj">${tt('Ajouter chez moi', 'Add to my cards')}</button></div></section>`;
+  const ouvrir = () => { vibrer(); ouvrirDansApp(urlVendusEbay(requeteVendus(titre))); };
+  $('#vt-eb').onclick = ouvrir; ouvrir();                      // la vitrine eBay s'ouvre tout de suite : la plus rapide possible
+  $('#vt-re').onclick = () => { vibrer(); V2.photos = []; V2.champs = null; V2.comp = true; etapePhoto(0); };
+  $('#vt-aj').onclick = () => { vibrer(); V2.comp = false; etapeVerifier(); };
+  if (titre.length > 8 && !/psa|bgs|sgc|cgc/i.test(c.grade || '')) {
+    const g = await API.carte_grader(titre).catch(() => null), z = $('#vt-ag');
+    if (z && g && g.ok && g.source === 'liste') z.innerHTML = g.verdict === 'oui' ? `<div class="ag-type">${ICO_ETOILE}<span>${esc(agTexte({r: g.rendement, s: g.seuil_10, g10: g.gain, c: g.confiance}))}</span></div>` : '';
+  }
+}
 async function etapePhoto(i){
+  if (i === 0 && !V2.choix && !V2.but_force) { choixCamera(); return; }
   V2.photos = V2.photos || [];
   const st = i === 0 ? await API.photo_statut().catch(() => ({})) : {};
   if (i === 0) { S.photoStatut = st; S.vsOuvert = false; }
@@ -10047,7 +10125,7 @@ async function verifierPrise(i, fichier, apres){
     <div class="photo-controle"><img src="${esc(ph)}" alt=""><span class="pc-etat"><span class="roue"></span></span></div>
     <div class="sous" style="text-align:center">${tt('Vérification de la photo…', 'Checking the photo…')}</div></section>`;
   const q = await qualitePhoto(ph).catch(() => ({ok: true}));
-  const garder0 = () => { V2.photos[i] = ph; (apres || (() => i === 0 ? etapePhoto(1) : lireVente()))(); };
+  const garder0 = () => { V2.photos[i] = ph; (apres || (() => i === 0 && !V2.comp ? etapePhoto(1) : lireVente()))(); };
   const garder = () => choixFond(i, ph, garder0);
   if (q.ok) {
     const e = $('.pc-etat'); if (e) { e.innerHTML = '✓'; e.classList.add('ok'); }
@@ -10131,6 +10209,7 @@ async function continuerLecture(r, ph){
   V2.douteux = (r && r.a_verifier) || [];
   V2.notes = [...((r && r.notes) || []), r && r.conseil_photo].filter(Boolean);
   await studioPhotos(ph);
+  if (V2.comp) { vitrineComp(); return; }                    // 27 nov : Comp rapide -> la vitrine
   if ((r && r.ok) || V2.but === 'collection') etapeVerifier(); else await preparerVente();
 }
 // photo studio : les coins lus par l'IA -> carte redressee sur fond clair ; l'originale reste a cote
@@ -12881,10 +12960,10 @@ const imgProduit = (id, nom) => { const u = (S.imgProd || {})[id]; return u ? `<
 async function vueAnalyse(arg){
   const vendeur = breakVendeur(), A = S.ana;
   if (arg && arg !== 'choisir' && A.produit !== decodeURIComponent(arg)) anaCharger(decodeURIComponent(arg));
-  V().innerHTML = `<section class="ecran large bk-page"><div class="entete"><div class="titre">${tt('Breaks', 'Breaks')}</div>
+  V().innerHTML = `<section class="ecran large bk-page"><div class="entete bk-ent"><div class="titre">${tt('Breaks', 'Breaks')}</div><div class="bk-mode" role="tablist" aria-label="${esc(tt('Je…', 'I…'))}">${[['acheteur', tt('J’achète une place', 'I buy a spot')], ['breaker', tt('Je fais un break', 'I run a break')]].map(([k, l]) =>
+      `<button role="tab" aria-selected="${S.breakMode === k}" class="${S.breakMode === k ? 'on' : ''}" data-bkm="${k}">${l}</button>`).join('')}</div>
       <div class="pastilles">${vendeur ? '<a class="pilule" href="#breaks/liste">' + tt('Mes breaks', 'My breaks') + '</a>' : ''}</div></div>
-    <div class="bk-fixe"><div class="bk-mode" role="tablist" aria-label="${esc(tt('Je…', 'I…'))}">${[['acheteur', tt('J’achète une place', 'I buy a spot')], ['breaker', tt('Je fais un break', 'I run a break')]].map(([k, l]) =>
-      `<button role="tab" aria-selected="${S.breakMode === k}" class="${S.breakMode === k ? 'on' : ''}" data-bkm="${k}">${l}</button>`).join('')}</div><div id="an-rech"></div></div>
+    <div class="bk-fixe"><div id="an-rech"></div></div>
     <div id="an-z">${roue}</div></section>`;
   // 20 nov 2026 (Mathieu : « je peux scroller l'entete et je ne devrais pas ») : a l'ordi, le titre ET la barre restent exactement
   // ou ils sont : chacun colle a sa propre position de depart, rien ne bouge
@@ -12916,7 +12995,7 @@ async function choisirProduitAnalyse(){
     <div class="ph-liens"><a href="#calendrier">${tt('Calendrier des sorties', 'Release calendar')}</a></div>`;
   // 15 nov 2026 (Mathieu : « minimise l'info, pas de flafla ») : la tuile = le visuel du produit (saison + nom) et le crochet
   // vert ; plus de nom en double, plus de « Checklist et cotes completes », plus de paragraphe d'explication
-  if (!(S.forfait && S.forfait.admin)) z.querySelector('.grille-c').insertAdjacentHTML('beforeend', `<button class="tuile-c tuile-ajout" id="an-demande"><span class="plus-g">?</span><b>${tt('Il manque un produit ?', 'Missing a product?')}</b><span>${tt('Envoie sa checklist Excel : il est ajouté pour tout le monde', 'Send its Excel checklist: it’s added for everyone')}</span></button>`);
+  if (!(S.forfait && S.forfait.admin)) z.querySelector('.grille-c').insertAdjacentHTML('beforeend', `<button class="tuile-c tuile-ajout" id="an-demande"><span class="plus-g">?</span><b>${tt('Il manque un produit ?', 'Missing a product?')}</b><span>${tt('Envoie sa checklist Excel : on la vérifie avant de l’ajouter', 'Send its Excel checklist: we review it before adding it')}</span></button>`);
   if (S.forfait && S.forfait.admin) z.querySelector('.grille-c').insertAdjacentHTML('beforeend', `<button class="tuile-c tuile-ajout" id="an-import"><span class="plus-g">+</span><b>${tt('Ajouter des produits', 'Add products')}</b><span>${tt('checklists GTS en un geste', 'GTS checklists in one tap')}</span></button>`);
   brancherQuota(z);
   // 9 nov 2026 (Mathieu : « ajouter une option recherche pour le produit ») : tous les mots tapes, dans l'ordre qu'on veut
@@ -12943,7 +13022,7 @@ async function choisirProduitAnalyse(){
 function feuilleDemandeProduit(){
   // 31 oct 2026 (Mathieu : « un breaker upload l'Excel de la checklist ; notre programme le valide et le publie pour les autres »)
   ouvrirFeuille(`<h3>${tt('Il manque un produit ?', 'Missing a product?')}</h3>
-    <button class="r-ligne" id="dp-xl"><span class="aj-ico">${ICONES.import}</span><span class="t"><b>${tt('J’ai la checklist Excel', 'I have the Excel checklist')}</b><span>${tt('SlabCoach la vérifie et l’ajoute pour tout le monde', 'SlabCoach checks it and adds it for everyone')}</span></span>${ICONES.chevron || '›'}</button>
+    <button class="r-ligne" id="dp-xl"><span class="aj-ico">${ICONES.import}</span><span class="t"><b>${tt('J’ai la checklist Excel', 'I have the Excel checklist')}</b><span>${tt('SlabCoach la vérifie ; elle est ajoutée une fois acceptée', 'SlabCoach reviews it; it’s added once accepted')}</span></span>${ICONES.chevron || '›'}</button>
     <div class="sous" style="font-size:15px;margin-top:14px">${tt('Pas de fichier ? Écris son nom : on l’ajoute bientôt.', 'No file? Type its name: we’ll add it soon.')}</div>
     <label>${tt('Produit', 'Product')}<input class="champ" id="dp-nom" placeholder="2026-27 Upper Deck Series 1"></label>
     <button class="btn" id="dp-ok">${tt('Envoyer', 'Send')}</button>`);
@@ -13843,6 +13922,8 @@ async function ouvrirAnnonce(base){
     const alerteN = estNumerique(a.titre || base.titre) ? [`<span class="capsule rouge">${tt('Carte numérique ? Vérifie que c’est une vraie carte avant de miser', 'Digital card? Check it’s a real card before bidding')}</span>`] : [];
     const L = {blesse: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], absent: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], en_feu: [tt('En feu', 'On fire'), 'vert'], echange_baisse: [tt('Échangé · baisse', 'Traded · down'), 'rouge'], echange_hausse: [tt('Échangé · hausse', 'Traded · up'), 'vert'], echange: [tt('Nouvelle équipe', 'New team'), 'acc'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or p-rc'], buzz: ['Buzz', 'acc'], actu: [tt('Dans l’actu', 'In the news'), 'acc'], en_creux: [tt('En creux', 'In a slump'), 'p-creux'], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert']};
     const pils = [], ri = raisonIQ(sp, base.item_id);
+    // 27 nov 2026, 21 h 04 (Mathieu, la fiche d'une Young Guns raw : « pas de grading ? ») : la pastille « A grader » de la carte, en premier
+    { const ag_ = agBadge(agDe(base)); if (ag_) pils.push(ag_); }
     if (ri === 'marche_bas' || (sp && (sp.pastilles || []).includes('marche_bas'))) pils.push(tag(libMB((sp.marche || {}).ecart_pct), 'vert'));
     else if (ri && RAISONS_IQ()[ri]) pils.push(tag(RAISONS_IQ()[ri][0], RAISONS_IQ()[ri][1]));
     if (c.type && c.type.niveau === 'ultra') pils.push(tag(tt('Ultra recherchée', 'Ultra sought-after'), 'or'));
@@ -13913,6 +13994,7 @@ async function ouvrirAnnonce(base){
           <div class="fb-t fb-pay"><span class="fb-k">${tt('Tu paies', 'You pay')}</span><b>${reel ? argent(reel, 0) : '—'}</b></div></div></div>
       <div class="fb-nom">${nomJ ? `<b>${esc(nomJ)}</b>` : ''}<span>${esc(ligneC)}</span></div>
       ${pils.length ? `<div class="pastilles fa-pils2">${pils.slice(0, 2).join('')}</div>` : ''}
+      ${(() => { const ty = !agDe(base) && (S.agTypeParId || {})[String(base.item_id)]; return ty ? `<div class="ag-type">${ICO_ETOILE}<span>${tt(`Les ${esc(ty.nom)} valent ×${decFr(String(ty.m))} en PSA 10 (médiane de ${ty.n} cartes). À grader si elle est belle.`, `${esc(ty.nom)} cards are worth ×${ty.m} in PSA 10 (median of ${ty.n} cards). Grade it if it’s clean.`)}</span></div>` : ''; })()}
       ${bandeTend(tendSorteDe(base, sp))}
       ${bandeauVerifier(base.item_id)}
       ${proChips(a)}
@@ -14714,7 +14796,7 @@ async function chargerDeals(frais){
     nbDealsGarde(nAff); radarListe([...(d.deals || []), ...SU].map(x => x.item_id)); }
   if (F.type === 'encan' || F.tri === 'fin') SU = [...SU].sort((a, b) => String(a.fin).localeCompare(String(b.fin)));
   S.dealsParId = Object.fromEntries([...(d.deals || []), ...P, ...SU].map(x => [String(x.item_id), x]));
-  S.agParId = d.a_grader || {};                      // 27 nov 2026 : les pastilles « À grader » (admin), à côté des annonces
+  S.agParId = d.a_grader || {}; S.agTypeParId = d.a_grader_type || {};   // 27 nov : le fait du type d'une carte pas mesuree                      // 27 nov 2026 : les pastilles « À grader » (admin), à côté des annonces
   const L = d.deals || [], gain = L.filter(x => !x.encan).reduce((t, x) => t + Math.max(0, x.gain || 0), 0), encans = L.filter(x => x.encan).length;
   const sp = Object.entries(d.sports || {}).sort((a, b) => b[1] - a[1]);
   { const zp = $('#d-preuve'), pv_ = preuveDeals(d), g_ = d.diag || {};
@@ -15799,6 +15881,7 @@ async function vueTendancesIQ(arg){
         const brG = (zone) => $$('[data-ag]', zone).forEach(b => b.onclick = () => { vibrer(); ouvrirG(C[+b.dataset.ag]); });
         z.innerHTML = `${modeH}<div class="tiq-av tiq-so tiq-mixv${C.length <= 24 ? ' tiq-peu' : ''}" data-on="bas"><div class="tiq-g tiq-pan bas"><div class="am-t tiq-gt">${tt('À grader', 'Worth grading')}<em class="tiq-pn">${C.length}</em></div>
           <p class="tiq-ps">${tt('Si elle revient PSA 10 : ce qui revient pour 1 $ mis (la carte, PSA, les envois et les frais eBay). Des ventes réelles ; chaque carte a sa confiance.', 'If it grades PSA 10: what comes back per $1 spent (the card, PSA, shipping and eBay fees). Real sales; each card has its confidence.')}</p>
+          ${(AG.types || []).length ? `<div class="ag-types"><div class="am-t">${tt('Les types qui prennent le plus de valeur gradés', 'Card types that gain the most when graded')}</div>${AG.types.slice(0, 6).map(t => `<span><b>${esc(t.nom)}</b><em>×${decFr(String(t.m))}</em><small>${t.n} ${tt('cartes', 'cards')}</small></span>`).join('')}</div>` : ''}
           <div class="tiq-lm">${C.map(ligneG).join('')}</div>
           <div class="tiq-pf">${C.length > 3 ? `<button class="tiq-pl2 tiq-tous" id="tiq-gtous">${tt(`Voir les ${C.length}`, `See all ${C.length}`)} ›</button>` : ''}</div></div></div>
           <div class="sous tiq-note">${tt(`${nb(AG.n_grader != null ? AG.n_grader : C.length)} cartes à grader sur ${nb(AG.n)} mesurées (raw, PSA 10, 9 et 8 de la même carte). Refait chaque semaine.`, `${nb(AG.n_grader != null ? AG.n_grader : C.length)} cards worth grading out of ${nb(AG.n)} measured (raw, PSA 10, 9 and 8 of the same card). Redone every week.`)}${AG.le ? ' · ' + tt('mis à jour ', 'updated ') + esc(ilYa(AG.le)) : ''}</div>`;
@@ -18121,12 +18204,39 @@ function barreSelInv(){
   b.innerHTML = `<div class="sb-t"><span><b>${n}</b> ${n > 1 ? tt('cartes', 'cards') : tt('carte', 'card')}</span>${ebayN ? `<small>${ebayN} ${tt('sur eBay', 'on eBay')}</small>` : ''}</div>
     <button class="pilule" id="sb-tout">${n === l.length ? tt('Aucune', 'None') : tt('Toutes', 'All')}</button>
     ${S.selBut === 'consig' ? '' : `<button class="pilule rouge" id="sb-ret" ${n ? '' : 'disabled'}>${tt('Retirer', 'Remove')}</button>`}
+    ${S.selBut !== 'consig' && ebayN ? `<button class="pilule" id="sb-pct" aria-label="${esc(tt('Baisser le prix', 'Lower the price'))}">−%</button>` : ''}
     <button class="pilule ${S.selBut === 'consig' ? 'acc' : ''}" id="sb-con" ${n ? '' : 'disabled'}>${tt('Consigner', 'Consign')}</button>
     <button class="pilule" id="sb-x" aria-label="${esc(tt('Annuler', 'Cancel'))}">✕</button>`;
   $('#sb-tout').onclick = () => { S.selInv = n === l.length ? new Set() : new Set(l.map(c => c.id)); chargerInventaire(); };
   $('#sb-x').onclick = () => { S.selInv = null; S.selBut = null; chargerInventaire(); };
   $('#sb-con').onclick = () => { vibrer(); feuilleConsigner(l.filter(c => S.selInv.has(c.id))); };
+  const sbp = $('#sb-pct'); if (sbp) sbp.onclick = () => { vibrer(); feuilleBaisse(l.filter(c => S.selInv.has(c.id) && c.item_number && c.statut === 'Listée')); };
   const sbr = $('#sb-ret'); if (sbr) sbr.onclick = async () => { if (await retirerCartes(l.filter(c => S.selInv.has(c.id)))) { S.selInv = null; chargerInventaire(); } };
+}
+// 27 nov 2026, 21 h 13 (Mathieu : « une option rapide et clean pour appliquer un % de reduction sur les cartes selectionnees ») : les
+// cartes choisies qui sont en vente sur eBay : -5, -10, -15 ou -20 % ; un exemple et une confirmation, puis chaque annonce est mise a
+// jour (ebay_changer_prix : eBay ET la carte) ; rien ne change sur une annonce qu'eBay refuse
+async function feuilleBaisse(cartes){
+  const L_ = cartes.filter(c => nb(c.prix_demande) > 0); if (!L_.length) { toast(tt('Aucune carte sur eBay avec un prix', 'No card on eBay with a price'), 2500); return; }
+  const neuf = (x, p) => { const v = x * (1 - p); return Math.max(0.99, v >= 10 ? Math.round(v) : Math.round(v * 100) / 100); };
+  ouvrirFeuille(`<h3>${tt('Baisser le prix', 'Lower the price')}</h3>
+    <p class="sous">${tt(`${L_.length} carte${L_.length > 1 ? 's' : ''} sur eBay : ${L_.length > 1 ? 'leurs annonces sont mises' : 'son annonce est mise'} à jour.`, `${L_.length} card${L_.length > 1 ? 's' : ''} on eBay: ${L_.length > 1 ? 'their listings are' : 'its listing is'} updated.`)}</p>
+    <div class="bx-pct">${[5, 10, 15, 20].map(p => `<button class="btn ghost" data-bx="${p}">−${p} %</button>`).join('')}</div><div class="sous" id="bx-ok"></div>`);
+  $$('[data-bx]').forEach(b => b.onclick = async () => {
+    const p = +b.dataset.bx / 100, x0 = L_[0], a = nb(x0.prix_demande);
+    if (!await confirmer(tt(`Baisser ${L_.length} prix de ${b.dataset.bx} % ?`, `Lower ${L_.length} prices by ${b.dataset.bx}%?`),
+      tt(`Par exemple ${argent(a, a < 10 ? 2 : 0)} → ${argent(neuf(a, p), a < 10 ? 2 : 0)}. Les annonces eBay sont mises à jour.`, `For example ${argent(a, a < 10 ? 2 : 0)} → ${argent(neuf(a, p), a < 10 ? 2 : 0)}. The eBay listings are updated.`), tt('Baisser', 'Lower'))) return;
+    let ok = 0, ko = 0;
+    ouvrirFeuille(`<h3>${tt('Mise à jour sur eBay…', 'Updating eBay…')}</h3><p class="sous" id="bx-av">0 / ${L_.length}</p>`);
+    for (const c of L_) {
+      const r = await API.ebay_changer_prix(c.item_number, neuf(nb(c.prix_demande), p)).catch(e => ({ok: false, erreur: e.message}));
+      if (r && r.ok) ok++; else ko++;
+      const av = $('#bx-av'); if (av) av.textContent = `${ok + ko} / ${L_.length}`;
+    }
+    fermerFeuille(); MEMO.clear();
+    toast(ko ? tt(`${ok} prix baissés · ${ko} refusés par eBay (rien n’a changé pour eux)`, `${ok} prices lowered · ${ko} refused by eBay (unchanged)`) : tt(`${ok} prix baissés`, `${ok} prices lowered`), 4500);
+    S.selInv = null; chargerInventaire();
+  });
 }
 async function retirerCartes(cartes){
   if (!cartes.length) return false;
@@ -18296,8 +18406,11 @@ async function chargerInventaire(){
 // de l'annonce originale, comme les pastilles de l'inventaire, avec le prix paye et propose pour le profit ; je dois savoir
 // quand les mettre : 3 mois minimum apres l'achat, et surtout si le score SlabIQ est haut (forte demande, en feu...) ») :
 // les cartes achetees pas encore sur eBay, de la plus pressee a la moins pressee
-const QUAND_ACH = () => ({maintenant: [tt('À mettre maintenant', 'List it now'), 'vert'], prete: [tt('Prête', 'Ready'), 'acc'],
+// 27 nov 2026, 20 h 53 (Mathieu : « c'est pas redondant ? si elle est dans Inventory elle n'est pas sur eBay » ; son « oui go ») : une tuile
+// ne dit que ce qui demande une action : « Prête » (27 cartes sur 30) n'est plus ecrit, c'est l'etat normal ; les tuiles du haut le comptent
+const QUAND_ACH = () => ({maintenant: [tt('À mettre maintenant', 'List it now'), 'vert'], prete: ['', ''],
   attendre_creux: [tt('Attendre · en creux', 'Wait · slump'), 'or'], inconnu: ['', '']});
+const ICB_ACH = {blesse: 'alerte', absent: 'alerte', en_feu: 'feu', echange_baisse: 'echange', echange_hausse: 'echange', honneur: 'medaille', rebond: 'hausse', en_creux: 'creux', recrue: 'etoile', buzz: 'buzz', en_hausse: 'hausse'};   // les icones du Radar
 const PAST_ACH = () => ({blesse: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], absent: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], en_feu: [tt('En feu', 'On fire'), 'vert'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], honneur: [tt('Honoré', 'Honored'), 'or'],
   buzz: ['Buzz', 'acc'], rebond: [tt('Sort du creux', 'Bouncing back'), 'vert'], en_creux: [tt('En creux', 'In a slump'), 'p-creux'],
   echange_hausse: [tt('Échangé · hausse', 'Traded · up'), 'vert'], echange_baisse: [tt('Échangé · baisse', 'Traded · down'), 'rouge'], recrue: [tt('Recrue', 'Rookie'), 'or p-rc']});
@@ -18307,8 +18420,8 @@ function etatEbayAch(x){
   const [t, c] = x.ebay_etat === 'sur_ebay' ? [tt('Sur eBay ? · touche pour relier', 'On eBay? · tap to link'), 'eb-oui']
     : x.ebay_etat === 'inventaire' ? [tt('Dans l’inventaire ? · touche pour relier', 'In inventory? · tap to link'), 'eb-inv']
     : x.a_ajouter ? [tt('Pas sur eBay · pas dans l’inventaire', 'Not on eBay · not in inventory'), 'eb-non']
-    : [tt('Pas encore sur eBay', 'Not listed yet'), 'eb-non'];
-  return `<span class="ach-new ${c}">${t}</span>`;
+    : ['', ''];                                  // 27 nov : « Pas encore sur eBay » sur chaque carte de l'onglet Inventory n'apprenait rien
+  return t ? `<span class="ach-new ${c}">${t}</span>` : '';
 }
 function tuileAchetee(x){
   // 15 nov 2026 (Mathieu : « pas besoin de savoir le nombre de jours restants ») : plus de « Dans 76 j » ; « Au gradage · PSA »
@@ -18321,7 +18434,9 @@ function tuileAchetee(x){
     // 14 nov 2026 (Mathieu : « enlever Ask et Profit, mettre simplement le nombre de jours depuis l'achat ») : 2 chiffres
     k3: [[tt('Payé', 'Paid'), x.cout != null ? argentCourt(x.cout) : '—'], [tt('Achetée il y a', 'Bought'), x.jours != null ? x.jours + tt(' jours', ' days') : '—', x.jours != null && x.jours >= 90 ? 'g' : '']],
     photo: x.photo,
-    puits: `${ql ? `<span class="isl-et">${capsule(ql, (qc ? qc + ' ' : '') + 'petit')}</span>` : ''}${p ? `<span class="isl-mk ach-p">${tag(PAST_ACH()[p][0], PAST_ACH()[p][1])}</span>` : ''}${etatEbayAch(x)}${x.photo_semblable ? `<span class="ach-sem">${tt('Photo semblable', 'Similar photo')}</span>` : ''}`});
+    // 27 nov 2026, 21 h 03 (Mathieu : « les pastilles devraient etre pareilles partout, Radar, Inventory » ; « voici les bonnes : celles du
+    // Radar ») : les MEMES pastilles que le Radar (badgeSlab : icone, contour de couleur), empilees en haut a gauche de la photo
+    puits: `${ql || p ? `<span class="sd-cs">${ql ? badgeSlab(ql, qc || 'acc', x.quand === 'au_gradage' ? 'grade' : 'hausse') : ''}${p ? badgeSlab(PAST_ACH()[p][0], /p-creux/.test(PAST_ACH()[p][1]) ? 'creux' : PAST_ACH()[p][1].split(' ')[0], ICB_ACH[p] || 'etoile', `data-np="${esc(p)}" data-np-j="${esc(x.joueur || '')}" data-np-l="${esc(PAST_ACH()[p][0])}"`) : ''}</span>` : ''}${etatEbayAch(x)}${x.photo_semblable ? `<span class="ach-sem">${tt('Photo semblable', 'Similar photo')}</span>` : ''}`});
 }
 async function vueAchetees(){
   const z = $('#i-liste'); if (!z) return;
@@ -20835,6 +20950,8 @@ function feuilleEbay(c){
   ouvrirFeuille(`<div class="fvd">
     <div class="fvd-h"><button class="fc-ph fvd-ph" id="fc-ph-z">${SVG_CARTE}${photoOk(c.photo) ? `<img src="${esc(photoNet(c.photo))}" alt="" data-oe="rm">` : ''}</button>
       <div class="fvd-i"><b>${esc(nom)}</b>${det ? `<span>${esc(det)}</span>` : ''}<span class="pastilles">${tag(prog ? tt('Programmée ', 'Scheduled ') + dateProg(c.debut) : tt('En vente sur eBay', 'Listed on eBay'), 'acc')}</span>
+        ${''/* 27 nov 2026, 21 h 11 (Mathieu : « j'ajouterais le nombre de jours affiche ; pour les cartes a ajuster, ca donne une bonne idee ») */}
+        ${c.debut && !prog ? (() => { const j = Math.max(0, Math.floor((Date.now() - new Date(String(c.debut).replace(' ', 'T')).getTime()) / 864e5)); return isNaN(j) ? '' : `<small class="fc-jours${j >= 30 ? ' vieux' : ''}">${tt(`En ligne depuis ${j} jour${j > 1 ? 's' : ''}`, `Listed ${j} day${j !== 1 ? 's' : ''} ago`)}</small>`; })() : ''}
         <a class="fc-lien" href="${esc((S.ebaySite || 'https://www.ebay.ca') + '/itm/' + c.item_number)}" target="_blank" rel="noopener">${tt('Voir mon annonce', 'See my listing')} ${EXT}</a></div></div>
     <div class="fvd-3">
       <label><span>${tt('Prix', 'Price')}</span><input class="champ" id="fe-prix" type="number" inputmode="decimal" step="0.01" value="${dev2(c.prix_demande)}"></label>
@@ -23560,19 +23677,12 @@ function feuilleVendusEbay(titre, mettre){
     <b class="pop2-t">${tt('Le bon prix, en 10 secondes', 'The right price, in 10 seconds')}</b>
     <ol class="pop2-l"><li>${tt('Regarde le <b>dernier vendu</b> de la même carte (même note, même parallèle).', 'Look at the <b>last sold</b> for the same card (same grade, same parallel).')}</li>
       <li>${tt(`Affiche environ <b>${Math.round(NEGO * 100)} % de plus</b> : les acheteurs font des offres, tu gardes ta marge.`, `List about <b>${Math.round(NEGO * 100)}% higher</b>: buyers make offers, you keep your margin.`)}</li></ol>
-    <button class="btn pop2-go" id="pe-go">${tt('Voir les vendues sur eBay', 'See sold on eBay')} ${EXT}</button>
-    <label class="pop2-v"><span>${tt('Dernier vendu', 'Last sold')}</span><input class="champ" id="pe-v" type="number" inputmode="decimal" step="any" placeholder="0"><em>${symDevise()}</em></label>
-    <div class="pop2-r" id="pe-r"></div></div>`;
+    <button class="btn pop2-go" id="pe-go">${tt('Voir les vendues sur eBay', 'See sold on eBay')} ${EXT}</button></div>`;
+  // 27 nov 2026, 21 h 16 (Mathieu : « c'est quoi le Last sold ? ca sert a rien ») : plus de case a remplir ; le prix se change dans la fiche
   document.body.appendChild(f); requestAnimationFrame(() => f.classList.add('ouvert'));
   const fermer = () => { f.classList.remove('ouvert'); setTimeout(() => f.remove(), 220); };
   f.querySelector('.pop2-x').onclick = fermer; f.onclick = (e) => { if (e.target === f) fermer(); };
-  $('#pe-go').onclick = () => { vibrer(); ouvrirDansApp(urlVendusEbay(requeteVendus(titre))); setTimeout(() => { const i = $('#pe-v'); if (i) i.focus(); }, 900); };
-  const v = $('#pe-v'), r = $('#pe-r');
-  v.oninput = () => { const x = nb(String(v.value).replace(',', '.'));
-    if (!(x > 0)) { r.innerHTML = ''; return; }
-    const p = Math.ceil(x * (1 + NEGO));
-    r.innerHTML = `<span>${tt('Prix à afficher', 'Price to list')} <small>+${Math.round(NEGO * 100)} %</small></span><b>${p} ${symDevise()}</b><button class="btn petit" id="pe-ok">${tt('Mettre', 'Use')}</button>`;
-    $('#pe-ok').onclick = () => { vibrer(); mettre(p); toast(tt('Prix mis', 'Price set'), 1500); fermer(); }; };
+  $('#pe-go').onclick = () => { vibrer(); ouvrirDansApp(urlVendusEbay(requeteVendus(titre))); fermer(); };
 }
 function prixPourProfit(cout){
   const c = +cout; if (!(c > 0)) return null;

@@ -1832,3 +1832,22 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
 - Petits graphes : sans changement (tdSens 'n') = ligne plate pointillée presque effacée, pastille « — » sans fond.
 - Point 3 (19 h 10) : tuiles d'annonce (.w-ligne : Watchlist, Mes cibles) au contour prisme, fond plus vivant, prix 20 px, ta mise en lavande,
   ligne d'infos (pastille À grader, encan/achat immédiat, port, vendeur). Vu sur la Watchlist locale ; à revoir sur de vraies annonces.
+
+## p135 — 27 nov 2026, 21 h 30 : retours en direct
+- Onglet Inventory : « Prête » et « Pas encore sur eBay » retirés des tuiles (seulement ce qui demande une action) ; les pastilles
+  = celles du Radar (badgeSlab, ICB_ACH). Breaks : le choix sur la ligne du titre. Notification des pastilles : largeur du texte.
+- Fiche d'annonce : la pastille « À grader » en premier. Menu de gauche : la flèche hors des icônes (right:3px).
+- Nouvelles : d'un flux général (Radio-Canada Sports), seulement les titres de hockey (nouvelles.parle_hockey).
+- « Il manque un produit ? » : un produit envoyé par un client attend TOUJOURS l'admin (catalogue_importer) ; tuile centrée.
+- « Le bon prix en 10 secondes » : la case « Last sold » retirée. Fiche d'une carte en ligne : « En ligne depuis N jours » (orange à 30+).
+- Sélection de l'inventaire : bouton « −% » (5/10/15/20 %) pour les cartes sur eBay : exemple, confirmation, ebay_changer_prix par carte.
+
+## p137 — 27 nov 2026, 22 h : le fait du type ; l'écran photo en deux
+- a_grader.motifs (types 2005+, ≥ 5 cartes : multiple PSA 10/raw médian, part des 10) dans la liste (« types ») ; type_de(titre) pour une
+  raw PAS mesurée (sinon le type parent : Clear Cut -> Young Guns) ; top_types pour Trends. Testé : deviner LA carte par son type se trompe
+  de ×1,5 (pastille estimée juste 5-7 fois sur 10) : donc un FAIT affiché, jamais une pastille. Radar : « a_grader_type » (Pro/Platine/admin).
+- Écran photo : choixCamera (Comp rapide / Inventaire · Collection) ; Comp rapide = photo du devant seulement, lecture, vitrineComp : la
+  carte, le fait À grader (carte_grader), et les VENDUES eBay de la carte ouvertes dans l'app (ouvrirDansApp) — la page d'eBay, pas nos prix.
+- 22 h 13 : « Comp rapide » ouvre le scanner en direct (ouvrirScanner : devant + dos, puis #valeur/…). Médiane 3 mois : Api.mediane_3mois(q)
+  (vendues.par_gradation, la série de la note, ventes des 90 derniers jours, ≥ 2) -> UN chiffre + le nombre de ventes, en haut de #valeur/…
+  (medTroisMois). Décision de Mathieu : ouvert à Pro (« jouer sur la limite le temps de l'obtention de l'accord ») ; gratuit : non.

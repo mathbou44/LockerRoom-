@@ -28,27 +28,30 @@ def main():
     api._est_admin = lambda: False
     valeurs.statut = lambda: {"nb_joueurs": 100}
     valeurs.connu = lambda j: j in JOUEURS
-    # 1. bonne checklist : publiee pour tous, marquee « contribue »
+    # 1. bonne checklist : 27 nov 2026 (Mathieu : « ca doit etre accepte par moi avant d'etre ajoute ») : en attente de l'admin,
+    #    jamais publiee toute seule, meme sans remarque de la validation automatique
     r = api.catalogue_importer({"fichier": csv(60), "nom_fichier": "2031-32 Upper Deck Zeta Hockey.csv", "sport": "hockey"})
-    assert r["ok"] and r.get("publie") and not r.get("attente"), r
-    p = catalogue.charger(r["id"])
-    assert p and p.get("contribue", {}).get("compte") == "c1"
-    # 2. la meme : deja au catalogue, jamais remplacee
-    r2 = api.catalogue_importer({"fichier": csv(60), "nom_fichier": "2031-32 Upper Deck Zeta Hockey.csv", "sport": "hockey"})
-    assert r2["ok"] and r2.get("deja"), r2
-    # 3. joueurs inconnus et sans marque : en attente, pas au catalogue
+    assert r["ok"] and r.get("attente") and not r.get("publie") and r["raisons"] == [], r
+    assert not catalogue.charger(r["id"])
+    # 3. joueurs inconnus et sans marque : en attente, avec ses raisons
     r3 = api.catalogue_importer({"fichier": csv(60, faux=True), "nom_fichier": "2031-32 Mystery Cards.csv", "sport": "hockey"})
     assert r3["ok"] and r3.get("attente") and r3["raisons"], r3
     assert not catalogue.charger(r3["id"])
     att = contributions.liste_attente()
-    assert [x["id"] for x in att] == [r3["id"]]
+    assert sorted(x["id"] for x in att) == sorted([r["id"], r3["id"]])
     # 4. trop court : en attente
     r4 = api.catalogue_importer({"fichier": csv(12), "nom_fichier": "2031-32 Topps Mini Hockey.csv", "sport": "hockey"})
     assert r4.get("attente") and any("cartes lues" in x for x in r4["raisons"]), r4
     # 5. l'admin : publier, refuser, retirer ; un utilisateur ne peut pas
     assert not api.admin_contribution(r3["id"], "publier")["ok"]
     api._est_admin = lambda: True
-    assert api.admin_contributions()["ok"] and len(api.admin_contributions()["attente"]) == 2
+    assert api.admin_contributions()["ok"] and len(api.admin_contributions()["attente"]) == 3
+    assert api.admin_contribution(r["id"], "publier")["ok"] and catalogue.charger(r["id"])
+    api._est_admin = lambda: False
+    # 2. la meme, une fois acceptee : deja au catalogue, jamais remplacee
+    r2 = api.catalogue_importer({"fichier": csv(60), "nom_fichier": "2031-32 Upper Deck Zeta Hockey.csv", "sport": "hockey"})
+    assert r2["ok"] and r2.get("deja"), r2
+    api._est_admin = lambda: True
     assert api.admin_contribution(r3["id"], "publier")["ok"] and catalogue.charger(r3["id"])
     assert api.admin_contribution(r4["id"], "refuser")["ok"] and not contributions.liste_attente()
     assert api.admin_contribution(r["id"], "retirer")["ok"] and not catalogue.charger(r["id"])

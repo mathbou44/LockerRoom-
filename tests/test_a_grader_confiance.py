@@ -46,3 +46,16 @@ with open(ag._chemin(), "w", encoding="utf-8") as f:
     json.dump({"version": 5, "cartes": [{"joueur": "X", "grader": True}], "index": [{"ok": True}]}, f)
 assert ag.lire() == {"version": 5} and ag.top_tendances()["cartes"] == []
 print("ANCIENNE LISTE CACHEE OK")
+
+# ---- 5. le fait du type (27 nov, 21 h 50) : le multiple median d'un type (au moins 5 cartes, 2005 et apres), et le parent d'une parallele
+C = [{"annee": 2024, "q": f"joueur{i} young guns", "cle_joueur": f"joueur{i}", "raw": 10.0, "psa10": 10.0 * (12 + i), "c10": 6, "c9": 4, "c8": 0, "c7": 0} for i in range(5)]
+C += [{"annee": 1987, "q": "wayne gretzky o-pee-chee", "cle_joueur": "wayne gretzky", "raw": 20.0, "psa10": 2500.0, "c10": 1, "c9": 9, "c8": 30, "c7": 9}] * 5
+M = ag.motifs(C)
+assert set(M) == {"young guns"} and M["young guns"]["m"] == 14.0 and M["young guns"]["n"] == 5 and M["young guns"]["p10"] == 0.6, M
+with open(ag._chemin(), "w", encoding="utf-8") as f:
+    json.dump({"version": ag.VERSION, "types": M, "cartes": [], "index": []}, f)
+ag._TYPES_VUS.clear()
+t = ag.type_de("2024-25 Upper Deck Young Guns Clear Cut Cutter Gauthier #212", "Cutter Gauthier")
+assert t and t["parent"] and t["m"] == 14.0, t
+assert ag.top_types(n_min=5)[0]["sorte"] == "young guns"
+print("TYPES OK")

@@ -127,6 +127,74 @@ def _net(v):
     return deals.net_revente(v)
 
 
+# 27 nov 2026, 21 h 50 (Mathieu : « une Young Guns Clear Cut est bcp plus rare donc bcp moins gradee, mais quand tu vois la valeur
+# qu'une de base prend, la Clear Cut va suivre » ; teste : deviner LA carte par son type se trompe de x1,5 et une pastille estimee ne
+# tient que 5 a 7 fois sur 10 ; son « on peut faire ca ») : pour une carte peu vendue, un FAIT du type, jamais une pastille :
+# « Les Young Guns valent x14 en PSA 10 (mediane de 120 cartes) ». Les types d'avant 2005 sont laisses de cote (un 10 y est rare).
+TYPE_MIN = 5
+_TYPES_VUS = {}
+TYPE_ANNEE_MIN = 2005
+
+
+def _sorte_de(q, j):
+    return " ".join(w for w in str(q or "").split() if w not in set(str(j or "").split()))
+
+
+def motifs(cartes):
+    """Les cartes mesurees -> {sorte: {m: multiple PSA 10 / raw (mediane), n: cartes, p10: part des 10 parmi les gradees vendues, nom}}."""
+    import tendance_sortes as ts
+    T = {}
+    for x in cartes or []:
+        try:
+            if int(x.get("annee") or 0) < TYPE_ANNEE_MIN or not x.get("raw") or not x.get("psa10"):
+                continue
+        except (TypeError, ValueError):
+            continue
+        t = T.setdefault(_sorte_de(x.get("q"), x.get("cle_joueur")), {"m": [], "c10": 0, "n": 0})
+        t["m"].append(float(x["psa10"]) / float(x["raw"]))
+        t["c10"] += int(x.get("c10") or 0); t["n"] += sum(int(x.get(k) or 0) for k in ("c10", "c9", "c8", "c7"))
+    return {so: {"m": round(statistics.median(t["m"]), 1), "n": len(t["m"]), "p10": round(t["c10"] / t["n"], 3) if t["n"] else 0.0, "nom": ts.libelle(so)}
+            for so, t in T.items() if so and len(t["m"]) >= TYPE_MIN}
+
+
+def type_de(titre, joueur=None):
+    """Le titre d'une carte raw PAS mesuree -> le fait de son type ({nom, m, n}), ou du type parent (Clear Cut -> Young Guns), ou None."""
+    T = (lire().get("types") or {})
+    if not T:
+        return None
+    cle = (str(titre or ""), str(joueur or ""))
+    if cle in _TYPES_VUS:
+        return _TYPES_VUS[cle]
+    if len(_TYPES_VUS) > 30000:
+        _TYPES_VUS.clear()
+    _TYPES_VUS[cle] = None
+    try:
+        c = classer(titre, joueur)
+    except Exception:
+        return None
+    if not c or c[1] != "raw":
+        return None
+    j, q = c[0][0], c[0][1]
+    so = _sorte_de(q, j)
+    if so in T:
+        _TYPES_VUS[cle] = dict(T[so], parent=False)
+        return _TYPES_VUS[cle]
+    m = set(so.split())
+    cand = [k for k in T if k and set(k.split()) < m]
+    if not cand:
+        return None
+    k = max(cand, key=lambda k: (len(k.split()), T[k]["n"]))
+    _TYPES_VUS[cle] = dict(T[k], parent=True)
+    return _TYPES_VUS[cle]
+
+
+def top_types(n=10, n_min=8):
+    """Pour Trends : les types qui prennent le plus de valeur une fois grades (multiple median, au moins n_min cartes mesurees)."""
+    T = lire().get("types") or {}
+    L = sorted(({"sorte": k, **v} for k, v in T.items() if v.get("n", 0) >= n_min and v.get("p10", 0) >= 0.15), key=lambda x: -x["m"])
+    return L[:n]
+
+
 def frais_psa_de(v10):
     """PSA pour une carte dont la PSA 10 vaut v10 ($ CA) : le palier qu'il faut, la taxe sur le service, l'envoi."""
     f = next(fr for cap, fr in PSA_PALIERS if v10 <= cap)
@@ -638,7 +706,7 @@ def analyser(ventes, aujourd=None, jours=JOURS, respirer=None):
     couv["sortes_inconnues"] = [[d, n] for d, n in sorted(mots_inconnus.items(), key=lambda x: (-x[1], x[0]))[:N_INCONNUES] if n >= 3]
     couv["exemples"] = {d: ex_duo.get(d) or [] for d, _ in couv["sortes_inconnues"]}
     couv["exemples_lot"] = ex_lot
-    return {"version": VERSION, "cartes": out[:N_LISTE], "n_cartes": len(out), "index": [_compact(x) for x in out[:5000]], "n_grader": sum(1 for x in out if x["grader"]), "lues": lues, "rangees": rangees, "ecartees": ecartees, "raw_gradees": raw_gradees, "couverture": couv,
+    return {"version": VERSION, "types": motifs(out), "cartes": out[:N_LISTE], "n_cartes": len(out), "index": [_compact(x) for x in out[:5000]], "n_grader": sum(1 for x in out if x["grader"]), "lues": lues, "rangees": rangees, "ecartees": ecartees, "raw_gradees": raw_gradees, "couverture": couv,
             "jours_recent": JOURS_RECENT if jours > JOURS_RECENT else None,
             "n_recent": sum(1 for x in out if jours > JOURS_RECENT and x["fenetre"] == JOURS_RECENT),
             "fenetres": [f for f in FENETRES if f < jours] + [jours], "par_fenetre": {str(f): sum(1 for x in out if x["fenetre"] == f) for f in sorted({x["fenetre"] for x in out})},
@@ -861,7 +929,7 @@ def top_tendances():
     # 27 nov 2026 : l'onglet ne montre plus que les cartes qui portent la pastille (avant : les 100 meilleurs rendements, dont des
     # cartes ou il faut beaucoup de 10 pour ne pas perdre). Une liste d'avant la pastille : la regle est appliquee a la lecture.
     bonnes = [x for x in (v.get("cartes") or []) if (x.get("grader") if "grader" in x else vaut_grader(x))]
-    return {"cartes": bonnes[:N_TOP], "n": v.get("n_cartes") or 0, "n_grader": v.get("n_grader") if v.get("n_grader") is not None else len(bonnes), "le": v.get("le"), "jours": v.get("jours") or JOURS,
+    return {"cartes": bonnes[:N_TOP], "types": top_types(), "n": v.get("n_cartes") or 0, "n_grader": v.get("n_grader") if v.get("n_grader") is not None else len(bonnes), "le": v.get("le"), "jours": v.get("jours") or JOURS,
             "jours_recent": v.get("jours_recent"), "frais_psa": v.get("frais_psa") or frais_psa(), "semaine": REFAIRE_J}
 
 

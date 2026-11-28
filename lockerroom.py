@@ -3138,11 +3138,11 @@ class Api:
         except Exception:
             verif = {"ok": [], "alertes": []}
         if not admin:
-            raisons = contributions.valider(prod, verif, sport)
-            if raisons:
-                contributions.mettre_en_attente(prod, compte, raisons, nom_f, verif=verif)
-                return {"ok": True, "attente": True, "id": prod["id"], "nom": prod["nom"], "nb_cartes": len(prod["cartes"]), "raisons": raisons}
-            prod["contribue"] = {"compte": compte, "le": datetime.now().isoformat(timespec="seconds")}
+            # 27 nov 2026, 21 h 07 (Mathieu : « ca doit etre accepte par moi avant d'etre ajoute ») : un produit envoye par un client
+            # n'est JAMAIS publie tout seul ; il attend toujours l'admin (avec les remarques de la validation automatique, s'il y en a)
+            raisons = contributions.valider(prod, verif, sport) or []
+            contributions.mettre_en_attente(prod, compte, raisons or ["Nouveau produit envoyé par un client : à accepter"], nom_f, verif=verif)
+            return {"ok": True, "attente": True, "id": prod["id"], "nom": prod["nom"], "nb_cartes": len(prod["cartes"]), "raisons": raisons}
         catalogue.enregistrer_ajout(prod)
         self._EV_CACHE.clear()
         p2 = catalogue.charger(prod["id"]) or prod
@@ -12645,6 +12645,53 @@ class Api:
         except Exception:
             return "gratuit"
 
+    def mediane_3mois(self, q):
+        """27 nov 2026, 22 h 13 (Mathieu : « une mediane du prix des ventes des 3 derniers mois » ; « on y va pour Pro, on doit jouer le
+        plus possible sur la limite le temps de l'obtention de l'accord ») : UN chiffre (la mediane des 90 derniers jours de la carte, a
+        sa note) et le nombre de ventes ; jamais la liste des ventes. Pro, Platine et admin."""
+        if self._niveau_ag() == "gratuit":
+            return {"ok": False, "raison": "pro"}
+        q = re.sub(r"\s+", " ", str(q or "")).strip()[:200]
+        if len(q) < 6:
+            return {"ok": False, "raison": "carte"}
+        import statistics
+        import vendues
+        try:
+            r = vendues.par_gradation(q, requete=True, fond=False, jours=120)
+        except Exception as e:
+            return {"ok": False, "erreur": type(e).__name__}
+        m = re.search(r"\b(psa|bgs|sgc|cgc)\s*(10|9\.5|9|8)\b", q, re.I)
+        voulue = f"{m.group(1).lower()} {m.group(2)}" if m else "brute"
+        S_ = {s.get("cle"): s for s in (r or {}).get("series") or []}
+        s = S_.get(voulue)
+        if not s:
+            return {"ok": False, "raison": "peu de ventes"}
+        d0 = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")
+        p = [float(x[1]) for x in s.get("points") or [] if str(x[0])[:10] >= d0 and x[1]]
+        if len(p) < 2:
+            return {"ok": False, "raison": "peu de ventes"}
+        return {"ok": True, "mediane": round(statistics.median(p), 2), "n": len(p), "note": s.get("nom") or voulue}
+
+    def _a_grader_type_de(self, annonces, cle="item_id", titre=lambda x: x.get("titre")):
+        """27 nov 2026 (Mathieu : « la Clear Cut va suivre la base ») : pour une carte raw PAS mesuree, le fait de son type (« les Young
+        Guns valent x14 en PSA 10, mediane de 120 cartes ») ; Pro, Platine et admin ; jamais un prix."""
+        try:
+            if self._niveau_ag() == "gratuit":
+                return {}
+            import a_grader
+            o = {}
+            for x in annonces or []:
+                k = x.get(cle)
+                if k is None or str(k) in o or a_grader.mesure(titre(x), x.get("joueur")):
+                    continue
+                t = a_grader.type_de(titre(x), x.get("joueur"))
+                if t:
+                    o[str(k)] = {"nom": t.get("nom"), "m": t.get("m"), "n": t.get("n")}
+            return o
+        except Exception as e:
+            print("A grader (type) : " + repr(e)[:160], flush=True)
+            return {}
+
     def _a_grader_de(self, annonces, cle="item_id", titre=lambda x: x.get("titre")):
         """27 nov 2026 (Mathieu : « une pastille dans Radar [...] tres, tres simple pour le end user de comprendre rapidement
         qu'est-ce qui est a grader ou non ») : {identifiant: la pastille « A grader »} pour les cartes NON gradees de la liste
@@ -12950,7 +12997,7 @@ class Api:
         # 31 oct 2026 (Mathieu : « les deals n'apparaissent pas au fur et a mesure, ca reste a 35 ») : un encan d'un gros vendeur
         # qui vient de recevoir sa valeur et qui est a 70 % ou moins de celle-ci est un deal : il compte dans le nombre
         n_su = sum(1 for x in suivis if x.get("valeur") and (x.get("total") or 0) <= _dl.prix_max(x["valeur"], taxe=_dl.taxe_de(x, valeur=x["valeur"])))
-        return self._pastilles_radar({"ok": True, "deals": lst[:240], "a_grader": self._a_grader_de([*lst[:240], *suivis, *pres]), "n": n + n_su, "n_encans_valorises": n_su, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
+        return self._pastilles_radar({"ok": True, "deals": lst[:240], "a_grader": self._a_grader_de([*lst[:240], *suivis, *pres]), "a_grader_type": self._a_grader_type_de([*lst[:240], *suivis, *pres]), "n": n + n_su, "n_encans_valorises": n_su, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
                 "suivis": suivis,
                 "pres": pres, "secours": secours, "secours_le": (dd.get("secours") or {}).get("le") if secours else None,
                 "sports": par_sport, "pays_dispo": par_pays, "maj": dd.get("maj"), "ebay": ebay_compte.statut().get("cles_ok"),

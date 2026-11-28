@@ -63,6 +63,22 @@ SOURCES_HOCKEY = [
 ]
 
 
+# 27 nov 2026, 21 h 06 (Mathieu, une nouvelle de Radio-Canada Sports sur le cross-country : « en quoi ca a rapport avec le hockey ? ») :
+# le flux de Radio-Canada Sports couvre TOUS les sports. D'un flux general, on ne garde que les titres qui parlent de hockey (le mot,
+# la ligue, une equipe, un terme du jeu) ; les flux hockey (Sportsnet NHL, La Presse hockey...) ne changent pas.
+GENERALES = {"Radio-Canada Sports"}
+_HOCKEY_RE = re.compile(r"hockey|\b(LNH|NHL|LHJMQ|LCH|OHL|WHL|AHL|LAH|PWHL|LPHF)\b|coupe stanley|stanley cup|repêchage de la lnh|gardien de but", re.I)
+# les equipes : en majuscule (« Championnat canadien » n'est pas le Canadien) et sans les noms partages avec le football ou le baseball
+_EQUIPES_RE = re.compile(r"\b(Canadien|Canadiens|Maple Leafs|Sénateurs|Senators|Bruins|Oilers|Flames|Canucks|Islanders|Flyers|Penguins|Capitals|"
+                         r"Hurricanes|Blue Jackets|Red Wings|Sabres|Blackhawks|Predators|Avalanche|Kraken|Golden Knights|Ducks|Sharks|Mammoth|"
+                         r"Rocket de Laval|Victoire de Montréal|Remparts|Saguenéens)\b")
+
+
+def parle_hockey(titre):
+    t = str(titre or "")
+    return bool(_HOCKEY_RE.search(t) or _EQUIPES_RE.search(t))
+
+
 def sources(sport):
     s = sport if sport in _ESPN else "hockey"
     if s != "hockey":
@@ -167,9 +183,12 @@ def chemin_cache():
 def lire_cache():
     try:
         with open(chemin_cache(), encoding="utf-8") as f:
-            return json.load(f) or {}
+            c = json.load(f) or {}
     except (OSError, ValueError):
         return {}
+    for sp, L in (c.get("sports") or {}).items():          # 27 nov 2026 : un vieux cache garde les titres hors hockey d'un flux general
+        c["sports"][sp] = [x for x in L or [] if x.get("source") not in GENERALES or parle_hockey(x.get("titre"))]
+    return c
 
 
 def rafraichir(sports_voulus=("hockey", "football", "basketball", "baseball"), lecteur=None):
@@ -187,6 +206,8 @@ def rafraichir(sports_voulus=("hockey", "football", "basketball", "baseball"), l
                 cache["etat"][f"{sport}:{nom}"] = type(e).__name__
                 continue
             for x in lus[:30]:
+                if nom in GENERALES and not parle_hockey(x.get("titre")):
+                    continue
                 cle = norm(x["titre"])[:60]
                 if not cle or cle in vus:
                     continue
@@ -203,7 +224,7 @@ def rafraichir(sports_voulus=("hockey", "football", "basketball", "baseball"), l
         for x in items:
             if not x.get("image") and deja.get(x.get("lien")):
                 x["image"] = deja[x["lien"]]
-        cache["sports"][sport] = items[:60] or ancien.get(sport) or []
+        cache["sports"][sport] = items[:60] or [x for x in (ancien.get(sport) or []) if x.get("source") not in GENERALES or parle_hockey(x.get("titre"))]
     _ecrire_cache(cache)
     if SANS_IMAGES:
         return cache
