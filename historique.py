@@ -231,7 +231,8 @@ def rechercher(q, chasseur=False, jours=JOURS, principal=False, cache_s=None, de
         pass
     try:
         import base_ventes
-        base_ventes.noter(q, ventes)                 # nos archives : la prochaine fois, sans appel
+        # nos archives : la prochaine fois, sans appel. 27 nov 2026 : un geste de l'utilisateur n'attend pas l'ecriture
+        (base_ventes.noter if chasseur else base_ventes.noter_plus_tard)(q, ventes)
     except Exception:
         pass
     return ventes, None

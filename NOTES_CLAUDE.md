@@ -1851,3 +1851,33 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
 - 22 h 13 : « Comp rapide » ouvre le scanner en direct (ouvrirScanner : devant + dos, puis #valeur/…). Médiane 3 mois : Api.mediane_3mois(q)
   (vendues.par_gradation, la série de la note, ventes des 90 derniers jours, ≥ 2) -> UN chiffre + le nombre de ventes, en haut de #valeur/…
   (medTroisMois). Décision de Mathieu : ouvert à Pro (« jouer sur la limite le temps de l'obtention de l'accord ») ; gratuit : non.
+
+## p140 — 27 nov 2026, 22 h 45 : l'inventaire réparé ; Comp rapide en UNE fenêtre, plus rapide
+- 22 h 44 (« l'inventaire est tout fucké ») : badgeSlab rendait un <button> quand la pastille est touchable ; dans une tuile qui est elle-même
+  un <button> (tuileAchetee, slabUni balise 'button'), le navigateur ferme la tuile avant la pastille : « Buzz » sortait de sa carte et la
+  grille se cassait. badgeSlab = toujours un <span role="button" tabindex="0"> (les touchers passent par data-np/data-cu/data-se sur le
+  document, en capture). Règle : JAMAIS un <button> dans une tuile-bouton (tests/test_comp_rapide.py le vérifie pour badgeSlab).
+- 22 h 37 : le compte Anthropic de SlabCoach à court de crédit (« credit balance is too low ») : toute lecture de carte échoue tant que
+  Mathieu n'a pas rechargé (console.anthropic.com, Plans & Billing). Lui seul touche la facturation.
+- Mesuré sur son scan de 22 h 35 (journaux Render) : photo_identifier 15,0 s (Opus qui ÉCRIT la fiche complète) ; puis valeur_carte 16,0 s
+  ET mediane_3mois 15,9 s EN MÊME TEMPS sur la même recherche CompSniper (2 crédits), les deux bloquées 10 s et plus dans
+  base_ventes.noter (le verrou des archives, pris par les tâches de fond).
+- Corrigé : (1) vendues.rechercher : un geste qui cherche ce qu'un autre geste cherche déjà attend sa réponse (_EN_VOL, 20 s max) ;
+  (2) base_ventes.noter_plus_tard : un geste dépose ses ventes dans les archives en arrière-plan (1 fil, l'ordre gardé ; le chasseur
+  reste synchrone) — dans vendues (SoldComps) et historique (CompSniper) ; (3) vision.identifier(rapide=True) : la fiche courte
+  (OUTIL_RAPIDE : les champs de la recherche, photos = le côté seulement ; 450 jetons max ; même modèle, mêmes règles), cache « r:… »
+  séparé (la complète sert aussi au comp, jamais l'inverse), sans CardSight ; (4) photo_identifier(photos, rapide) renvoie q_comp
+  (lockerroom.requete_comp) et LANCE la recherche des ventes sur le serveur (comptes.fil) pendant que la réponse revient.
+- Mathieu, 22 h 38 (l'écran après le scan) : « trop d'info, doit fitter dans une fenêtre ; on doit voir le prix des last comps de manière
+  zone grise avec eBay ; on skip l'étape de cliquer sur le lien vers eBay, on leur montre direct une fenêtre ; si rien vendu dans les 3
+  derniers mois on fonce CompSniper ; encore plus rapide ». -> Api.comp_rapide(q) / vendues.comp_rapide : UNE recherche (sans attendre
+  TheCardAPI), les ventes de la MÊME carte à la MÊME note (brute = ventes brutes), la médiane des 90 jours (≥ 2 ventes ; 1 vente : la
+  vente seule) ; rien en 90 jours -> CompSniper (un an) + nos archives, médiane « 12 mois » (jamais présentée comme 3 mois) ; rien du
+  tout : aucune médiane. 8 ventes max (prix, date, titre, lien, photo, offre). Écran : feuilleComp (scan en mode 'comp' depuis la tuile
+  Comp rapide) : la carte (✎ Préciser = refaire la recherche), la médiane, 5 dernières ventes (toucher = la vente sur eBay dans l'app),
+  « + Ma collection » et « Autre carte ». Tient dans un iPhone 390×844 (560 px). Gratuit : un bloc « Pro » (feuillePro('comps')).
+- DÉCISION DE MATHIEU (22 h 38), qui élargit l'exception de 22 h 13 : Pro voit maintenant les DERNIÈRES VENTES (prix, date, titre, lien)
+  de la carte scannée, en plus de la médiane — « zone grise avec eBay » en attendant l'accord. Admin et Platine : comme avant. Gratuit : rien.
+- BOGUE TROUVÉ : la médiane 3 mois livrée à 22 h 29 ne sortait RIEN pour un compte Pro (vendues._coupe -> comps_permis = admin/Platine).
+  lockerroom._comp_pro_ouvert() (fil local) ouvre le verrou pour CE geste seulement (mediane_3mois, comp_rapide, la recherche d'avance) ;
+  tout le reste des comps reste admin/Platine. comp_rapide et mediane_3mois ajoutés aux gestes lourds (_LOURDS : plafond par minute).

@@ -7382,6 +7382,48 @@ html body .vitrine .vt-c span{display:block; font-size:13.5px; color:rgba(255,25
 html body .med3{display:grid; grid-template-columns:1fr auto; align-items:end; gap:2px 12px; margin:10px 0 14px; padding:14px 16px; border-radius:18px; border:1.5px solid transparent;
   background:linear-gradient(160deg, #272631, #15151B) padding-box, var(--holo) border-box} html body .med3 small{grid-column:1 / -1; font-size:12px; color:rgba(255,255,255,.62); text-transform:uppercase; letter-spacing:.06em}
 html body .med3 b{font:800 34px/1 var(--f-cond); color:#fff} html body .med3 span{font-size:13px; color:rgba(255,255,255,.62)}   /* 27 nov : la mediane 3 mois */
+/* 27 nov 2026, 22 h 38 — Comp rapide : UNE fenetre qui tient dans l'ecran (la carte, la mediane, 5 ventes, 2 gestes) */
+#feuille:has(.cpr){gap:0; padding-top:8px}
+.cpr{display:flex; flex-direction:column; gap:12px}
+.cpr-c{display:grid; grid-template-columns:62px 1fr; gap:12px; align-items:center; padding-right:40px}
+.cpr-ph{position:relative; width:62px; aspect-ratio:5/7; border-radius:8px; overflow:hidden; background:var(--img); display:grid; place-items:center}
+.cpr-ph > svg{width:26px; opacity:.35} .cpr-ph img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.cpr-n{display:flex; flex-direction:column; gap:3px; min-width:0}
+.cpr-n b{font:800 22px/1.05 var(--f-cond); text-transform:uppercase; letter-spacing:.01em; color:var(--texte)}
+.cpr-n > span{font-size:13px; line-height:1.3; color:var(--doux); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.cpr-corr{align-self:flex-start; background:none; border:0; padding:2px 0; color:var(--acc); font:600 13px var(--f-txt); cursor:pointer}
+.cpr-f{display:flex; gap:8px; margin-top:6px} .cpr-f .champ{flex:1; min-width:0; height:40px; font-size:15px} .cpr-f .btn{width:auto; flex:none}
+.cpr-m{display:grid; grid-template-columns:1fr auto; align-items:end; gap:2px 12px; padding:13px 16px; border-radius:18px; border:1.5px solid transparent;
+  background:linear-gradient(160deg, #272631, #15151B) padding-box, var(--holo) border-box}
+.cpr-m small{grid-column:1 / -1; font-size:12px; color:rgba(255,255,255,.62); text-transform:uppercase; letter-spacing:.06em}
+.cpr-m b{font:800 38px/1 var(--f-cond); color:#fff} .cpr-m > span{font-size:13px; color:rgba(255,255,255,.62); text-align:right}
+.cpr-m em{grid-column:1 / -1; font-style:normal; font-size:12px; color:var(--or)}
+.cpr-lt{display:flex; justify-content:space-between; align-items:baseline; margin-top:2px}
+.cpr-lt span{font:700 15px var(--f-cond); text-transform:uppercase; letter-spacing:.05em; color:var(--texte)} .cpr-lt small{font-size:12px; color:var(--pale)}
+.cpr-l{display:flex; flex-direction:column; border-radius:16px; background:var(--carte); overflow:hidden}
+.cpr-v{display:grid; grid-template-columns:38px 1fr auto; gap:10px; align-items:center; width:100%; padding:7px 12px; background:none; border:0; text-align:left; color:inherit; font:inherit; cursor:pointer}
+.cpr-v + .cpr-v{border-top:1px solid var(--sep)} div.cpr-v{cursor:default}
+.cpr-v:active{background:var(--carte2)}
+.cpr-i{position:relative; width:38px; height:38px; border-radius:7px; overflow:hidden; background:var(--img); display:grid; place-items:center}
+.cpr-i > svg{width:16px; opacity:.35} .cpr-i img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.cpr-t{display:flex; flex-direction:column; gap:1px; min-width:0}
+.cpr-t b{font:800 19px/1.1 var(--f-cond); color:var(--texte); display:flex; gap:8px; align-items:baseline}
+.cpr-t b i{font:500 13px var(--f-txt); font-style:normal; color:var(--doux)}
+.cpr-t small{font-size:12px; color:var(--pale); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.cpr-go{font-size:20px; color:var(--pale)}
+.cpr-vide{display:flex; flex-direction:column; gap:6px; align-items:flex-start; padding:14px 16px; border-radius:16px; background:var(--carte)}
+.cpr-vide b{font-size:15px; color:var(--texte)} .cpr-vide span{font-size:13px; color:var(--doux)}
+.cpr-lock{display:grid; grid-template-columns:auto 1fr; gap:2px 12px; align-items:center; text-align:left; padding:14px 16px; border-radius:18px; color:var(--texte); cursor:pointer;
+  border:1.5px solid transparent; background:linear-gradient(160deg, #272631, #15151B) padding-box, var(--prisme) border-box}
+.cpr-lk{grid-row:span 2; width:40px; height:40px; border-radius:12px; background:var(--acc-fonce); color:var(--acc); display:grid; place-items:center} .cpr-lk svg{width:22px}
+.cpr-lock b{font-size:15px} .cpr-lock span:not(.cpr-lk){font-size:13px; color:var(--doux)}
+.cpr-b{display:grid; grid-template-columns:1fr 1fr; gap:10px} .cpr-b .btn{margin:0; width:100%; padding:0 12px; display:flex; gap:6px; align-items:center; justify-content:center; white-space:nowrap}
+.cpr-b .btn svg{width:18px; height:18px; flex:none}
+.cpr-sq{display:block; height:14px; border-radius:7px; background:linear-gradient(90deg, #2a2a33 0%, #383844 50%, #2a2a33 100%); background-size:200% 100%; animation:cpr-sq 1.1s ease-in-out infinite}
+.cpr-m.sq b.cpr-sq{height:34px; border-radius:10px} .cpr-m.sq span.cpr-sq{justify-self:end}
+.cpr-v.sq{cursor:default} .cpr-v.sq b.cpr-sq{height:17px; margin-bottom:5px} .cpr-i.cpr-sq{height:38px}
+@keyframes cpr-sq{from{background-position:100% 0} to{background-position:-100% 0}}
+@media (prefers-reduced-motion:reduce){.cpr-sq{animation:none}}
 /* ===== 27 nov 2026 — LE STANDARD DES EN-TETES (PDF de Mathieu, points 1, 5, 6 et 7 : « l'entete doit etre translucide, tous les
    entetes dans le meme format, style, couleur, police [...] juste l'onglet Breaks a une entete fonctionnelle et ok, faire la meme
    pour tout le reste ») : UN titre (celui de Breaks : 32 px, condense, majuscules, blanc) sur toutes les pages, et a l'ordi une bande
@@ -10024,7 +10066,7 @@ function choixCamera(){
     <div class="cam-2"><button class="cam-t" id="cam-comp"><span class="cam-ic">${ICO_VENDUS}</span><b>${tt('Comp rapide', 'Quick comp')}</b><span>${tt('Une photo : la carte et ses ventes eBay', 'One photo: the card and its eBay sales')}</span></button>
       <button class="cam-t" id="cam-inv"><span class="cam-ic">${ICONES.plus}</span><b>${tt('Inventaire · Collection', 'Inventory · Collection')}</b><span>${tt('Ajouter la carte chez toi', 'Add the card to your cards')}</span></button></div></section>`;
   // 27 nov, 22 h 11 (Mathieu : « pour les comps ce n'est pas une photo mais un scan devant et derriere ; lightning fast ») : le scanner en direct
-  $('#cam-comp').onclick = () => { vibrer(); ouvrirScanner(); };
+  $('#cam-comp').onclick = () => { vibrer(); ouvrirScanner({but: 'comp'}); };
   $('#cam-inv').onclick = () => { vibrer(); V2.choix = true; V2.comp = false; etapePhoto(0); };
 }
 // 27 nov 2026, 22 h 13 (Mathieu : « une mediane du prix des ventes des 3 derniers mois » ; Pro aussi) : en haut de la fiche d'une
@@ -10054,6 +10096,70 @@ async function vitrineComp(){
     const g = await API.carte_grader(titre).catch(() => null), z = $('#vt-ag');
     if (z && g && g.ok && g.source === 'liste') z.innerHTML = g.verdict === 'oui' ? `<div class="ag-type">${ICO_ETOILE}<span>${esc(agTexte({r: g.rendement, s: g.seuil_10, g10: g.gain, c: g.confiance}))}</span></div>` : '';
   }
+}
+// 27 nov 2026, 22 h 38 (Mathieu, l'ecran apres un scan Comp rapide : « trop d'info, doit fitter dans une fenetre ; on doit voir le prix
+// des last comps de maniere zone grise avec eBay ; on skip l'etape de cliquer sur le lien vers eBay pour les comps, on leur montre direct
+// une fenetre ; si rien vendu dans les 3 derniers mois on fonce CompSniper ; encore plus rapide, c'est bcp trop long ») : UNE fenetre,
+// ouverte des que la carte est lue : la carte, la mediane, les dernieres ventes (un toucher : la vente elle-meme, sur eBay, dans
+// l'app), deux gestes. Le serveur a deja lance la recherche pendant que la reponse revenait (photo_identifier, rapide).
+const COMP_LIGNES = 5;
+function feuilleComp(sr){
+  const c = sr.champs || {};
+  const det = [c.annee, c.set_nom, c.parallele, c.numero ? '#' + c.numero : '', c.tirage ? '/' + c.tirage : '', c.auto ? 'Auto' : '', c.grade].filter(Boolean).join(' · ');
+  ouvrirFeuille(`<div class="cpr">
+    <div class="cpr-c"><span class="cpr-ph">${SVG_CARTE}<img id="cpr-ph" src="${esc(sr.studio || sr.hd || sr.ph)}" alt=""></span>
+      <div class="cpr-n"><b>${esc(c.joueur || tt('Carte', 'Card'))}</b><span>${esc(det)}</span><button class="cpr-corr" id="cpr-corr">✎ ${tt('Préciser', 'Refine')}</button></div></div>
+    <div id="cpr-z">${compSquelette()}</div>
+    <div class="cpr-b"><button class="btn" id="cpr-aj" aria-label="${esc(tt('Ajouter à ma collection', 'Add to my collection'))}">${ICONES.plus}<span>${tt('Ma collection', 'My collection')}</span></button>
+      <button class="btn ghost" id="cpr-re">${ICONES.photo}<span>${tt('Autre carte', 'Next card')}</span></button></div></div>`);
+  $('#cpr-re').onclick = () => { vibrer(); fermerFeuille(); setTimeout(() => ouvrirScanner({but: 'comp'}), 280); };
+  $('#cpr-corr').onclick = () => { vibrer(); const n = $('.cpr-n'); if (!n || n.querySelector('form')) return;
+    n.insertAdjacentHTML('beforeend', `<form class="cpr-f" id="cpr-f"><input class="champ" id="cpr-q" value="${esc(sr.q)}" enterkeyhint="search" aria-label="${esc(tt('La carte', 'The card'))}"><button class="btn petit">${tt('Chercher', 'Search')}</button></form>`);
+    const i = $('#cpr-q'); i.focus(); i.setSelectionRange(i.value.length, i.value.length);
+    $('#cpr-f').onsubmit = (e) => { e.preventDefault(); const v = i.value.trim(); if (v.length < 6) return; sr.q = v; $('#cpr-f').remove(); compCharger(v); }; };
+  $('#cpr-aj').onclick = async () => {
+    const b = $('#cpr-aj'); b.disabled = true; b.textContent = tt('Ajout…', 'Adding…');
+    const p = await API.annonce_preparer(c, typeof LANGUE !== 'undefined' ? LANGUE : 'fr').catch(() => ({ok:false}));
+    const g = await API.carte_garder({carte:{...c, emplacement:'Collection', valeur: p && p.ok && p.prix ? p.prix.marche : null},
+      titre:(p && p.ok && p.titre) || c.titre || '', prix:null, photos: photosScan(sr), originales: [sr.hd || sr.ph, sr.hdDos || sr.dos].filter(Boolean)}).catch(e => ({ok:false, erreur:e.message}));
+    if (!$('#cpr-aj')) return;
+    if (!g || !g.ok) { b.disabled = false; b.innerHTML = `${ICONES.plus}<span>${tt('Ma collection', 'My collection')}</span>`; toast((g && g.erreur) || tt('Erreur', 'Error'), 5000); return; }
+    b.outerHTML = `<a class="btn" href="#inventaire" id="cpr-voir">✓ ${tt('Dans ta collection', 'In your collection')}</a>`;
+    $('#cpr-voir').onclick = () => { S.filtreInv = 'collection'; fermerFeuille(); };
+  };
+  compCharger(sr.q);
+}
+const compSquelette = () => `<div class="cpr-m sq"><small>${tt('Médiane · 3 derniers mois', 'Median · last 3 months')}</small><b class="cpr-sq" style="width:96px"></b><span class="cpr-sq" style="width:64px"></span></div>
+  <div class="cpr-lt"><span>${tt('Dernières ventes', 'Latest sales')}</span><small>eBay</small></div>
+  <div class="cpr-l">${Array.from({length: 4}, () => `<div class="cpr-v sq"><span class="cpr-i cpr-sq"></span><span class="cpr-t"><b class="cpr-sq" style="width:58px"></b><small class="cpr-sq" style="width:70%"></small></span></div>`).join('')}</div>`;
+async function compCharger(q){
+  const z = $('#cpr-z'); if (!z) return;
+  S.compQ = q; z.innerHTML = compSquelette();
+  const r = await API.comp_rapide(q).catch(e => ({ok: false, erreur: e.message}));
+  if (S.compQ !== q || !$('#cpr-z')) return;
+  z.innerHTML = compHtml(r || {}, q);
+  $$('[data-cv]', z).forEach(el => el.onclick = () => { vibrer(); ouvrirDansApp(el.dataset.cv); });
+  const o = (id, f) => { const b = $('#' + id, z); if (b) b.onclick = () => { vibrer(); f(); }; };
+  o('cpr-pro', () => feuillePro('comps'));
+  o('cpr-eb', () => ouvrirDansApp(urlVendusEbay(requeteVendus(q))));
+  o('cpr-rs', () => compCharger(q));
+}
+function compHtml(r, q){
+  if (!r.ok && r.raison === 'pro') return `<button class="cpr-lock" id="cpr-pro"><span class="cpr-lk">${ICO_VENDUS}</span><b>${tt('Ses ventes et sa médiane : Pro', 'Its sales and median: Pro')}</b><span>${tt('Les dernières ventes de chaque carte scannée, en une fenêtre.', 'The latest sales of every card you scan, in one window.')}</span></button>`;
+  if (!r.ok) return `<div class="cpr-vide"><b>${esc(r.erreur === 'Carte pas reconnue' ? tt('Carte pas reconnue : précise-la', 'Card not recognized: refine it') : tt('Ventes indisponibles pour l’instant', 'Sales unavailable right now'))}</b><button class="lien-doux" id="cpr-rs">${tt('Réessayer', 'Retry')}</button></div>`;
+  const L = r.ventes || [], note = r.note === 'Brute' ? tt('brute', 'raw') : esc(r.note || '');
+  // une recherche en erreur (fournisseur en panne, plafond du jour) n'est pas « aucune vente » : on ne le dit pas
+  if (!L.length && r.erreur) return `<div class="cpr-vide"><b>${tt('Ventes indisponibles pour l’instant', 'Sales unavailable right now')}</b><button class="lien-doux" id="cpr-rs">${tt('Réessayer', 'Retry')}</button></div>`;
+  if (!L.length) return `<div class="cpr-vide"><b>${tt('Aucune vente de cette carte depuis un an', 'No sale of this card in the last year')}</b><span>${tt('Vérifie la carte (✎ Préciser) ou regarde les vendues sur eBay.', 'Check the card (✎ Refine) or look at sold listings on eBay.')}</span><button class="lien-doux" id="cpr-eb">${tt('Vendues sur eBay', 'Sold on eBay')} ›</button></div>`;
+  const per = r.periode === '12 mois' ? tt('12 derniers mois', 'last 12 months') : tt('3 derniers mois', 'last 3 months');
+  const v0 = L[0], dec = (p) => p < 10 ? 2 : 0;
+  const m = r.mediane != null
+    ? `<div class="cpr-m"><small>${tt('Médiane', 'Median')} · ${per}</small><b>${argent(r.mediane, dec(r.mediane))}</b><span>${r.n} ${tt('ventes', 'sales')} · ${note}</span>${r.periode === '12 mois' ? `<em>${tt('Aucune vente dans les 3 derniers mois', 'No sale in the last 3 months')}</em>` : ''}</div>`
+    : `<div class="cpr-m"><small>${tt('Dernière vente', 'Last sale')} · ${note}</small><b>${argent(v0.prix, dec(v0.prix))}</b><span>${dateCourte(v0.le)}</span>${r.periode !== '3 mois' ? `<em>${tt('Aucune vente dans les 3 derniers mois', 'No sale in the last 3 months')}</em>` : ''}</div>`;
+  const ligne = (v) => `<${v.url ? `button data-cv="${esc(v.url)}"` : 'div'} class="cpr-v"><span class="cpr-i">${SVG_CARTE}${v.photo ? `<img src="${esc(photoNet(v.photo, 140))}" alt="" loading="lazy" decoding="async" data-oe="rm">` : ''}</span>
+    <span class="cpr-t"><b>${argent(v.prix, dec(v.prix))}<i>${dateCourte(v.le)}${v.offre ? ' · ' + tt('offre acceptée', 'best offer') : ''}</i></b><small>${esc(v.titre)}</small></span>${v.url ? '<span class="cpr-go">›</span>' : ''}</${v.url ? 'button' : 'div'}>`;
+  return `${m}<div class="cpr-lt"><span>${tt('Dernières ventes', 'Latest sales')}</span><small>${tt('Ventes eBay', 'eBay sales')}</small></div>
+    <div class="cpr-l">${L.slice(0, COMP_LIGNES).map(ligne).join('')}</div>`;
 }
 async function etapePhoto(i){
   if (i === 0 && !V2.choix && !V2.but_force) { choixCamera(); return; }
@@ -10542,10 +10648,11 @@ async function avecReseau(appel, pauses = [2000, 5000, 12000, 25000]){
     await new Promise(x => setTimeout(x, pauses[k]));
   }
 }
-async function identifier(photos){
+async function identifier(photos, rapide){
   // un redemarrage du serveur (mise a jour : avec son disque, Render arrete l'ancien avant de lancer le nouveau) dure
   // environ une minute : 5 essais sur environ 85 s (sans compter le temps passe hors de l'app)
-  const r = await avecReseau(() => API.photo_identifier(photos), [3000, 10000, 25000, 45000]).catch(e => ({ok:false, erreur:e.message, reseau:!!e.reseau}));
+  // 27 nov 2026, 22 h 38 (Comp rapide : « encore plus rapide ») : rapide = la fiche courte, et le serveur lance la recherche des ventes
+  const r = await avecReseau(() => rapide ? API.photo_identifier(photos, rapide === true) : API.photo_identifier(photos), [3000, 10000, 25000, 45000]).catch(e => ({ok:false, erreur:e.message, reseau:!!e.reseau}));
   // 13 nov 2026 (Mathieu : « encore inversees les photos », Kurri Global Chirography : le dos publie en 1re photo) : la
   // correction n'etait faite que dans « Vendre ». Maintenant ICI, pour TOUS les parcours (scan, lot, inventaire, vendre) :
   // l'IA dit ce que montre chaque image ; dos puis pas-un-dos -> le devant revient devant (le tableau recu est remis
@@ -11770,7 +11877,7 @@ async function feuillePro(raison){
     repere: tt('Le repère prix sur toutes tes cartes est une fonction Pro.', 'The price check on all your cards is a Pro feature.'),
     deals: tt('Tous les deals sont dans le Pro.', 'All deals are in Pro.'),
     tendances: tt('Les plus gros mouvements de chaque liste sont dans le Pro. En Gratuit : les 5 derniers.', 'The biggest moves in each list are in Pro. Free: the last 5.'),
-    radar: tt('Les meilleures cartes de ton Radar t’attendent : débloque-les toutes avec le Pro.', 'The best cards in your Radar are waiting: unlock them all with Pro.'), offres_jour: tt('Tes offres gratuites du jour sont envoyées. En Pro, c’est illimité.', 'Your free offers for today are sent. Pro is unlimited.'), prix_auto: tt('Le mode Auto des prix fait partie de Pro.', 'Auto pricing is part of Pro.'), breaks: tt('L’analyse de tous les produits est dans le Pro.', 'Analysis of every product is in Pro.')}[raison] || '';
+    radar: tt('Les meilleures cartes de ton Radar t’attendent : débloque-les toutes avec le Pro.', 'The best cards in your Radar are waiting: unlock them all with Pro.'), offres_jour: tt('Tes offres gratuites du jour sont envoyées. En Pro, c’est illimité.', 'Your free offers for today are sent. Pro is unlimited.'), prix_auto: tt('Le mode Auto des prix fait partie de Pro.', 'Auto pricing is part of Pro.'), breaks: tt('L’analyse de tous les produits est dans le Pro.', 'Analysis of every product is in Pro.'), comps: tt('Les dernières ventes et la médiane de chaque carte scannée sont dans le Pro.', 'The latest sales and median of every card you scan are in Pro.')}[raison] || '';
   ouvrirFeuille(`<div class="pro-tete"><span class="badge-f pro grand">✦ PRO</span>
       <h3>${f.payant ? tt('Tu es Pro', 'You’re Pro') : f.essai ? tt(`Ton essai Pro : encore ${f.jours_restants} jour${f.jours_restants > 1 ? 's' : ''}`, `Your Pro trial: ${f.jours_restants} day${f.jours_restants > 1 ? 's' : ''} left`) : tt('Passe au Pro', 'Go Pro')}</h3>
       ${motif ? `<div class="sous" style="font-size:15px">${esc(motif)}</div>` : ''}</div>
@@ -12746,7 +12853,10 @@ function feuilleSorte(t){ if (!t) return; const k = tdSens(t), UNE = t.niveau ==
     <p class="fso-p">${phrase}</p>${resteTD(t)}${t.double ? `<p class="sous fso-n fso-2">${t.double === 'h' ? tt('À noter : le marché de ce joueur, toutes ses cartes ensemble, est aussi à son plus haut depuis des mois.', 'Note: this player’s market, all his cards together, is also at its highest in months.') : tt('À noter : le marché de ce joueur, toutes ses cartes ensemble, est aussi à son plus bas depuis des mois.', 'Note: this player’s market, all his cards together, is also at its lowest in months.')}</p>` : ''}<p class="sous fso-n">${UNE ? tt('Mesuré sur nos ventes de cette carte exacte (même saison ; les gradées 9 et plus à part), chaque vente comptée une fois. Chiffre prudent : moins il y a de ventes, plus il est ramené vers zéro. Chaque point : la médiane des 3 dernières semaines. Refait aux 3 jours. Un fait, pas une promesse.', 'Measured on our sales of this exact card (same season; graded 9 and up apart), each sale counted once. A cautious figure: the fewer the sales, the more it is pulled toward zero. Each point: the median of the last 3 weeks. Redone every 3 days. A fact, not a promise.') : tt('Mesuré sur nos ventes, chaque carte comparée à elle-même. D’un joueur à l’autre, la même sorte peut aller dans l’autre sens. Refait aux 3 jours.', 'Measured on our sales, each card compared with itself. From one player to the next, the same type can go the other way. Redone every 3 days.')}</p></div>`); }
 document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-td]'); if (!b) return;
   e.preventDefault(); e.stopPropagation(); vibrer(); feuilleSorte(TD[b.dataset.td]); }, true);
-const badgeSlab = (txt, ton, ic, attrs) => `<${attrs ? 'button' : 'span'} class="sd-b b-${esc(ton || '')}" ${attrs || ''}><svg viewBox="0 0 24 24" aria-hidden="true">${IC_BADGE[ic] || IC_BADGE.etoile}</svg><span>${esc(txt)}</span></${attrs ? 'button' : 'span'}>`;
+// 27 nov 2026, 22 h 44 (Mathieu, l'inventaire : « tout fucké ») : une pastille touchable etait un <button> ; posee dans une tuile qui est
+// elle-meme un <button> (Inventaire), le navigateur fermait la tuile avant la pastille : « Buzz » sortait de sa carte et la grille se
+// cassait. Toujours un <span> (role bouton) : les touchers passent par data-np / data-cu / data-se, sur le document.
+const badgeSlab = (txt, ton, ic, attrs) => `<span class="sd-b b-${esc(ton || '')}" ${attrs ? attrs + ' role="button" tabindex="0"' : ''}><svg viewBox="0 0 24 24" aria-hidden="true">${IC_BADGE[ic] || IC_BADGE.etoile}</svg><span>${esc(txt)}</span></span>`;
 // 27 nov 2026, 11 h 24 (Mathieu : « dans notre tableau trend ou si on a une pastille dans Radar, il faut vraiment, mais vraiment
 // que ce soit très, très simple pour le end user de comprendre rapidement qu'est-ce qui est à grader ou non ; on peut même mettre
 // cette pastille-là dans les cartes en inventaire, pas encore sur eBay, pour que la personne décide si elle l'affiche non gradée
@@ -15024,7 +15134,8 @@ async function scanNatif(opts){
       : [tt('La carte remplit le cadre, sans reflet. Touche-la pour la mise au point.', 'The card fills the frame, no glare. Tap it to focus.'),
          tt('Retourne la carte, même cadrage', 'Flip the card, same framing')]);
   if (!l) return;
-  const ph = await petitePhoto(l[0].url), dos = l[1] ? await petitePhoto(l[1].url) : null;
+  // 27 nov 2026 (« encore plus rapide ») : le devant et le dos reduits EN MEME TEMPS
+  const [ph, dos] = await Promise.all([petitePhoto(l[0].url), l[1] ? petitePhoto(l[1].url) : null]);
   scanFermer();
   Object.assign(SCAN, {opts, actif: true, natif: true, etat: 'lecture', essais: 1, devant: ph, devantHD: l[0].url, dosHD: l[1] ? l[1].url : null,
     quadDevant: l[0].cadre, quadDos: l[1] ? l[1].cadre : null, quadPhoto: l[0].cadre, derniereHD: l[0].url, mpx: l[0].mpx});
@@ -15183,7 +15294,8 @@ async function scanIdentifier(photos, ph, dos){
   scanFiger(ph, false);
   $('#scan').insertAdjacentHTML('beforeend', `<div class="scan-analyse" id="scan-an"><span class="roue grande"></span><b>${dos ? tt('Analyse des deux côtés…', 'Analyzing both sides…') : tt('Analyse de la carte…', 'Analyzing the card…')}</b><small>${tt('Tu peux poser ton téléphone', 'You can put your phone down')}</small></div>`);
   scanAide(tt('Photo prise', 'Photo taken'), 'vert');
-  const r = await identifier(photos);
+  const enComp = !!(SCAN.opts && SCAN.opts.but === 'comp');
+  const r = await identifier(photos, enComp);
   if (!SCAN.actif) return;
   if (r && r.inverse && dos) {                           // 13 nov 2026 : le dos a ete scanne en premier
     [ph, dos] = [dos, ph]; SCAN.devant = ph;
@@ -15208,14 +15320,16 @@ async function scanIdentifier(photos, ph, dos){
   const coins = ((r.photos || [])[0] || {}).coins, quad = SCAN.quadDevant || SCAN.quadPhoto;
   const coinsD = ((r.photos || [])[1] || {}).coins, quadD = SCAN.quadDos;
   scanFermer();
+  // 27 nov 2026, 22 h 38 : Comp rapide -> UNE fenetre (la carte, la mediane, les dernieres ventes), sans quitter la page
+  if (enComp) { sr.q = r.q_comp || q; feuilleComp(sr); } else
   location.hash = '#valeur/' + encodeURIComponent(q);
   // 5 nov 2026 (Mathieu : « mauvaise qualite et mauvais crop ») : la photo pleine resolution (meme cadrage, donc memes
   // coins 0..1000), un bord qui ne rentre pas dans la carte, 2,5 mm d'air, et si un bord est douteux : la vraie photo
   sr.hd = SCAN.devantHD || null; sr.hdDos = SCAN.dosHD || null;
   sr.ph = sr.hd || ph; if (dos) sr.dos = sr.hdDos || dos;
-  const im0 = $('.scan-tete img.st-devant'); if (im0 && sr.hd) im0.src = sr.hd;
+  const im0 = $('.scan-tete img.st-devant, #cpr-ph'); if (im0 && sr.hd) im0.src = sr.hd;
   recadrageNet(sr.ph, (coins && coins.length === 4) ? coins : quad).then(st => { sr.studio = st.photo;
-    const im = $('.scan-tete img.st-devant'); if (im) im.src = st.photo; }).catch(() => {});
+    const im = $('.scan-tete img.st-devant, #cpr-ph'); if (im) im.src = st.photo; }).catch(() => {});
   if (dos && ((coinsD && coinsD.length === 4) || quadD)) recadrageNet(sr.dos, (coinsD && coinsD.length === 4) ? coinsD : quadD).then(st => { sr.studioDos = st.photo;
     const im = $('.scan-tete img.st-dos'); if (im) im.src = st.photo; }).catch(() => {});
 }

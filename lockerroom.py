@@ -462,6 +462,29 @@ def _payee(v):
     return not st or st in ("PAID", "FULLY_PAID", "PARTIALLY_REFUNDED", "COMPLETE", "COMPLETED")
 
 
+def requete_comp(c):
+    """La recherche d'une carte lue au scan (la meme que l'ecran : annee, joueur, set, parallele, /tirage, auto, note)."""
+    c = c or {}
+    par = str(c.get("parallele") or "")
+    l = [c.get("annee"), c.get("joueur"), c.get("set_nom") if c.get("set_nom") and not re.search(r"young guns", par, re.I) else "",
+         par, "/" + str(c["tirage"]) if c.get("tirage") else "", "auto" if c.get("auto") else "", c.get("grade") or ""]
+    return re.sub(r"\s+", " ", " ".join(str(x) for x in l if x)).strip()[:200]
+
+
+# 27 nov 2026, 22 h 38 : Comp rapide et la mediane 3 mois pour Pro (Mathieu : « on y va pour Pro, on doit jouer le plus possible sur la
+# limite le temps de l'obtention de l'accord » ; « le prix des last comps de maniere zone grise avec eBay »). Le verrou des comps
+# (comps_permis) reste ferme pour tout le reste ; seul l'appel de ces deux gestes l'ouvre, sur son propre fil, le temps de sa recherche.
+_COMP_PRO = threading.local()
+
+
+class _comp_pro_ouvert:
+    def __enter__(self):
+        _COMP_PRO.ok = True
+
+    def __exit__(self, *a):
+        _COMP_PRO.ok = False
+
+
 def comps_permis(api=None):
     """10 nov 2026 (Mathieu : « pour les comps on va garder ca seulement admin, mettre le tout de cote pour la version
     officielle de lancement », « 100 % legale avec nos cles eBay ») : les ventes recoltees sur eBay (SoldComps, CompSniper,
@@ -469,6 +492,8 @@ def comps_permis(api=None):
     collection) : l'ADMIN seulement. Les taches de fond globales (chasseur de deals de l'admin, base des ventes) continuent.
     LR_COMPS_PUBLICS=1 pour les rouvrir a tous (seulement avec l'accord ecrit d'eBay ou une source sous licence)."""
     if os.environ.get("LR_COMPS_PUBLICS") == "1":
+        return True
+    if getattr(_COMP_PRO, "ok", False):
         return True
     if _platine():
         return True
@@ -1261,13 +1286,16 @@ class Api:
         import cardsight
         return {**vision.statut(), "cardsight": cardsight.actif()}
 
-    def photo_identifier(self, photos):
+    def photo_identifier(self, photos, rapide=False):
         """1 ou 2 photos (devant, dos) -> fiche pre-remplie. Rien n'est enregistre : l'ecran montre
-        la fiche (champs douteux en or) et l'utilisateur touche « Enregistrer »."""
+        la fiche (champs douteux en or) et l'utilisateur touche « Enregistrer ».
+        rapide (27 nov 2026, Comp rapide) : la fiche courte (vision.identifier) ; la recherche des ventes part tout de suite ici, sur
+        le serveur, pendant que la reponse revient au telephone (q_comp : la meme recherche que celle que l'ecran demandera)."""
         if not self.reglages_lire().get("ia_photos_ok"):      # 27 oct 2026 : rien ne part chez l'IA sans un OUI explicite
             return {"ok": False, "erreur": "Permission de lecture par l’IA requise", "consentement_requis": True}
+        rapide = rapide is True
         try:
-            r = vision.identifier(photos if isinstance(photos, list) else [photos])
+            r = vision.identifier(photos if isinstance(photos, list) else [photos], rapide=rapide)
         except vision.Erreur as e:
             # 28 oct 2026 : l'admin voit la vraie raison (code et message d'Anthropic, sans la cle)
             # 11 nov 2026 (« pourquoi le titre n'est pas pre-rempli ? ») : chaque echec est aussi note dans Admin > Erreurs
@@ -1279,7 +1307,7 @@ class Api:
             return {"ok": False, "erreur": str(e), **({"detail": vision.derniere_erreur()} if self._est_admin(reel=True) else {})}
         try:                                   # 28 oct 2026 : CardSight AI confirme les champs douteux (si CARDSIGHT_CLE)
             import cardsight
-            if cardsight.actif() and not r.get("cache"):
+            if cardsight.actif() and not r.get("cache") and not rapide:
                 img = vision._decoder((photos if isinstance(photos, list) else [photos])[0])[0]
                 r["champs"], r["a_verifier"], src = cardsight.completer(r["champs"], r.get("a_verifier"), img)
                 if src:
@@ -1298,7 +1326,24 @@ class Api:
         ch["sport"] = sports.valide(ch.get("sport")) if ch.get("sport") else self.sport_de(ch)
         if not ch.get("titre"):
             ch["titre"] = ebay_csv.titre_annonce(ch)
+        if rapide:
+            r["q_comp"] = q = requete_comp(ch)
+            if q and self._niveau_ag() != "gratuit":
+                self._comp_lancer(q)
         return r
+
+    def _comp_lancer(self, q):
+        """La recherche des ventes du Comp rapide, lancee des que la carte est lue (un fil a part) : quand l'ecran la demande
+        (comp_rapide), elle est deja faite ou en route (vendues.rechercher attend la meme recherche au lieu de la refaire)."""
+        def go():
+            try:
+                with _comp_pro_ouvert():
+                    import vendues
+                    vendues.comp_rapide(q)
+            except Exception as e:
+                print("Comp rapide (d'avance) : " + repr(e), flush=True)
+        import comptes
+        comptes.fil(go, nom="comp-avance")                # le fil garde le compte (son plafond de recherches du jour)
 
     # -- 13 nov 2026 : le lot lu AU SERVEUR ---------------------------------------------------------------------------------
     # Mathieu : « les cartes doivent continuer de loader meme quand le cell se ferme, que l'app se ferme ou change de page ».
@@ -12657,7 +12702,9 @@ class Api:
         import statistics
         import vendues
         try:
-            r = vendues.par_gradation(q, requete=True, fond=False, jours=120)
+            # 27 nov, 22 h 38 : le verrou des comps coupait la recherche d'un compte Pro (rien ne sortait) ; ouvert pour ce geste
+            with _comp_pro_ouvert():
+                r = vendues.par_gradation(q, requete=True, fond=False, jours=120)
         except Exception as e:
             return {"ok": False, "erreur": type(e).__name__}
         m = re.search(r"\b(psa|bgs|sgc|cgc)\s*(10|9\.5|9|8)\b", q, re.I)
@@ -12671,6 +12718,24 @@ class Api:
         if len(p) < 2:
             return {"ok": False, "raison": "peu de ventes"}
         return {"ok": True, "mediane": round(statistics.median(p), 2), "n": len(p), "note": s.get("nom") or voulue}
+
+    def comp_rapide(self, q):
+        """27 nov 2026, 22 h 38 (Mathieu, l'ecran apres un scan : « trop d'info, doit fitter dans une fenetre et on doit voir le prix des
+        last comps de maniere zone grise avec eBay ; on skip l'etape de cliquer sur le lien vers eBay, on leur montre direct une fenetre ;
+        si rien vendu dans les 3 derniers mois on fonce CompSniper ; encore plus rapide ») : UN appel : la mediane des 90 derniers jours
+        de la carte (a sa note), ses dernieres ventes (prix, date, titre, lien), et l'annee de CompSniper quand rien n'est vendu en 3 mois.
+        Pro, Platine et admin (decision de Mathieu, en attendant l'accord d'eBay) ; le compte gratuit : rien."""
+        if self._niveau_ag() == "gratuit":
+            return {"ok": False, "raison": "pro"}
+        q = re.sub(r"\s+", " ", str(q or "")).strip()[:200]
+        if len(q) < 6:
+            return {"ok": False, "raison": "carte"}
+        import vendues
+        try:
+            with _comp_pro_ouvert():
+                return vendues.comp_rapide(q)
+        except Exception as e:
+            return {"ok": False, "erreur": type(e).__name__}
 
     def _a_grader_type_de(self, annonces, cle="item_id", titre=lambda x: x.get("titre")):
         """27 nov 2026 (Mathieu : « la Clear Cut va suivre la base ») : pour une carte raw PAS mesuree, le fait de son type (« les Young

@@ -182,6 +182,32 @@ def noter(q, ventes, sport=None):
     return len(lignes)
 
 
+# 27 nov 2026, 22 h 38 (Mathieu : « encore plus rapide ») : son scan de 22 h 35 a attendu plus de 10 s ICI (le verrou des
+# archives, pris par les taches de fond) apres la reponse de CompSniper. Un geste de l'utilisateur depose ses ventes dans les
+# archives en arriere-plan, un fil a la fois (l'ordre est garde) ; la reponse part tout de suite.
+_FIL = []
+
+
+def noter_plus_tard(q, ventes, sport=None):
+    if not q or not ventes:
+        return 0
+    try:
+        if not _FIL:
+            from concurrent.futures import ThreadPoolExecutor
+            _FIL.append(ThreadPoolExecutor(max_workers=1, thread_name_prefix="archives"))
+        _FIL[0].submit(_noter_sur, q, list(ventes), sport)
+        return len(ventes)
+    except RuntimeError:                       # le serveur s'arrete : on ecrit tout de suite
+        return noter(q, ventes, sport)
+
+
+def _noter_sur(q, ventes, sport):
+    try:
+        noter(q, ventes, sport)
+    except Exception as e:
+        print("Archives (plus tard) : " + repr(e), flush=True)
+
+
 # -- le plan : les cartes qui comptent ----------------------------------------------------------------------
 _COURT = [(r"\bparallel\b", ""), (r"\s+-\s+", " "), (r"\bset\b", "")]
 

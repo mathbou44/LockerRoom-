@@ -471,8 +471,32 @@ def _photos(l):
     return out
 
 
-def identifier(photos):
+# 27 nov 2026, 22 h 38 (Mathieu : « encore plus rapide, c'est bcp trop long ») : la lecture de son scan Comp rapide a pris 15 s, surtout
+# a ECRIRE la fiche complete (une confiance par champ, les 4 coins de chaque photo, le titre eBay, les conseils). Pour un comp, seuls
+# les champs qui font la recherche comptent : la fiche courte, avec le meme modele et les memes regles de lecture.
+_CHAMPS_RAPIDES = ("est_une_carte", "sport", "joueur", "annee", "marque", "set_nom", "parallele", "numero", "tirage", "numero_serie",
+                   "auto", "relique", "recrue", "slab", "grade", "cert")
+OUTIL_RAPIDE = {
+    "name": "carte",
+    "description": "Fiche courte de la carte de sport vue sur les photos (pour trouver ses ventes).",
+    "input_schema": {
+        "type": "object",
+        "properties": {**{k: OUTIL["input_schema"]["properties"][k] for k in _CHAMPS_RAPIDES},
+                       "photos": {"type": "array", "description": "Une entree par image, dans l'ordre recu.",
+                                  "items": {"type": "object", "properties": {
+                                      "cote": OUTIL["input_schema"]["properties"]["photos"]["items"]["properties"]["cote"]},
+                                      "required": ["cote"]}}},
+        "required": ["est_une_carte", "sport", "joueur"],
+    },
+}
+SYSTEME_RAPIDE = SYSTEME + """
+- MODE RAPIDE : remplis seulement les champs de cette fiche courte, sans rien ajouter ; photos : seulement le cote de chaque image."""
+MAX_SORTIE_RAPIDE = 450
+
+
+def identifier(photos, rapide=False):
     """photos : 1 ou 2 images (devant, dos) en base64 / data URL.
+    rapide (27 nov 2026, Comp rapide) : la fiche courte (les champs de la recherche des ventes), bien plus vite.
     -> {"ok", "champs", "a_verifier", "notes", "conseil_photo", "cout_usd", "cache"}."""
     if not disponible():
         raise Erreur("Reconnaissance photo pas encore activée sur ce serveur : remplis la fiche à la main.")
@@ -484,18 +508,20 @@ def identifier(photos):
     cache = _lire(_chemin_cache())
     if cle_cache in cache:
         return dict(cache[cle_cache], ok=True, cache=True, cout_usd=0)
+    if rapide and ("r:" + cle_cache) in cache:
+        return dict(cache["r:" + cle_cache], ok=True, cache=True, cout_usd=0, rapide=True)
     _verifier_quotas()
     lim_ = _limite_compte()
     res_ = _reserver("photo", (_lire(_chemins()[0]).get(_mois()) or {}).get("n", 0), lim_)
     if res_ is None:
         raise Erreur(f"Tes {lim_} photos du mois sont utilisées.")
     try:
-        return _identifier_appel(images, cle_cache)
+        return _identifier_appel(images, cle_cache, rapide=rapide)
     finally:
         _liberer(res_)
 
 
-def _identifier_appel(images, cle_cache):
+def _identifier_appel(images, cle_cache, rapide=False):
     contenu = []
     for i, (b, typ) in enumerate(images):
         # 12 nov 2026 (Mathieu : une annonce publiee avec le dos en 1re photo) : plus d'etiquette « Devant » / « Dos » imposee
@@ -504,7 +530,8 @@ def _identifier_appel(images, cle_cache):
         contenu.append({"type": "text", "text": f"Image {i + 1} :" if len(images) > 1 else "La carte :"})
         contenu.append({"type": "image", "source": {"type": "base64", "media_type": typ, "data": base64.b64encode(b).decode()}})
     contenu.append({"type": "text", "text": "Remplis la fiche de cette carte."})
-    r = _appeler({"model": MODELE, "max_tokens": 1500, "system": SYSTEME, "tools": [OUTIL],
+    r = _appeler({"model": MODELE, "max_tokens": MAX_SORTIE_RAPIDE if rapide else 1500, "system": SYSTEME_RAPIDE if rapide else SYSTEME,
+                  "tools": [OUTIL_RAPIDE if rapide else OUTIL],
                   "tool_choice": {"type": "tool", "name": "carte"}, "messages": [{"role": "user", "content": contenu}]})
     cout = _noter(r.get("usage") or {})
     fiche = next((b.get("input") for b in r.get("content") or [] if b.get("type") == "tool_use"), None)
@@ -513,6 +540,9 @@ def _identifier_appel(images, cle_cache):
     if fiche.get("est_une_carte") is False:
         raise Erreur("Je ne vois pas de carte de sport sur la photo : cadre la carte entière.")
     res = _nettoyer(fiche)
+    if rapide:
+        res["rapide"] = True
+        cle_cache = "r:" + cle_cache                   # la fiche courte ne remplace jamais la complete dans le cache
     with _verrou:
         cache = _lire(_chemin_cache())
         cache[cle_cache] = res

@@ -454,6 +454,14 @@ def raffiner(q, ventes, futur):
     return ventes + neuves
 
 
+# 27 nov 2026, 22 h 38 (Mathieu : « encore plus rapide, c'est bcp trop long ») : son scan de 22 h 35 a fait chercher la MEME carte
+# deux fois en meme temps chez CompSniper (la fiche et la mediane 3 mois : 16 s chacune, deux credits). Un geste qui cherche ce
+# qu'un autre geste est deja en train de chercher attend sa reponse (le cache) au lieu de refaire l'appel.
+_EN_VOL = {}
+_EN_VOL_VERROU = threading.Lock()
+ATTENTE_VOL_S = 20
+
+
 def rechercher(q, fond=True, usage=None, sans_cache=False):
     """Ventes eBay d'une recherche (toutes cartes confondues : filtrer ensuite). {ventes, erreur, cache}.
     sans_cache (20 nov 2026, le prix final d'un encan de la watchlist) : une recherche d'avant la fin ne le contient pas."""
@@ -465,6 +473,29 @@ def rechercher(q, fond=True, usage=None, sans_cache=False):
     deja = None if sans_cache else _cache_lire(q.lower())
     if deja is not None:
         return {"ventes": deja, "erreur": None, "cache": True}
+    if fond or sans_cache:
+        return _rechercher_appel(q, fond, usage)
+    cle = q.lower()
+    with _EN_VOL_VERROU:
+        ev = _EN_VOL.get(cle)
+        moi = ev is None
+        if moi:
+            ev = _EN_VOL[cle] = threading.Event()
+    if not moi:
+        ev.wait(ATTENTE_VOL_S)
+        deja = _cache_lire(cle)
+        if deja is not None:
+            return {"ventes": deja, "erreur": None, "cache": True}
+        return _rechercher_appel(q, fond, usage)       # le premier a echoue : on essaie nous-memes
+    try:
+        return _rechercher_appel(q, fond, usage)
+    finally:
+        with _EN_VOL_VERROU:
+            _EN_VOL.pop(cle, None)
+        ev.set()
+
+
+def _rechercher_appel(q, fond, usage):
     if not actif():
         return {"ventes": [], "erreur": "inactif"}
     if not _budget_ok(fond, usage):                 # les taps passent avant les taches de fond
@@ -548,7 +579,7 @@ def rechercher(q, fond=True, usage=None, sans_cache=False):
         _cache_ecrire(q.lower(), ventes, age=CACHE_S - 600)
     try:                                       # 26 oct 2026 - la base des ventes (tendances) garde tout, sans appel de plus
         import base_ventes
-        base_ventes.noter(q, ventes)
+        (base_ventes.noter if fond else base_ventes.noter_plus_tard)(q, ventes)     # 27 nov : un geste n'attend pas l'ecriture
     except Exception:
         pass
     # un site en panne et l'autre sans vente : on ne sait pas (pas « aucune vente ») ; les ventes deja lues en secours
@@ -906,6 +937,83 @@ def par_gradation(texte, requete=True, fond=False, jours=365, force=False):
         series.append({"cle": k, "nom": nom(k), "n": len(pts), "points": pts[-300:], "derniere": {"prix": pts[-1][1], "le": pts[-1][0]}})
     return {"ok": True, "series": series, "carte": cartes_match.resume(c0),
             "erreur": r.get("erreur")}
+
+
+# 27 nov 2026, 22 h 38 : Comp rapide (Mathieu : « on doit voir le prix des last comps ; si rien vendu dans les 3 derniers mois on
+# fonce CompSniper ; encore plus rapide »)
+COMP_JOURS = 90
+COMP_N = 8
+
+
+def _note_voulue(texte):
+    import re
+    m = re.search(r"\b(psa|bgs|sgc|cgc|beckett)\s*(10|9\.5|9|8\.5|8|7)\b", str(texte or ""), re.I)
+    return f"{m.group(1).upper().replace('BECKETT', 'BGS')} {m.group(2)}" if m else None
+
+
+def comp_rapide(texte, n=COMP_N):
+    """Les ventes de la MEME carte (meme note : une carte brute ne prend que des ventes brutes), en UNE recherche (sans attendre
+    TheCardAPI), les plus recentes d'abord, et la mediane des 90 derniers jours. Rien en 90 jours -> CompSniper (un an) et nos
+    archives ; la mediane est alors celle de l'annee (periode « 12 mois »), jamais presentee comme celle de 3 mois.
+    -> {ok, mediane, n, periode, n_total, derniere, ventes: [{prix, le, titre, url, photo, offre}], note, source}"""
+    if _coupe():
+        return {"ok": False, "raison": "pro"}
+    import cartes_match
+    cib = cartes_match.cible(texte)
+    if cib.get("exclu") or not (cib.get("joueur") or cib.get("mots")):
+        return {"ok": False, "erreur": "Carte pas reconnue"}
+    q = cartes_match.requete_ebay(cib) or texte
+    r = rechercher(q, fond=False)
+    brut = r.get("ventes") or []
+
+    def garde(l):
+        return [v for v in l if v.get("prix") and v.get("le") and not cartes_match.raisons_refus(cib, v.get("titre") or "")
+                and not cartes_match.abimee(v.get("titre") or "")]
+    ventes = garde(brut)
+    if not ventes and len(brut) >= 40 and not r.get("erreur"):
+        q2 = requete_precise(cib, q)
+        if q2:
+            ventes = garde(rechercher(q2, fond=False).get("ventes") or [])
+    src = "compsniper" if (r.get("source") == "compsniper" or r.get("secours") == "compsniper") else "ebay"
+    d90 = (datetime.now() - timedelta(days=COMP_JOURS)).strftime("%Y-%m-%d")
+    if not any(str(v["le"])[:10] >= d90 for v in ventes):
+        # rien en 3 mois : CompSniper (l'annee) si la recherche n'y est pas deja passee, puis nos archives (aucun appel)
+        if src != "compsniper":
+            try:
+                import historique
+                if historique.actif():
+                    v1, err = historique.rechercher(q, sport=_sport_q(q))
+                    if not err and v1:
+                        ventes += garde(v1)
+                        src = "compsniper"
+            except Exception as e:
+                print("Comp rapide (CompSniper) : " + repr(e), flush=True)
+        try:
+            ventes += archives(cib, jours=365, max_=200)
+        except Exception:
+            pass
+    vus, l = set(), []
+    for v in ventes:
+        k = _id_vente(v) or str(v.get("url") or "") or f"{v.get('titre')}|{v.get('le')}|{v.get('prix')}"
+        if k in vus:
+            continue
+        vus.add(k)
+        l.append(v)
+    l.sort(key=lambda v: str(v.get("le") or ""), reverse=True)
+    p90 = [float(v["prix"]) for v in l if str(v["le"])[:10] >= d90]
+    if p90:
+        periode, pts = "3 mois", p90
+    else:
+        d365 = (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d")
+        periode, pts = ("12 mois", [float(v["prix"]) for v in l if str(v["le"])[:10] >= d365]) if l else (None, [])
+    med = round(statistics.median(pts), 2) if len(pts) >= 2 else None
+    out = [{"prix": round(float(v["prix"]), 2), "le": str(v["le"])[:10], "titre": str(v.get("titre") or "")[:120],
+            "url": v.get("url") if str(v.get("url") or "").startswith("https://") else None,
+            "photo": v.get("photo") if str(v.get("photo") or "").startswith("https://") else None,
+            "offre": bool(v.get("offre"))} for v in l[:n]]
+    return {"ok": True, "mediane": med, "n": len(pts), "periode": periode, "n_total": len(l), "derniere": out[0]["le"] if out else None,
+            "ventes": out, "note": _note_voulue(texte) or "Brute", "source": src,
+            "erreur": r.get("erreur") if not l else None}
 
 
 def requete_precise(cib, q):
