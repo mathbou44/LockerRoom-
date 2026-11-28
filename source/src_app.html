@@ -1559,11 +1559,11 @@ body.fen-ouverte .fond-feuille{z-index:95}  /* 11 nov 2026 : les petites fenetre
 html.clavier .fond-feuille.centre{padding-bottom:calc(16px + var(--clavier, 0px))}
 .feuille{width:100%; max-width:640px; max-height:90vh; overflow-y:auto; background:#131317; border-radius:22px 22px 0 0; padding:10px 18px calc(18px + var(--bas)); display:flex; flex-direction:column; gap:14px;
   will-change:transform; overscroll-behavior:contain; -webkit-overflow-scrolling:touch}
-.feuille.entre{animation:monte .38s cubic-bezier(.16,1,.3,1)}
-.fond-feuille:not([hidden]){animation:fondu .22s ease-out}
+.feuille.entre{animation:monte .44s cubic-bezier(.32,.72,0,1)}  /* 27 nov 2026 : la courbe des feuilles d'iOS */
+.fond-feuille:not([hidden]){animation:fondu .3s cubic-bezier(.32,.72,0,1)}
 @keyframes fondu{from{background:rgba(0,0,0,0)}}
 .feuille-fantome{position:fixed; z-index:41; margin:0; overflow:hidden; pointer-events:none; animation:none !important;
-  transition:transform .28s cubic-bezier(.4,0,.9,.55)}
+  transition:transform .3s cubic-bezier(.32,.72,0,1)}
 .fond-fantome{position:fixed; inset:0; z-index:40; background:rgba(0,0,0,.6); pointer-events:none; transition:opacity .28s ease-out}
 .f-bloc > .carte-acc{background:none; padding:0; box-shadow:none; border:none}
 /* 16 nov 2026 (Mathieu : « croche et le X est place sur quelque chose ; prends plus d'espace pour la fenetre ») : un bloc de
@@ -7321,6 +7321,42 @@ html body .tiq-mg .tiq-gs, html body .tiq-mg .tiq-gs.ok{color:color-mix(in srgb,
 html body .tiq-mg .ag-x{font:800 24px/1 var(--f-txt, inherit); color:#fff; letter-spacing:-.01em}
 @media (hover:hover){ html body .tiq-mg:hover{border-color:var(--tt) !important} } html body .tiq-mg:active{transform:scale(.985)}
 html body .ceo .acc-sec span{text-transform:none !important; letter-spacing:0 !important; font:600 14px/1.2 var(--f-txt, inherit) !important; color:var(--texte) !important}
+/* 27 nov 2026 (PDF, point 9) : « aucun changement » = neutre : ligne plate pointillee presque effacee, pastille sans fond */
+html body .tiq-sp.plat path{stroke:rgba(255,255,255,.2) !important; stroke-dasharray:2 3; stroke-width:1.5 !important} html body .tiq-sp.plat circle{fill:rgba(255,255,255,.28) !important}
+html body .tiq-pc.nul{background:transparent !important; border:1px solid rgba(255,255,255,.1) !important; color:rgba(255,255,255,.45) !important; box-shadow:none !important}
+/* 27 nov 2026 (PDF, point 2 : « les pastilles de choix plus collees, mais quand meme bien espacees, a gauche, comme un menu normal ») */
+html body .d-onglets{display:inline-flex !important; width:auto !important; flex:0 0 auto !important; justify-content:flex-start !important; gap:4px !important}
+html body .d-onglets > a{flex:0 0 auto !important; width:auto !important; min-width:0 !important; padding-left:16px !important; padding-right:16px !important}
+/* 27 nov 2026 (PDF, point 8) : la vue « Je fais un break » prend la tuile de « J'achete une place » ; le prix a droite, dans la case de la note ;
+   le texte gris rapetisse (la ligne sous le nom, « changer de produit ») */
+html body .place-liste .score.place-px{min-width:86px; background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.12)} html body .place-liste .score.place-px b{font-size:19px; color:#fff; letter-spacing:0}
+html body .place-liste .score.place-px small{color:rgba(255,255,255,.6)}
+html body .score-bloc.simple .sl-n > span{font-size:12px !important; color:rgba(255,255,255,.5) !important}
+html body .ana-prod small{font-size:11px !important; opacity:.55}
+/* 27 nov 2026 (PDF, point 3 : « les mettre encadrees prizm comme les autres, mettre ca sexy, les couleurs sont fades ») : les tuiles d'annonce
+   (Watchlist, Mes cibles) prennent le contour prisme des slabs, un fond plus vivant, des prix plus grands et une ligne d'infos */
+html body .w-ligne{border:1.5px solid transparent !important; border-radius:16px !important; background:linear-gradient(160deg, #272631, #15151B 70%) padding-box, var(--holo) border-box !important;
+  box-shadow:0 10px 26px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.05)}
+@media (hover:hover){ html body .w-ligne:hover{box-shadow:0 12px 30px rgba(0,0,0,.45), 0 0 0 1px rgba(185,190,255,.25)} }
+html body .w-ligne .w-t{color:#fff !important; font-weight:700}
+html body .w-ligne .w-pr2 b{font-size:20px !important; color:#fff}
+html body .w-ligne .w-pr2 > div + div b, html body .w-ligne .w-max2 b{color:var(--h2) !important}
+html body .w-ligne .w-pr2 small{color:rgba(255,255,255,.6) !important}
+html body .w-info{display:flex; flex-wrap:wrap; align-items:center; gap:4px 8px; margin:3px 0 4px; font-size:12px; color:rgba(255,255,255,.62)}
+html body .w-info > span + span::before{content:'·'; margin-right:8px; color:rgba(255,255,255,.3)}
+html body .w-ligne .w-tps{background:rgba(185,190,255,.16); color:#E6E7FF; border:1px solid rgba(185,190,255,.35)} html body .w-ligne .w-tps.bientot{background:#FF9F43 !important; color:#15120B !important; border-color:#FF9F43}
+/* ===== 27 nov 2026 — LE STANDARD DES EN-TETES (PDF de Mathieu, points 1, 5, 6 et 7 : « l'entete doit etre translucide, tous les
+   entetes dans le meme format, style, couleur, police [...] juste l'onglet Breaks a une entete fonctionnelle et ok, faire la meme
+   pour tout le reste ») : UN titre (celui de Breaks : 32 px, condense, majuscules, blanc) sur toutes les pages, et a l'ordi une bande
+   collante TRANSLUCIDE (verre depoli sur toute la largeur, le motif du fond passe a travers) au lieu d'une bande noire pleine. */
+html body .ecran .entete .titre:not(.moyen), html body .ecran .entete .titre.d-tt, html body .ecran > .tete-fixe > .entete .titre, html body .ecran .tiq-t .titre{
+  font-family:var(--f-cond); font-weight:700; font-size:32px !important; line-height:1.05; letter-spacing:.01em; text-transform:uppercase; color:#fff}
+@media (min-width:900px) and (min-height:640px){
+  html body .tete-fixe, html body .ecran.bk-page > .bk-fixe{background:transparent !important; clip-path:none !important; isolation:isolate}
+  html body .tete-fixe::before, html body .ecran.bk-page > .bk-fixe::before{content:''; position:absolute; z-index:-1; top:-200px; bottom:0; left:-100vw; right:-100vw;
+    background:rgba(11,11,14,.72) !important; -webkit-backdrop-filter:blur(24px) saturate(1.5); backdrop-filter:blur(24px) saturate(1.5); box-shadow:none !important;
+    border-bottom:1px solid rgba(255,255,255,.07); pointer-events:none}
+}
 </style>
 <script>
 
@@ -7908,9 +7944,11 @@ const ptrY = () => { const v = document.getElementById('vue'); if (!v || !v.styl
   try { return new DOMMatrixReadOnly(getComputedStyle(v).transform).m42 || 0; } catch (e) { return 0; } };
 const APRES_PTR = {f: null};
 // 19 nov 2026 : la hauteur de l'en-tete fixe (Radar, Inventaire), pour que la recherche colle juste dessous
-(() => { const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(es => { for (const e of es) { const r_ = document.documentElement.style, ec = e.target.closest('.ecran');
-    r_.setProperty('--tf-h', Math.round(e.target.getBoundingClientRect().height) + 'px');
-    if (ec) r_.setProperty('--tf-top', Math.max(0, Math.round(parseFloat(getComputedStyle(ec).paddingTop) - 12)) + 'px'); } }) : null;
+// 27 nov 2026 (fluidite : 50 ms a l'Inventaire) : une variable de la page n'est reecrite que si elle change (sinon tout se recalcule)
+const _tfV = {}; const _tfSet = (k, v) => { if (_tfV[k] !== v) { _tfV[k] = v; document.documentElement.style.setProperty(k, v); } };
+(() => { const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(es => { for (const e of es) { const ec = e.target.closest('.ecran');
+    _tfSet('--tf-h', Math.round(e.target.getBoundingClientRect().height) + 'px');
+    if (ec) _tfSet('--tf-top', Math.max(0, Math.round(parseFloat(getComputedStyle(ec).paddingTop) - 12)) + 'px'); } }) : null;
   const suivre = () => { const t = document.querySelector('.tete-fixe'); if (ro && t && !t._ro) { t._ro = 1; ro.observe(t); } };
   const go = () => { const v = document.getElementById('vue'); if (!v) return setTimeout(go, 200); new MutationObserver(suivre).observe(v, {childList: true, subtree: true}); suivre(); }; go(); })();
 // 20 nov 2026 : la hauteur de la barre du haut (telephone), pour que les bandes fixes (Breaks) collent juste dessous
@@ -7951,14 +7989,19 @@ function feuilleBloc(el, avant, apres){
   S.feuilleRetour = () => { if (parent && parent.isConnected) parent.insertBefore(el, suivant && suivant.parentNode === parent ? suivant : null); };
 }
 // 26 oct 2026 - feuilles comme sur iPhone : on les glisse vers le bas pour les fermer
+// 27 nov 2026 (Mathieu : « smooth comme iOS ») : le fond s'eclaircit avec le doigt ; une feuille lancee vite vers le bas se ferme
+// aussi (la vitesse, comme iOS) ; la fermeture part d'ou est le doigt ; relachee trop tot, elle revient avec le ressort d'iOS
 (() => {
-  let y0 = null, dy = 0;
-  // 11 nov 2026 (Mathieu : « quand je deplace le dot mauve, ca ferme la fenetre ») : le cadrage, les curseurs et le zoom ne
-  // tirent jamais la feuille
-  document.addEventListener('touchstart', (e) => { const f = e.target.closest('#feuille'); if (!f || f.scrollTop > 0 || e.target.closest('.cadrage, .cd-p, input[type=range], .pas-glisse')) { y0 = null; return; } y0 = e.touches[0].clientY; dy = 0; }, {passive:true});
-  document.addEventListener('touchmove', (e) => { if (y0 === null) return; dy = Math.max(0, e.touches[0].clientY - y0); const f = $('#feuille'); if (f && dy > 0) { f.style.transition = 'none'; f.style.transform = `translateY(${dy}px)`; } }, {passive:true});
-  document.addEventListener('touchend', () => { if (y0 === null) return; const f = $('#feuille'); y0 = null; if (!f) return;
-    f.style.transition = 'transform .2s ease'; if (dy > 110) { f.style.transform = 'translateY(100%)'; setTimeout(fermerFeuille, 180); } else f.style.transform = ''; });
+  let y0 = null, dy = 0, t0 = 0, yv = 0, tv = 0, v = 0;
+  document.addEventListener('touchstart', (e) => { const f = e.target.closest('#feuille'); if (!f || f.scrollTop > 0 || e.target.closest('.cadrage, .cd-p, input[type=range], .pas-glisse')) { y0 = null; return; } y0 = e.touches[0].clientY; t0 = tv = Date.now(); yv = y0; v = 0; dy = 0; }, {passive:true});
+  document.addEventListener('touchmove', (e) => { if (y0 === null) return; const y = e.touches[0].clientY, t = Date.now(); dy = Math.max(0, y - y0);
+    if (t > tv) { v = (y - yv) / (t - tv); yv = y; tv = t; }
+    const f = $('#feuille'), fo = $('#fond-feuille'); if (f && dy > 0) { f.style.transition = 'none'; f.style.transform = `translateY(${dy}px)`;
+      if (fo) fo.style.backgroundColor = `rgba(0,0,0,${(0.6 * Math.max(0, 1 - dy / Math.max(1, f.offsetHeight))).toFixed(3)})`; } }, {passive: true});
+  document.addEventListener('touchend', () => { if (y0 === null) return; const f = $('#feuille'), fo = $('#fond-feuille'); y0 = null; if (!f) return;
+    if (dy > 110 || (dy > 24 && v > 0.45)) fermerFeuille();
+    else { f.style.transition = 'transform .42s cubic-bezier(.32,.72,0,1)'; f.style.transform = ''; if (fo) { fo.style.transition = 'background-color .3s'; fo.style.backgroundColor = ''; setTimeout(() => { fo.style.transition = ''; }, 320); } }
+    dy = 0; });
 })();
 // 28 oct 2026 (Mathieu : « sur la fiche, si on met le doigt en haut et qu'on descend, la page descend aussi pour finalement se
 // fermer, dynamiquement ») : la fiche d'une annonce suit le doigt quand on tire vers le bas depuis le haut ; lachee assez bas
@@ -8029,6 +8072,24 @@ document.addEventListener('pointerdown', (e) => {
 function fermerFeuille(){
   const f = $('#feuille'), fond = $('#fond-feuille');
   // 29 oct 2026 : la feuille glisse vers le bas (une copie visuelle s'en va ; la vraie est videe tout de suite, comme avant)
+  // 27 nov 2026 (Mathieu : « smooth comme iOS » ; mesure : 150 ms de gel a la fermeture de la feuille Pro, la copie de tout son
+  // contenu) : la VRAIE feuille glisse vers le bas ; une feuille neuve et vide (meme id) prend sa place tout de suite
+  if (!S.feuilleRetour && !fond.hidden && f.firstChild && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const r = f.getBoundingClientRect(), st = f.scrollTop;
+    if (r.height > 0) {
+      const neuve = f.cloneNode(false), ff = document.createElement('div');
+      neuve.classList.remove('entre'); neuve.removeAttribute('style'); f.parentNode.insertBefore(neuve, f);
+      f.removeAttribute('id'); f.querySelectorAll('[id]').forEach(e => e.removeAttribute('id')); f.classList.remove('entre'); f.classList.add('feuille-fantome');
+      ff.className = 'fond-fantome'; const tr = f.style.transform || 'none';
+      if (fond.style.backgroundColor) { ff.style.background = fond.style.backgroundColor; fond.style.backgroundColor = ''; }      // le fond deja eclairci par le doigt
+      Object.assign(f.style, {left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', transform: tr, transition: 'none'});
+      document.body.append(ff, f); f.scrollTop = st;
+      requestAnimationFrame(() => { f.style.transition = ''; f.style.transform = `translateY(${Math.round(r.height + 40)}px)`; ff.style.opacity = '0'; });
+      setTimeout(() => { f.remove(); ff.remove(); }, 340);
+      fond.hidden = true;
+      return;
+    }
+  }
   if (!fond.hidden && f.firstChild && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
     const r = f.getBoundingClientRect();
     if (r.height > 0) {
@@ -8081,7 +8142,7 @@ const coche = (id) => { const e = $('#' + id); return e ? e.checked : false; };
 // Etat
 // ============================================================
 const S = { reglages:null, equipes:null, produits:null, ongletBreaks:'calc', ongletBreak:'places', ongletComptoir:'vente',
-  filtreInv:'tous', rechInv:'', calc:{}, panier:[], rachat:[], clients:null, mois:null };
+  filtreInv:'achetees', rechInv:'', calc:{}, panier:[], rachat:[], clients:null, mois:null };
 async function reglages(force){ if (!S.reglages || force) { S.reglages = await API.reglages_lire(); appliquerMarque();
     if (S.reglages && typeof S.reglages.photo_studio === 'boolean') MODE_STUDIO = S.reglages.photo_studio;
     if (S.reglages && S.reglages.flou_niveau != null) FLOU = flouNorm(S.reglages.flou_niveau); } return S.reglages; }
@@ -8612,7 +8673,9 @@ function htmlNeige(n){
 // 9 nov 2026 (Mathieu : « des guirlandes, des lumieres, un sapin dans la version web ; j'aime bcp la neige a l'arriere ») :
 // a l'ordi (la barre du haut n'y est pas), une guirlande le long du haut de l'ecran, la neige derriere TOUTES les pages
 // (elle remplit les grands fonds) et un petit sapin dans la barre de gauche ; rien sur le telephone (il a deja les siens)
-const versionOrdi = () => !document.documentElement.classList.contains('tel-large') && innerWidth >= 900 && !/LockerRoomiOS/.test(navigator.userAgent);
+// 27 nov 2026 (fluidite : 65-75 ms par changement d'ecran) : lire innerWidth force la mise en page ; la media query, non
+const MQ_ORDI = matchMedia('(min-width: 900px)'), IOS_APP = /LockerRoomiOS/.test(navigator.userAgent);
+const versionOrdi = () => !document.documentElement.classList.contains('tel-large') && MQ_ORDI.matches && !IOS_APP;
 // 15 nov 2026 (Mathieu : « mettre joyeuses fetes de la part de notre equipe ou il y a le sapin, ou un petit "SlabCoach is
 // registered..." en bas pour la propriete intellectuelle ; c'est un peu vide : quelque chose de petit, subtil et utile ») :
 // le pied de la barre de cote (ordi) : aux fetes, le sapin et le cadeau avec « Joyeuses fetes, de toute l'equipe » ; toute
@@ -12115,6 +12178,9 @@ async function chargerWatch(){
         <span class="w-tps ${x.gagne ? 'gagne' : !fini && x.encan && x.reste_min != null && x.reste_min <= 60 ? 'bientot' : ''}">${x.encan && !fini ? icH() : ''}${temps}</span>
         ${x.ebay_le && !fini ? `<span class="w-eb">✓ eBay</span>` : ''}</div>
       <div class="w-mil"><div class="w-t">${esc(titreCourt(x.titre))}</div>
+        ${''/* 27 nov 2026 (PDF de Mathieu, point 3 : « il manque de punch et d'infos ; ajouter un peu d'infos ») : la pastille, le genre
+           d'annonce, le port et le vendeur, en une ligne */}
+        <div class="w-info">${agBadge(agDe(x))}<span>${x.encan ? (x.mises != null ? `${x.mises} ${tt('mises', 'bids')}` : tt('Encan', 'Auction')) : tt('Achat immédiat', 'Buy it now')}</span>${x.port != null ? `<span>${Number(x.port) > 0 ? '+' + argent(x.port, 0) + ' ' + tt('de port', 'ship') : tt('Port gratuit', 'Free ship')}</span>` : ''}${x.vendeur ? `<span>${esc(String(x.vendeur).slice(0, 22))}</span>` : ''}</div>
         ${fini ? finW(x, cur) : ''}${fini ? '' : `<div class="w-pr2"><div class="${dep ? 'rouge' : ''}"><small>${x.encan ? tt('Mise', 'Bid') : tt('Prix', 'Price')}</small><b>${cur}</b></div>
           ${!r.prix ? (x.mise_perso && x.mise_max != null ? `<div><small>${tt('Ta mise', 'Your bid')}</small><b>${argent(x.mise_max, 0)}</b></div>` : '') : `<button class="w-max2 ${x.mise_perso ? 'perso' : ''}" data-wmax="${esc(x.item_id)}"><small>${x.encan ? tt('Ta mise max', 'Your max bid') : tt('Paie au plus', 'Pay at most')} ✎</small><b class="${(x.mise_max == null && x.sans_comps) || (x.mise_max != null && x.mise_max < 1 && !x.mise_perso) ? 'w-sc' : ''}">${x.mise_max != null && x.mise_max < 1 && !x.mise_perso && x.valeur ? tt('Trop petite', 'Too small') : x.mise_max != null ? argent(x.mise_max, 0) : x.sans_comps ? tt('Pas de comps', 'No comps') : '—'}</b></button>${x.profit != null ? `<div class="w-pro ${x.profit > 0 ? 'vert' : 'rouge'}"><small>${x.encan ? tt('Profit actuel', 'Profit now') : tt('Profit', 'Profit')}</small><b>${x.profit > 0 ? '+' : '−'}${argent(Math.abs(x.profit), 0)}</b></div>` : ''}`}</div>`}
         ${dep ? `<div class="w-dep">${tt('Dépasse ta mise max', 'Over your max bid')}</div>` : ''}</div>
@@ -12556,7 +12622,11 @@ const tdPts = (serie, W, H, m, avec, jours) => { const v = (serie || []).filter(
   const J = jours && jours.length === v.length && jours[jours.length - 1] > 0 ? jours : v.map((_, i) => i), jm = J[J.length - 1];
   return v.map((y, i) => [m + (W - 2 * m) * J[i] / jm, m + (H - 2 * m) * (1 - (y - lo) / e)]); };
 const tdTrace = (P) => P.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ',' + q[1].toFixed(1)).join('');
-const sparkTD = (t, W, H) => { W = W || 64; H = H || 26; const P = tdPts(t && t.serie, W, H, 3, null, t && t.jours); if (!P) return ''; const f = P[P.length - 1];
+// 27 nov 2026 (PDF de Mathieu, point 9 : « coherent entre un -19 et un aucun changement ; la ils ont le meme genre de graph ; le gris
+// aurait du etre bcp plus neutre ») : sans changement mesure, une ligne plate pointillee, presque effacee ; la pastille « — » sans fond
+const sparkTD = (t, W, H) => { W = W || 64; H = H || 26; if (t && t.serie && tdSens(t) === 'n') { const y = (H / 2).toFixed(1);
+    return `<svg class="tiq-sp n plat" viewBox="0 0 ${W} ${H}" style="width:${W}px; height:${H}px" aria-hidden="true"><path d="M3,${y}L${W - 3},${y}"/><circle cx="${W - 3}" cy="${y}" r="2"/></svg>`; }
+  const P = tdPts(t && t.serie, W, H, 3, null, t && t.jours); if (!P) return ''; const f = P[P.length - 1];
   return `<svg class="tiq-sp ${tdSens(t)}" viewBox="0 0 ${W} ${H}" style="width:${W}px; height:${H}px" aria-hidden="true"><path d="${tdTrace(P)}"/><circle cx="${f[0].toFixed(1)}" cy="${f[1].toFixed(1)}" r="2.2"/></svg>`; };
 const pcTD = (t) => { const k = tdSens(t); return `<span class="tiq-pc ${k === 'h' ? 'acheter' : k === 'b' ? 'vendre' : 'nul'}">${t.pct == null ? '—' : sgPct(t.pct)}</span>`; };
 // 25 nov 2026 (Mathieu : « j'espere que le trend est associe aux joueurs ? ») : sur la tuile, seulement la tendance de LA carte du
@@ -13282,10 +13352,14 @@ async function rendreAnalyse(){
     corps = `<div class="an-bilan"><div><span>${tt('Coût', 'Cost')}</span><b>${argentCourt(r.cout)}</b></div><div><span>${tt('Total des places', 'All spots')}</span><b>${argentCourt(r.total)}</b></div>
         <div class="${r.profit_plein >= 0 ? 'vert' : 'rouge'}"><span>${tt('Profit', 'Profit')}</span><b>${r.profit_plein >= 0 ? '+' : ''}${argentCourt(r.profit_plein)}</b></div></div>
       ${segA('an-m', [['equipes', tt('Équipes', 'Teams')], ['joueurs', tt('Joueurs', 'Players')], ['divisions', 'Divisions']], A.mode)}
-      <div class="grille-c grille-places" style="margin-top:12px">${places.map(x => `<div class="tuile-c place-s">
-        ${r.mode === 'equipes' ? ecussonEquipe(x.cle) : r.mode === 'joueurs' ? vignetteJoueur(x.cle) : `<span class="ecu-eq" style="--c1:${COUL_EQ(x.cle)};--c2:#111115"><i>${esc(String(x.nom).split(/\s+/).map(m => m[0]).join('').slice(0, 3))}</i></span>`}
-        <div class="ps-n"><b>${r.mode === 'joueurs' ? lienJoueur(x.cle, x.nom) : esc(x.nom)}</b>${(x.vedettes || [])[0] && r.mode !== 'joueurs' ? `<span>${x.vedettes.slice(0, 2).map(v => lienJoueur(v)).join(' · ')}</span>` : ''}</div>
-        <span class="ps-p">${argent(x.prix, 0)}</span></div>`).join('')}</div>
+      ${''/* 27 nov 2026 (PDF de Mathieu, point 8 : « I buy a spot et I run a break avec le meme design de tuile ; seulement les infos en
+         lien avec un breaker et un acheteur changent ») : la MEME tuile que la vue acheteur (score-bloc simple), le prix de la place a droite */}
+      <div class="score-liste place-liste" style="margin-top:12px">${places.map((x, i) => { const ceq = r.mode === 'equipes' ? couleurEquipe(x.cle) : r.mode === 'joueurs' ? couleurEquipe(x.equipe, x.cle) : null;
+        return `<div class="score-bloc simple"${ceq ? ` style="--eq:${ceq}"` : ''}><div class="score-l">
+        <span class="rang">${i + 1}</span>
+        ${r.mode === 'equipes' ? ecussonEquipe(x.cle) : r.mode === 'joueurs' ? vignetteJoueur(x.cle, x.equipe) : `<span class="ecu-eq" style="--c1:${COUL_EQ(x.cle)};--c2:#111115"><i>${esc(String(x.nom).split(/\s+/).map(m => m[0]).join('').slice(0, 3))}</i></span>`}
+        <span class="sl-n"><b>${r.mode === 'joueurs' ? lienJoueur(x.cle, x.nom) : esc(x.nom)}</b><span>${(x.vedettes || [])[0] && r.mode !== 'joueurs' ? x.vedettes.slice(0, 2).map(v => esc(v)).join(' · ') : ''}</span></span>
+        <span class="score place-px"><b>${argent(x.prix, 0)}</b><small>${tt('la place', 'per spot')}</small></span></div></div>`; }).join('')}</div>
       <div class="an-actions"><button class="btn" id="an-creer">${tt('Créer ce break avec ces prix', 'Create this break with these prices')}</button>
         <button class="btn ghost" id="an-xls"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>${tt('Excel des prix', 'Prices to Excel')}</button></div>`;
   } else {
@@ -13740,7 +13814,7 @@ async function ouvrirAnnonce(base){
       ${blocAutres(base)}
       ${proChips(a)}
       <div class="fa-bas"><a href="#valeur/${encodeURIComponent(a.titre || base.titre || '')}" data-fermer>${tt('Toutes ses ventes ›', 'All its sales ›')}</a>
-        <span class="fa-bas-d"><button class="lien-doux fa-sig" id="fa-sig">${tt('Pas la bonne note ?', 'Wrong grade?')}</button>${(S.dealsParId || {})[String(base.item_id)] ? `<button class="pas-deal" id="fen-pasdeal">${tt('Pas un deal ?', 'Not a deal?')}</button>` : ''}</span></div></div></div>`;
+        <span class="fa-bas-d">${(S.dealsParId || {})[String(base.item_id)] ? `<button class="pas-deal" id="fen-pasdeal">${tt('Pas un deal ?', 'Not a deal?')}</button>` : ''}</span></div></div></div>`;
     $$('.fen-vigs [data-ph]', f).forEach(b => b.onclick = () => { $('#fen-img', f).innerHTML = `<img src="${esc(b.dataset.ph)}" alt="">`; $$('.fen-vigs button', f).forEach(x => x.classList.toggle('on', x === b)); brancherLoupe($('#fen-img', f)); });
     brancherLoupe($('#fen-img', f));
     $$('[data-fermer]', f).forEach(b => b.addEventListener('click', fermerAnnonce));
@@ -13806,7 +13880,7 @@ async function ouvrirAnnonce(base){
   const brancherPro = (a) => { const sp = scoreP;
     // 11 nov 2026 : le score ouvre « Pourquoi ce score » (petite fenetre avec un X) ; le vendeur aussi
     $$('[data-slabiq]', f).forEach(b => b.onclick = () => { vibrer(); if (!sp || sp.score == null) return expliquerSlabIQ();
-      _SC[(base.titre || '') + '|'] = sp; pourquoiScore({score: sp.score, item_id: base.item_id, titre: base.titre || '', petit_vendeur: base.petit_vendeur, vendeur_score: a.vendeur_score, moment: sp.moment, vague: sp.vague}); });
+      _SC[(base.titre || '') + '|'] = sp; pourquoiScore({score: sp.score, item_id: base.item_id, titre: base.titre || '', petit_vendeur: base.petit_vendeur, vendeur_score: a.vendeur_score, moment: sp.moment, vague: sp.vague, sig: true}); });
     const vd = $('#fa-vd', f); if (vd) vd.onclick = () => { vibrer(); ouvrirFeuille(`<div class="ps"><div class="ps-n"><span>${esc(a.vendeur)}<small>${tt('Vendeur eBay', 'eBay seller')}</small></span></div><div class="ps-l">
       ${a.vendeur_pct ? `<div class="ps-r"><span class="ps-i vendeur"></span><span><b>${esc(a.vendeur_pct)} %</b><small>${tt('d’évaluations positives', 'positive feedback')}</small></span></div>` : ''}
       ${a.vendeur_score ? `<div class="ps-r"><span class="ps-i carte"></span><span><b>${Number(a.vendeur_score).toLocaleString()}</b><small>${tt('évaluations', 'ratings')}${a.vendeur_score < 5000 ? ' · ' + tt('petit vendeur, souvent moins vu', 'small seller, often less seen') : ''}</small></span></div>` : ''}
@@ -13842,8 +13916,8 @@ async function ouvrirAnnonce(base){
       ${bandeTend(tendSorteDe(base, sp))}
       ${bandeauVerifier(base.item_id)}
       ${proChips(a)}
-      ${''/* 20 nov 2026 (Mathieu : « Wrong grade juste en dessous des deux tuiles, un petit onglet en rouge pale ») */}
-      <button class="fa-sig fa-sig-p" id="fa-sig">${tt('Pas la bonne note ?', 'Wrong grade?')}</button>
+      ${''/* 27 nov 2026 (PDF de Mathieu, point 4 : « le wrong grade devrait etre dans la fenetre quand tu cliques sur le grade, pas la ;
+         ca cree du bruit pour rien ») : il est dans la fenetre de la note SlabIQ (pourquoiScore, sig) */}
       ${blocMesAchats(d.mes_achats, d.deja_achetee, 0, null)}
       <div class="fa-btns"><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${encan ? tt('Miser sur eBay', 'Bid on eBay') : tt('Acheter sur eBay', 'Buy on eBay')}</a>${boutonWatch({item_id: base.item_id})}</div>
       ${blocAutres(base)}
@@ -17514,7 +17588,7 @@ const FILTRES_INV = [['tous','Tous',{dispo:1}],['collection','Ma collection',{di
   ['achetees','Achetées',{dispo:1}],                                       // 14 nov 2026 : achetees, pas encore sur eBay
   ['sans-cout','Sans coût',{sans_cout:1}],['magasin','Magasin',{dispo:1, emplacement:'Magasin'}],['consig','Consignation',{dispo:1, consignation:1}],['vendue','Vendues',{statut:'Vendue'}]];
 // 29 oct 2026 (Mathieu : « trop d'options et je dois swiper ») : 3 filtres visibles, le reste (et les sports) dans « Filtrer »
-const LIB_FILTRE = (k) => ({afinir: tt('À finir', 'To finish'), tous: tt('Tout', 'All'), collection: tt('Collection', 'Collection'), listee: tt('Sur eBay', 'On eBay'), afficher: tt('À mettre sur eBay', 'To list on eBay'), vendretot: tt('Vends tôt', 'Sell early'), achetees: tt('Achetées', 'Bought'), 'sans-cout': tt('Sans coût', 'No cost'),
+const LIB_FILTRE = (k) => ({afinir: tt('À finir', 'To finish'), tous: tt('Tout', 'All'), collection: tt('Collection', 'Collection'), listee: tt('Sur eBay', 'On eBay'), afficher: tt('À mettre sur eBay', 'To list on eBay'), vendretot: tt('Vends tôt', 'Sell early'), achetees: tt('Inventaire', 'Inventory'), 'sans-cout': tt('Sans coût', 'No cost'),
   magasin: tt('Magasin', 'Store'), consig: tt('Consignation', 'Consignment'), vendue: tt('Vendues', 'Sold')})[k] || k;
 // 9 nov 2026 (Mathieu : « un onglet pending qui disparait s'il n'y a pas de carte ; la personne part sans finir, revient et
 // reprend chacune de ses cartes pour les mettre sur eBay en lot ») : « À finir » n'apparait que s'il y a quelque chose a finir
@@ -17693,10 +17767,12 @@ function filtresBarreInv(){
   // 13 nov 2026 (Mathieu : « ou est notre onglet Sold dans l'inventaire ? ») : « Vendues » visible a cote des 3 autres ; les
   // autres filtres (et les sports) dans le petit bouton rond a droite
   // 14 nov 2026 (Mathieu : « un onglet pour les cartes achetees ») : « Achetées » visible aussi
-  const f = S.filtreInv || 'tous', autre = !['tous', 'collection', 'listee', 'achetees', 'vendue', 'afinir'].includes(f), sp = S.sportInv, n = nbAFinir();
+  // 27 nov 2026 (PDF de Mathieu, point 6 : « l'onglet Bought devrait etre Inventaire, et All pourrait etre retire car il cree juste
+  // de la confusion ») : Inventaire (les cartes achetees, pas encore sur eBay), Collection, Sur eBay, Vendues ; « Tout » reste dans le menu
+  const f = S.filtreInv || 'achetees', autre = !['collection', 'listee', 'achetees', 'vendue', 'afinir'].includes(f), sp = S.sportInv, n = nbAFinir();
   return (n || f === 'afinir' ? `<button class="chip chip-afinir ${f === 'afinir' ? 'on' : ''}" data-f="afinir">${LIB_FILTRE('afinir')}${n ? ` <b>${(S.nbAFinir || 0) + (S.lotGardeN || 0) || ''}</b>` : ''}</button>` : '')
     // 20 nov 2026 (Mathieu : « ou est parti l'onglet Bought et On eBay ? ») : les 5 filtres de tous les jours restent visibles
-    + ['tous', 'collection', 'listee', 'achetees', 'vendue'].map(k => `<button class="chip ${f === k ? 'on' : ''}" data-f="${k}">${LIB_FILTRE(k)}</button>`).join('')
+    + ['achetees', 'collection', 'listee', 'vendue'].map(k => `<button class="chip ${f === k ? 'on' : ''}" data-f="${k}">${LIB_FILTRE(k)}</button>`).join('')
     + (autre || sp ? `<button class="chip on" id="i-plus-f">${autre ? LIB_FILTRE(f) : nomSport(sp)} ▾</button>`
       : `<button class="chip i-f-rond" id="i-plus-f" aria-label="${esc(tt('Plus de filtres', 'More filters'))}"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.reglages}</svg></button>`);
 }
@@ -17727,12 +17803,12 @@ function majTuileAjuster(){
 }
 async function tableauInv(){
   const z = $('#i-tab'); if (!z) return;
-  if ((S.filtreInv || 'tous') === 'vendue') { tuilesVendues(); return; }       // 16 nov 2026 : les ventes ont leurs tuiles
+  if ((S.filtreInv || 'achetees') === 'vendue') { tuilesVendues(); return; }       // 16 nov 2026 : les ventes ont leurs tuiles
   const r = await API.inventaire_tableaux().catch(() => null);
-  if ((S.filtreInv || 'tous') === 'vendue') return;
+  if ((S.filtreInv || 'achetees') === 'vendue') return;
   if (!r || !r.ok || !$('#i-tab')) { if (z) z.innerHTML = ''; return; }
   const t = (lib, val, sous, cl, id) => `<button class="t-acc" ${id ? `id="${id}"` : ''}><span class="l">${lib}</span><b class="${cl || ''}">${val}</b><span class="s">${sous}</span></button>`;
-  const coll = (S.filtreInv || 'tous') === 'collection';
+  const coll = (S.filtreInv || 'achetees') === 'collection';
   if (coll) {
     const c = r.collection, v = c.variation || {}, k = v['12m'] != null ? '12m' : v['6m'] != null ? '6m' : v['3m'] != null ? '3m' : null;
     const per = {['3m']: tt('3 mois', '3 months'), ['6m']: tt('6 mois', '6 months'), ['12m']: tt('12 mois', '12 months')};
@@ -17806,7 +17882,7 @@ function brancherFiltresInv(){
     const ps = S.parSportInv || {}, sports = Object.entries(ps).sort((a, b) => b[1] - a[1]);
     // 20 nov 2026 (Mathieu : « beaucoup trop de choix pour rien ; mieux d'en donner un peu moins ») : la feuille ne repete plus les
     // filtres deja visibles en haut (Tout, Collection, Sur eBay, Achetees, Vendues) ni « A finir » (sa pastille apparait seule)
-    const VIS = ['tous', 'collection', 'listee', 'achetees', 'vendue', 'afinir'];
+    const VIS = ['collection', 'listee', 'achetees', 'vendue', 'afinir'];
     ouvrirFeuille(`<h3>${tt('Filtrer', 'Filter')}</h3><div class="menu-f">${filtresInv().filter(([k]) => !VIS.includes(k)).map(([k]) => `<button class="choix-f ${S.filtreInv === k ? 'on' : ''}" data-ff="${k}">${LIB_FILTRE(k)}${S.filtreInv === k ? ' ✓' : ''}</button>`).join('')}</div>
       ${sports.length > 1 ? `<div class="sous">${tt('Sport', 'Sport')}</div><div class="menu-f"><button class="choix-f ${S.sportInv ? '' : 'on'}" data-fs="">${tt('Tous les sports', 'All sports')}${S.sportInv ? '' : ' ✓'}</button>${sports.map(([k, n]) => `<button class="choix-f ${S.sportInv === k ? 'on' : ''}" data-fs="${k}">${nomSport(k)} · ${n}${S.sportInv === k ? ' ✓' : ''}</button>`).join('')}</div>` : ''}`);
     const fin = () => { fermerFeuille(); const z = $('.i-filtres'); if (z) { z.innerHTML = filtresBarreInv(); brancherFiltresInv(); } chargerInventaire(); };
@@ -18111,7 +18187,7 @@ async function estimerManquantes(l){
 const VUES_LOCALES = {tous: () => true, collection: (c) => c.emplacement === 'Collection', afinir: (c) => !!c.a_finir};
 async function chargerInventaire(){
   if (S.filtreInv === 'achetees') return vueAchetees();
-  const loc = VUES_LOCALES[S.filtreInv || 'tous'];
+  const loc = VUES_LOCALES[S.filtreInv || 'achetees'];
   const f = loc ? {dispo: 1, q: S.rechInv} : Object.assign({}, (FILTRES_INV.find(x => x[0] === S.filtreInv) || FILTRES_INV[0])[2], {q:S.rechInv});
   const seq = S.invSeq = (S.invSeq || 0) + 1;                 // deux changements rapides : seule la derniere vue s'affiche
   let tout;
@@ -22997,7 +23073,8 @@ async function pourquoiScore(x){
   const nL = (l) => ({A: 'na', B: 'nb', C: 'nc', D: 'nd', E: 'ne'})[String(l || '')[0]] || 'nx';
   ouvrirFeuille(`<div class="ps ps2"><div class="ps-g"><div class="ps-n ${nL(lettre(x.score))}"><b>${lettre(x.score)}</b><span>${qual(x.score)}<small>Score SlabIQ${S.forfait && S.forfait.admin && x.score != null ? ' · ' + Math.round(x.score) + '/100' : ''}</small></span></div><div id="ps-ra"></div><div id="ps-tu"></div></div>
     <div class="ps-d"><div id="ps-td"></div><div id="ps-l"><span class="roue"></span></div>
-    <button class="lien-doux" id="ps-iq">${tt('Comment SlabIQ fonctionne', 'How SlabIQ works')} ›</button></div></div>`);
+    <button class="lien-doux" id="ps-iq">${tt('Comment SlabIQ fonctionne', 'How SlabIQ works')} ›</button>
+    ${x.sig ? `<button class="fa-sig fa-sig-p" id="fa-sig">${tt('Pas la bonne note ?', 'Wrong grade?')}</button>` : ''}</div></div>`);
   $('#ps-iq').onclick = () => { fermerFeuille(); setTimeout(expliquerSlabIQ, 200); };
   const cle = (x.titre || '') + '|' + (x.joueur || '');
   const sp = _SC[cle] || (_SC[cle] = await API.annonce_score(x.titre, x.joueur).catch(() => null));
@@ -24662,7 +24739,9 @@ function tenirProfil(){
   if (!ec || !pils || !d) { R.style.removeProperty('--pk'); return; }
   $$('.pk-plie', pils).forEach(x => x.classList.remove('pk-plie')); { const p0 = $('#gg-plus'); if (p0) p0.remove(); }
   const dep = (k) => { R.style.setProperty('--pk', String(k)); return d.scrollHeight - innerHeight; };
-  const serrer = () => { if (dep(0) <= 0) return; let a = 0, b = 1; for (let i = 0; i < 6; i++) { const m = (a + b) / 2; if (dep(m) > 0) a = m; else b = m; } dep(b); };
+  // 27 nov 2026 (fluidite : 330 ms de calcul a l'ouverture du Profil, 8 mesures de la page) : la hauteur suit --pk en ligne droite :
+  // deux mesures donnent le bon serrage du premier coup ; la recherche ne sert que si ce n'est pas le cas
+  const serrer = () => { const h0 = dep(0); if (h0 <= 0) return; const h1 = dep(1); if (h1 < h0 && dep(Math.min(1, h0 / (h0 - h1) + 0.005)) <= 0) return; let a = 0, b = 1; for (let i = 0; i < 6; i++) { const m = (a + b) / 2; if (dep(m) > 0) a = m; else b = m; } dep(b); };
   if (dep(0) <= 0) return;
   if (dep(1) <= 0) { serrer(); return; }
   const L = PLIER_PROFIL.map(id => document.getElementById(id)).filter(l => l && l.parentElement === pils);

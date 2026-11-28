@@ -1818,3 +1818,17 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   confiance, chance). Inventaire : la version « déjà à soi » (cp, sp, rp ; g10p pour comps seulement).
 - Journal de surveillance : a_grader.journal() écrit chaque pastille calculée dans DONNEES/a_grader_journal.jsonl (date, carte, prix,
   seuil, confiance) : à juger 6-8 mois plus tard (règle : sous 85 % pendant 3 mois -> retour en admin). Le juge reste à écrire (~juin 2027).
+
+## p131 — 27 nov 2026, 19 h : fluidité + PDF « todo_slab » (points 1, 2, 4, 5, 6, 7, 8, 9)
+- Fluidité (mesure : /home/claude/vue/fluide/mesure.py, faux iPhone, processeur ×4 ; gels totaux 1 580 → 885 ms) : fermerFeuille
+  fait glisser la VRAIE feuille (plus de copie ; une feuille neuve et vide prend sa place) ; glisser vers le bas : le fond suit, la
+  vitesse ferme, retour avec la courbe iOS (.32,.72,0,1) ; versionOrdi lit une media query (innerWidth forçait la mise en page) ;
+  tenirProfil : 3 mesures au lieu de 8 ; --tf-h/--tf-top réécrites seulement si elles changent.
+- Standard des entêtes (bloc « LE STANDARD DES EN-TETES » à la fin de la 2e feuille de style) : un titre 32 px partout ; à l'ordi,
+  la bande collante est translucide (verre dépoli, pleine largeur) ; les choix du Radar serrés à gauche.
+- « Wrong grade? » : dans la fenêtre de la note SlabIQ (pourquoiScore, sig) ; plus dans la fiche.
+- Inventaire : onglets Inventaire (= achetées), Collection, Sur eBay, Vendues ; « Tout » seulement dans le menu ; défaut 'achetees'.
+- Breaks « Je fais un break » : la tuile de la vue acheteur (score-bloc simple), le prix de la place à droite ; texte gris réduit.
+- Petits graphes : sans changement (tdSens 'n') = ligne plate pointillée presque effacée, pastille « — » sans fond.
+- Point 3 (19 h 10) : tuiles d'annonce (.w-ligne : Watchlist, Mes cibles) au contour prisme, fond plus vivant, prix 20 px, ta mise en lavande,
+  ligne d'infos (pastille À grader, encan/achat immédiat, port, vendeur). Vu sur la Watchlist locale ; à revoir sur de vraies annonces.
